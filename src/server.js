@@ -2,7 +2,7 @@ import express from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { mkdirSync } from "node:fs";
-import { getConfig } from "./db/database.js";
+import { getConfig, DB_PATH } from "./db/database.js";
 import { buildOnStartup } from "./build/rebuild.js";
 import authRouter from "./api/auth.js";
 import chatRouter from "./api/chat.js";
@@ -53,6 +53,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Belt-and-suspenders: nothing under /data is ever served over HTTP, even if a
+// future static mount or a symlink would otherwise expose it. 404 (not 403) so
+// we don't confirm the path exists. Registered before any static handler so it
+// always wins. (Uploads are served at /uploads, not /data, so this is safe.)
+app.use("/data", (req, res) => res.status(404).end());
+
 app.use("/uploads", express.static(uploadsDir));
 
 // API routes
@@ -102,6 +108,7 @@ app.listen(PORT, () => {
   console.log(`🦞 bl-site-package running on port ${PORT}`);
   console.log(`   Panel: http://localhost:${PORT}/panel`);
   console.log(`   Setup: http://localhost:${PORT}/setup`);
+  console.log(`   DB:    ${DB_PATH} (keep OUTSIDE the web document root — see RELEASE.md)`);
 });
 
 export default app;

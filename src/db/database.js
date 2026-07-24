@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname, join, resolve, sep } from "node:path";
 import { scheduleRebuild } from "../build/rebuild.js";
 
 // Config keys exposed to the public site (GET /api/site/config and the
@@ -32,10 +33,40 @@ export const PUBLIC_CONFIG_KEYS = [
   "legal_email",
 ];
 
-const dbPath = process.env.DB_PATH || "./data/app.db";
-mkdirSync(dirname(dbPath), { recursive: true });
+// Absolute, normalized path to the SQLite file. Default lives in ./data/app.db;
+// on hosts where the web docroot is the app root (e.g. Plesk), point DB_PATH
+// outside it (see RELEASE.md). The DB holds the panel password (plaintext), the
+// JWT secret, the client's OpenRouter key and contact messages — it must never
+// be reachable over HTTP.
+export const DB_PATH = resolve(process.env.DB_PATH || "./data/app.db");
 
-const db = new Database(dbPath);
+// Defense-in-depth: refuse to even OPEN the DB if it resolves inside a directory
+// this app serves over HTTP. Runs before new Database() so a misconfigured
+// deploy never writes the sensitive file into a served dir. We can't see an
+// upstream nginx docroot from here (the Plesk leak was nginx serving the app
+// root directly — fixed structurally by pointing the docroot at public/), but
+// the unambiguously-wrong case — DB_PATH inside _site/, web/, public/ or
+// data/uploads/ — is caught here. The Zeabur default (./data/app.db) is inside
+// none of these, so this never false-positives on a correct deploy.
+const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const servedDirs = [
+  join(appRoot, "_site"),
+  join(appRoot, "web"),
+  join(appRoot, "public"),
+  join(appRoot, "data", "uploads"),
+];
+if (servedDirs.some((d) => DB_PATH === d || DB_PATH.startsWith(d + sep))) {
+  console.error(
+    `\n🚨 SECURITY: DB_PATH resolves inside a web-served directory:\n   ${DB_PATH}\n` +
+      `   The database would be downloadable over HTTP. Set DB_PATH to a path\n` +
+      `   OUTSIDE the web document root (see RELEASE.md). Refusing to start.\n`,
+  );
+  process.exit(1);
+}
+
+mkdirSync(dirname(DB_PATH), { recursive: true });
+
+const db = new Database(DB_PATH);
 
 db.pragma("journal_mode = WAL");
 
