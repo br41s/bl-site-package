@@ -51,6 +51,24 @@ check() {
   echo "OK    $desc — $path → HTTP $code"
 }
 
+# check_absent <desc> <path>
+# Security gate: the path must NOT be downloadable. A 200 is a hard fail — it
+# means the web docroot is exposing an app-internal file (the Shoroban incident:
+# nginx served the app root, so GET /data/app.db returned the whole SQLite DB —
+# panel password, JWT secret, contact messages). Anything non-200 (404/403/000)
+# passes.
+check_absent() {
+  desc="$1"; path="$2"
+  url="$BASE$path"
+  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$url" 2>/dev/null || echo "000")
+  if [ "$code" = "200" ]; then
+    echo "FAIL  $desc — $path → HTTP 200 (MUST NOT be downloadable — docroot is exposing app internals)"
+    fails=$((fails + 1))
+    return
+  fi
+  echo "OK    $desc — $path → HTTP $code (not downloadable)"
+}
+
 echo "Smoke test: $BASE"
 echo "---------------------------------------------"
 
@@ -65,6 +83,13 @@ check "setup wizard" "/setup" "200"
 # Panel route — 200 if configured, 302 redirect to /setup if not. Either proves
 # the route is wired (a 404/500 would be the failure we care about).
 check "panel route" "/panel" "200|302"
+
+# Security gates — these MUST NOT be downloadable. If any returns 200 the web
+# docroot is exposing app internals (data/, config files). Hard fail: do not
+# ship. See RELEASE.md (docroot = <app>/public) and the DB-path guard in
+# src/server.js.
+check_absent "DB not downloadable" "/data/app.db"
+check_absent "env file not downloadable" "/.env"
 
 echo "---------------------------------------------"
 if [ "$fails" -eq 0 ]; then
