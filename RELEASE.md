@@ -85,3 +85,132 @@ Comprueba:
 - `GET /setup` → 200 (wizard accesible).
 - `GET /panel` → 200 ó 302 (la ruta está cableada; 302 = aún sin configurar,
   redirige a `/setup`).
+- `GET /data/app.db` → **NO 200** (404/403). Puerta de seguridad: un 200 aquí
+  significa que el document root está sirviendo el directorio `data/` de la app
+  y la base de datos es descargable (el incidente de Shoroban). Es un fallo duro.
+- `GET /.env` → **NO 200** (404/403). Misma clase de fuga: ficheros internos
+  expuestos por un docroot mal configurado.
+
+Como los checks de `/` y `/api/site/config` exigen exactamente 200, un arranque
+roto (p. ej. el crash de ABI de `better-sqlite3`, que devuelve 500 en todo el
+sitio) también los hace fallar: el smoke test bloquea tanto una fuga de datos
+como un arranque caído.
+
+---
+
+## Estructura de directorios y document root (seguridad)
+
+**Regla de oro: el document root del servidor web solo puede servir estáticos
+públicos. Nunca puede ser la raíz de la aplicación.** La raíz contiene
+`data/app.db` (base de datos SQLite con la contraseña del panel en texto plano,
+el `JWT_SECRET`, la API key de OpenRouter del cliente y los mensajes de
+contacto), además de `src/`, `node_modules/`, `.env` y `.git/`.
+
+En Zeabur (contenedor Node, Express sirve todo) el problema no se da: Express es
+el único servidor y **nunca** sirve la raíz de la app — solo `_site/` (build de
+Eleventy), `web/` (assets del panel/setup) y `/uploads`. Una petición a
+`/data/app.db` cae en el 404. No hay nginx sirviendo ficheros directamente.
+
+En **Plesk** (y cualquier hosting donde nginx/apache sirve estáticos del
+document root directamente, antes de pasar a la app), si el document root ==
+raíz de la app, `GET /data/app.db` lo sirve el servidor web sin pasar por
+Express y **descarga la base de datos entera**. Esto le pasó a Shoroban.
+
+**El paquete incluye `public/`** como frontera del document root. Es un
+directorio (casi) vacío a propósito: su único fin es ser el document root en
+Plesk, de modo que nginx solo pueda servir lo que haya dentro (nada sensible) y
+todo lo demás se proxye a Passenger → Express, que decide qué se sirve. No metas
+en `public/` nada de la app.
+
+Defensa en profundidad, además de la estructura:
+- **Guard de arranque** (`src/db/database.js`): si `DB_PATH` resuelve dentro de
+  un directorio que la app sirve (`_site/`, `web/`, `public/`, `data/uploads/`),
+  el proceso **se niega a arrancar** — antes incluso de abrir/crear el fichero.
+- **Deny de `/data`** (`src/server.js`): ninguna ruta bajo `/data` se sirve por
+  HTTP (404), aunque un futuro montaje estático o un symlink lo intentara.
+- **Puertas del smoke test**: `/data/app.db` y `/.env` deben devolver NO-200.
+
+---
+
+## Runbook de despliegue en cliente Plesk/Passenger
+
+Procedimiento razonado para el go-live y las actualizaciones en un servidor
+Plesk/Passenger (Debian). Documentado a partir del rollout de Shoroban. **No se
+aplica hasta que el cambio esté verde en pruebas (Zeabur)** — ver flujo
+staging-first arriba. Pasos, en orden:
+
+1. **Document root correcto (CRÍTICO, seguridad).** En Plesk → *Node.js*:
+   - **Application Root** = `<app>` (la raíz del repo, p. ej. `httpdocs`).
+   - **Document Root** = `<app>/public` (subdirectorio, **no** la raíz).
+   - **Application Startup File** = `passenger-startup.cjs`.
+   Plesk mismo lo avisa: *"set the document root to a subdirectory of the
+   application root (like public/) for security."* Con esto nginx solo sirve
+   `public/` y `data/` queda fuera de su alcance.
+
+2. **Backup de `data/` FUERA de `httpdocs`** (nunca re-clonar el repo encima; se
+   perdería la DB). Copia `data/` a una ruta fuera del document root, p. ej.
+   `~/bl-data/`, y usa esa ruta como `DB_PATH` (ver punto 6).
+
+3. **Traer el código**: `git pull --ff-only` (no re-clonar).
+
+4. **Versión de Node**: debe ser **20.x o 22.x LTS**, y debe coincidir con la
+   versión contra la que se compiló el módulo nativo `better-sqlite3`. En Plesk
+   se fija en la config Node del dominio.
+
+5. **Instalar dependencias**: `npm ci --omit=dev`.
+   - **Al cambiar la versión de Node hay que RECONSTRUIR el binario nativo**:
+     `npm rebuild better-sqlite3` (o un `npm ci` limpio). Si no, al arrancar
+     salta un `NODE_MODULE_VERSION` mismatch (ABI). Caso real de Shoroban:
+     binario compilado para Node 24 (ABI 137) contra runtime Node 22 (ABI 127)
+     → 500 en todo el sitio.
+
+6. **Variables de entorno** (Plesk → Node → Environment variables):
+   - `DB_PATH` = ruta a la DB **fuera del document root** (la del backup del
+     punto 2, p. ej. `/var/www/vhosts/<dominio>/bl-data/app.db`). Es el estándar,
+     no opcional.
+   - `STAGING=true` en el subdominio de staging (`prueba.<dominio>`); en go-live,
+     **quitarla** y poner `SITE_URL=https://<dominio>`.
+   - **NO** definir `OPENROUTER_API_KEY`: el código la prioriza sobre la key BYOK
+     que el cliente introduce en `/setup`, así que definirla aquí ignora en
+     silencio la del cliente.
+
+7. **Reiniciar Passenger**: `touch tmp/restart.txt` en la raíz de la app, o el
+   botón *Restart App* en Plesk.
+
+8. **Smoke test**: `scripts/smoke-test.sh https://<dominio>` (o el de staging).
+   Debe salir en verde, incluidas las puertas de seguridad `/data/app.db` y
+   `/.env` (NO-200).
+
+**Ver errores de arranque en Passenger**: en modo producción Passenger oculta
+los errores de arranque (muestra una página genérica). Para verlos: ejecuta
+`npm start` desde el *Node command runner* de Plesk, o pon temporalmente la app
+en modo *development*. Ahí verás el ABI mismatch, un `DB_PATH` mal puesto, etc.
+
+---
+
+## Vulnerabilidades npm (`npm audit`)
+
+`npm audit` reporta 4 high-severity, todas la misma cadena transitiva:
+`@11ty/eleventy` → `@11ty/recursive-copy` → `minimatch@3.1.5` →
+`brace-expansion` (DoS/OOM, [GHSA-mh99-v99m-4gvg], CVSS 7.5, solo
+disponibilidad).
+
+**Estado: documentada y diferida a propósito.** No se aplica fix por ahora:
+- Es una dependencia **de build** (Eleventy la usa al copiar estáticos con
+  globs). Los patrones de glob están **hardcodeados** en `eleventy.config.mjs`;
+  **ningún input de un visitante llega a `brace-expansion`**. No es explotable
+  desde la web.
+- Impacto solo de disponibilidad (A:H), no de confidencialidad ni integridad.
+- La **única versión parcheada es `brace-expansion@5.0.8`, que es ESM puro**
+  (`type: module`), incompatible con el `minimatch@3.1.5` (CommonJS, hace
+  `require('brace-expansion')`) que Eleventy fija. Forzarla rompería el build en
+  las versiones de Node soportadas por debajo de 20.19 / 22.12 (donde
+  `require()` de un módulo ESM falla).
+- `npm audit fix --force` **degradaría** `@11ty/eleventy` 3.1.6 → 3.1.2 (una
+  regresión), no es un fix real. **Nunca** usar `--force` aquí.
+
+**Acción de seguimiento**: revisar en cada release de Eleventy si actualiza
+`recursive-copy`/`minimatch` a una cadena con `brace-expansion` parcheado, y
+re-auditar. Mientras tanto el riesgo real en producción es nulo.
+
+[GHSA-mh99-v99m-4gvg]: https://github.com/advisories/GHSA-mh99-v99m-4gvg
