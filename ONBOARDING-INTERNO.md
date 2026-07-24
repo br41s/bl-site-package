@@ -96,6 +96,15 @@ staging-first descrito en [`RELEASE.md`](RELEASE.md): merge a `main` → auto-de
 en Zeabur (staging) → `scripts/smoke-test.sh` en verde → recién entonces, rollout
 a cada servidor de cliente (Plesk) con su propio smoke test.
 
+**Clientes en Plesk/Passenger**: el rollout tiene su propio runbook con los
+puntos críticos (document root = `<app>/public`, `DB_PATH` **fuera** del document
+root, versión de Node y reconstrucción del binario nativo `better-sqlite3`, y las
+variables de entorno). Ver la sección *Runbook de despliegue en cliente
+Plesk/Passenger* en [`RELEASE.md`](RELEASE.md). El estándar de `DB_PATH` en
+cualquier hosting donde el servidor web sirve el document root directamente es
+una ruta **fuera** de ese document root; en Zeabur el `/app/data` por defecto es
+seguro porque Express nunca sirve la raíz de la app.
+
 ---
 
 ## Datos del cliente (rellenar por cada instancia)
