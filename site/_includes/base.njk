@@ -8,9 +8,9 @@
 } -%}
 {%- set pageDescMap = {
   "index": site.page_index_desc or site.page_index_subtitle or "",
-  "quienes": site.page_quienes_desc or site.page_quienes_subtitle or "",
-  "servicios": site.page_servicios_desc or site.page_servicios_subtitle or "",
-  "contacto": site.page_contacto_desc or site.page_contacto_subtitle or "",
+  "quienes": site.page_quienes_subtitle or (site.page_quienes_desc_html | striptags | truncate(160)),
+  "servicios": site.page_servicios_subtitle or (site.page_servicios_desc_html | striptags | truncate(160)),
+  "contacto": site.page_contacto_subtitle or (site.page_contacto_desc_html | striptags | truncate(160)),
   "blog": site.page_blog_subtitle or "",
   "productos": "Reserva online y recoge en tienda"
 } -%}

@@ -1,10 +1,20 @@
 import { getConfig, PUBLIC_CONFIG_KEYS } from "../../src/db/database.js";
+import { formatContent } from "../../src/content/format-content.js";
 
 // Eleventy global data — same key set as GET /api/site/config, read directly
 // at build time instead of over HTTP.
 export default function () {
   const config = { year: new Date().getFullYear() };
   for (const k of PUBLIC_CONFIG_KEYS) config[k] = getConfig(k) || "";
+  // Markdown-rendered variants for the long-form body fields. Templates output
+  // these with `| safe` (already sanitized) instead of the raw text, so the
+  // agent can write structured content (headings, lists, bold, links) and pages
+  // render enriched — not one flat paragraph. Plain-text values render unchanged
+  // (see formatContent). The raw fields stay for the hero blurb and SEO meta.
+  config.page_index_body_html = formatContent(config.page_index_body);
+  config.page_quienes_desc_html = formatContent(config.page_quienes_desc);
+  config.page_servicios_desc_html = formatContent(config.page_servicios_desc);
+  config.page_contacto_desc_html = formatContent(config.page_contacto_desc);
   // site_url env override (SITE_URL) mirrors the runtime pattern used for
   // secrets like PANEL_PASSWORD; trailing slashes are stripped so templates
   // can concatenate absolute URLs without doubling the separator.

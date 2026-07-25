@@ -13,6 +13,7 @@ export const PUBLIC_CONFIG_KEYS = [
   "page_index_title",
   "page_index_subtitle",
   "page_index_desc",
+  "page_index_body",
   "page_quienes_title",
   "page_quienes_subtitle",
   "page_quienes_desc",
