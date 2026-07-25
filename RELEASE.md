@@ -140,12 +140,31 @@ aplica hasta que el cambio esté verde en pruebas (Zeabur)** — ver flujo
 staging-first arriba. Pasos, en orden:
 
 1. **Document root correcto (CRÍTICO, seguridad).** En Plesk → *Node.js*:
-   - **Application Root** = `<app>` (la raíz del repo, p. ej. `httpdocs`).
-   - **Document Root** = `<app>/public` (subdirectorio, **no** la raíz).
-   - **Application Startup File** = `passenger-startup.cjs`.
+
+   | Campo (Plesk)                    | Valor              |
+   | -------------------------------- | ------------------ |
+   | **Raíz de la aplicación** (Application Root) | `/httpdocs`        |
+   | **Raíz del documento** (Document Root)       | `/httpdocs/public` |
+   | **Archivo de inicio** (Startup File)         | `passenger-startup.cjs` |
+
    Plesk mismo lo avisa: *"set the document root to a subdirectory of the
    application root (like public/) for security."* Con esto nginx solo sirve
-   `public/` y `data/` queda fuera de su alcance.
+   `public/`; `data/`, `src/`, `node_modules/`, `.env` y `package.json` quedan
+   fuera de su alcance.
+
+   **Gotchas (los pisamos en Shoroban):**
+   - Los dos campos se confunden con facilidad. Solo cambia el **Document Root**
+     a `public/`; el **Application Root** se queda en `/httpdocs`. Si inviertes
+     los dos, Passenger busca `passenger-startup.cjs` dentro de `public/`, no lo
+     encuentra, y todo el sitio da 500.
+   - **`public/` tiene que existir ANTES** de poner el Document Root, o Plesk
+     rechaza el valor (*"El nombre de archivo /httpdocs/public no es válido"*).
+     Se crea con el `git pull` (el repo trae `public/.gitkeep`); si aún no has
+     hecho pull, créalo a mano en *Administrador de archivos* → `httpdocs` →
+     *Crear → Directorio* → `public`.
+   - Con el Document Root ya en `public/`, comprueba desde fuera que el código
+     dejó de ser servible: `GET /src/server.js` y `GET /package.json` deben dar
+     **404** (el smoke test lo verifica).
 
 2. **Backup de `data/` FUERA de `httpdocs`** (nunca re-clonar el repo encima; se
    perdería la DB). Copia `data/` a una ruta fuera del document root, p. ej.
@@ -178,13 +197,31 @@ staging-first arriba. Pasos, en orden:
    botón *Restart App* en Plesk.
 
 8. **Smoke test**: `scripts/smoke-test.sh https://<dominio>` (o el de staging).
-   Debe salir en verde, incluidas las puertas de seguridad `/data/app.db` y
-   `/.env` (NO-200).
+   Debe salir en verde, incluidas las puertas de seguridad `/data/app.db`,
+   `/.env`, `/src/server.js` y `/package.json` (todas NO-200). Córrelo desde tu
+   máquina (o cualquier host con `curl`): es un chequeo HTTP externo, no hace
+   falta ejecutarlo dentro del contenedor/servidor.
+
+9. **Verifica que la DB es la correcta, no una vacía.** Si `DB_PATH` apunta a una
+   ruta donde no está el `app.db` poblado, la app **crea uno vacío ahí sin
+   avisar** y `/panel` redirige a `/setup` (config perdida en apariencia). Tras
+   el deploy comprueba que la config del cliente está:
+   ```bash
+   curl -s https://<dominio>/api/site/config | head -c 120   # company_name != null
+   scripts/smoke-test.sh https://<dominio>                    # /panel → 200 si ya está configurado
+   ```
+   Ojo con WAL: `better-sqlite3` usa `journal_mode=WAL`, así que la DB son TRES
+   ficheros (`app.db`, `app.db-wal`, `app.db-shm`). Si mueves/copias la DB, muévelos
+   los tres juntos, o los datos recientes (que viven en el `-wal`) se pierden.
 
 **Ver errores de arranque en Passenger**: en modo producción Passenger oculta
 los errores de arranque (muestra una página genérica). Para verlos: ejecuta
 `npm start` desde el *Node command runner* de Plesk, o pon temporalmente la app
 en modo *development*. Ahí verás el ABI mismatch, un `DB_PATH` mal puesto, etc.
+Nota: si `npm start` da `EADDRINUSE: :::3000`, **no es un error de la app** —
+significa que Passenger ya la está corriendo en ese puerto; de hecho confirma
+que arranca bien. Passenger gestiona el proceso: no lo lances a mano en paralelo,
+usa *Reiniciar app*.
 
 ---
 

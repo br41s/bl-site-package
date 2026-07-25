@@ -85,11 +85,17 @@ check "setup wizard" "/setup" "200"
 check "panel route" "/panel" "200|302"
 
 # Security gates — these MUST NOT be downloadable. If any returns 200 the web
-# docroot is exposing app internals (data/, config files). Hard fail: do not
-# ship. See RELEASE.md (docroot = <app>/public) and the DB-path guard in
-# src/server.js.
+# docroot is exposing app internals (data/, source, config files). Hard fail:
+# do not ship. See RELEASE.md (docroot = <app>/public) and the DB-path guard in
+# src/db/database.js.
 check_absent "DB not downloadable" "/data/app.db"
 check_absent "env file not downloadable" "/.env"
+# Source + manifest live at the app root. If nginx serves them, the document
+# root is pointed at the app root instead of public/ (the Shoroban regression:
+# the DB check alone passed because DB_PATH was moved out, while /src stayed
+# exposed). These files always exist, so a 200 unambiguously means wrong docroot.
+check_absent "source not downloadable" "/src/server.js"
+check_absent "package manifest not downloadable" "/package.json"
 
 echo "---------------------------------------------"
 if [ "$fails" -eq 0 ]; then
