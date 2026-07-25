@@ -98,6 +98,31 @@ como un arranque caído.
 
 ---
 
+## Cuándo hace falta rebuild/restart (plantillas y código vs. contenido)
+
+`_site/` (el build de Eleventy) **no está en el volumen persistente**: se regenera
+desde cero en cada arranque (`buildOnStartup`, `src/server.js`). Además, los cambios
+de CONTENIDO (textos de página, blog) escritos desde el panel o el agente disparan un
+rebuild en caliente (`scheduleRebuild`). Consecuencia práctica al desplegar:
+
+- **Cambios de contenido** (un texto, un artículo): se ven solos, sin reiniciar.
+- **Cambios de plantilla, CSS o código** (una release del paquete — p. ej. el render
+  Markdown de las páginas o un campo de config nuevo como `page_index_body`):
+  **necesitan reiniciar la app.** El reinicio (a) carga el código nuevo y (b) regenera
+  `_site/` con las plantillas nuevas. No hace falta un `npm run build` aparte.
+  - En **Zeabur** el auto-deploy desde `main` reconstruye la imagen y reinicia el
+    contenedor: basta con confirmar que redesplegó tras el merge.
+  - En **Plesk** es el `touch tmp/restart.txt` (o *Restart App*) del runbook de abajo,
+    tras el `git pull`. Solo hace falta `npm ci` si cambiaron dependencias.
+
+  Sin reinicio, el servidor sigue con el código viejo (un campo de config nuevo se
+  rechaza en la allowlist de `/api/site/texts` y no se expone en `site.js`) y sirve el
+  `_site/` antiguo (las páginas no reflejan el cambio de plantilla). Ojo con el orden:
+  si un agente de contenidos (onboarding/gap-hunter) ya está apuntando a un campo nuevo,
+  reinicia el sitio del cliente **antes** de su próxima ejecución.
+
+---
+
 ## Estructura de directorios y document root (seguridad)
 
 **Regla de oro: el document root del servidor web solo puede servir estáticos
