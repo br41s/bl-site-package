@@ -25,6 +25,7 @@ const ALLOWED_TEXT_KEYS = new Set([
   "page_index_title",
   "page_index_subtitle",
   "page_index_desc",
+  "page_index_body",
   "page_quienes_title",
   "page_quienes_subtitle",
   "page_quienes_desc",
@@ -195,7 +196,7 @@ Si el cliente pide cambiar textos de una página, responde SIEMPRE con este form
 <ACTION>{"type":"update_texts","data":{"key":"valor","key2":"valor2"}}</ACTION>
 
 Las keys disponibles para cada página son:
-- Inicio: page_index_title, page_index_subtitle, page_index_desc
+- Inicio: page_index_title, page_index_subtitle, page_index_desc (blurb corto del héroe), page_index_body (cuerpo largo en Markdown, debajo del héroe)
 - Quiénes somos: page_quienes_title, page_quienes_subtitle, page_quienes_desc
 - Servicios: page_servicios_title, page_servicios_subtitle, page_servicios_desc
 - Contacto: page_contacto_title, page_contacto_subtitle, page_contacto_desc

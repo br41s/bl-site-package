@@ -6,7 +6,11 @@ permalink: "/contacto.html"
 <main class="site-page"><div class="site-page-inner">
   <h1 class="reveal">{{ (site.page_contacto_title or "Contacto") | safe }}</h1>
   <p class="site-page-subtitle reveal">{{ (site.page_contacto_subtitle or "Escríbenos y te responderemos lo antes posible.") | safe }}</p>
-  <p class="site-page-desc reveal">{{ (site.page_contacto_desc or "Cuéntanos qué necesitas y te contactaremos con una propuesta clara.") | safe }}</p>
+  {%- if site.page_contacto_desc_html %}
+  <div class="site-page-body reveal">{{ site.page_contacto_desc_html | safe }}</div>
+  {%- else %}
+  <p class="site-page-desc reveal">Cuéntanos qué necesitas y te contactaremos con una propuesta clara.</p>
+  {%- endif %}
   <form class="site-contact-form reveal" id="contact-form">
     <input type="text" id="contact-name" placeholder="Nombre" required>
     <input type="email" id="contact-email" placeholder="Email" required>

@@ -195,15 +195,94 @@ body {
   max-width: 60ch;
 }
 .site-page-body {
-  max-width: 65ch;
-  color: var(--text-muted);
+  max-width: 68ch;
+  color: var(--text-secondary);
   line-height: 1.8;
-  white-space: pre-line;
 }
 .site-page-desc {
   color: var(--text-muted);
   margin-bottom: 2rem;
   max-width: 55ch;
+}
+
+/* RENDERED MARKDOWN (page bodies + blog posts) — the *_html fields and blog
+   contentHtml go through the same marked+sanitize pipeline, so both share these
+   prose styles. Without them the global reset zeroes all margins and headings/
+   lists render flat ("looks like plain text"). */
+.site-page-body > :first-child,
+.site-post-body > :first-child {
+  margin-top: 0;
+}
+.site-page-body p,
+.site-post-body p {
+  margin: 0 0 1.15rem;
+}
+.site-page-body h2,
+.site-post-body h2 {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 2.25rem 0 0.85rem;
+}
+.site-page-body h3,
+.site-post-body h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 1.75rem 0 0.6rem;
+}
+.site-page-body h4,
+.site-post-body h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 1.4rem 0 0.5rem;
+}
+.site-page-body ul,
+.site-page-body ol,
+.site-post-body ul,
+.site-post-body ol {
+  margin: 0 0 1.15rem;
+  padding-left: 1.4rem;
+}
+.site-page-body li,
+.site-post-body li {
+  margin-bottom: 0.4rem;
+}
+.site-page-body a,
+.site-post-body a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.site-page-body strong,
+.site-post-body strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.site-page-body blockquote,
+.site-post-body blockquote {
+  margin: 0 0 1.15rem;
+  padding-left: 1rem;
+  border-left: 3px solid var(--border);
+  color: var(--text-muted);
+}
+.site-page-body table,
+.site-post-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1.15rem;
+  font-size: 0.9375rem;
+}
+.site-page-body th,
+.site-page-body td,
+.site-post-body th,
+.site-post-body td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
 }
 
 /* BUTTONS */

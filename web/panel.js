@@ -912,7 +912,8 @@ document.addEventListener("DOMContentLoaded", function () {
     index: [
       { key: "page_index_title", label: "Título principal", type: "input" },
       { key: "page_index_subtitle", label: "Subtítulo", type: "input" },
-      { key: "page_index_desc", label: "Descripción", type: "textarea" },
+      { key: "page_index_desc", label: "Descripción (héroe, texto corto)", type: "textarea" },
+      { key: "page_index_body", label: "Contenido de la página (Markdown)", type: "textarea" },
     ],
     quienes: [
       { key: "page_quienes_title", label: "Título", type: "input" },
