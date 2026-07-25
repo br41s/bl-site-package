@@ -11,6 +11,33 @@ permalink: "/contacto.html"
   {%- else %}
   <p class="site-page-desc reveal">Cuéntanos qué necesitas y te contactaremos con una propuesta clara.</p>
   {%- endif %}
+  {%- set bizStreet = site.biz_street | trim -%}
+  {%- set bizCity = site.biz_city | trim -%}
+  {%- set bizPostal = site.biz_postal_code | trim -%}
+  {%- set bizPhone = site.biz_phone | trim -%}
+  {%- set bizHours = site.biz_hours | trim -%}
+  {%- if bizStreet or bizCity or bizPhone or bizHours %}
+  <div class="site-contact-info reveal">
+    {%- if bizStreet or bizCity %}
+    <p class="site-contact-info-item">
+      <strong>Dónde estamos</strong><br>
+      {{ bizStreet }}{% if bizStreet and (bizPostal or bizCity) %}, {% endif %}{{ bizPostal }}{% if bizPostal and bizCity %} {% endif %}{{ bizCity }}
+    </p>
+    {%- endif %}
+    {%- if bizPhone %}
+    <p class="site-contact-info-item">
+      <strong>Teléfono</strong><br>
+      <a href="tel:{{ bizPhone | replace(' ', '') }}">{{ bizPhone }}</a>
+    </p>
+    {%- endif %}
+    {%- if bizHours %}
+    <p class="site-contact-info-item">
+      <strong>Horario</strong><br>
+      {{ bizHours }}
+    </p>
+    {%- endif %}
+  </div>
+  {%- endif %}
   <form class="site-contact-form reveal" id="contact-form">
     <input type="text" id="contact-name" placeholder="Nombre" required>
     <input type="email" id="contact-email" placeholder="Email" required>

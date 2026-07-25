@@ -32,6 +32,21 @@ export const PUBLIC_CONFIG_KEYS = [
   "legal_id",
   "legal_address",
   "legal_email",
+  // Business profile for local SEO (LocalBusiness JSON-LD + contact page).
+  // All optional; empty ones are omitted from the structured data.
+  "biz_type",
+  "biz_street",
+  "biz_city",
+  "biz_postal_code",
+  "biz_region",
+  "biz_country",
+  "biz_phone",
+  "biz_geo_lat",
+  "biz_geo_lng",
+  "biz_hours",
+  "biz_price_range",
+  "biz_facebook",
+  "biz_instagram",
 ];
 
 // Absolute, normalized path to the SQLite file. Default lives in ./data/app.db;

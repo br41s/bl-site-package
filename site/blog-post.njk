@@ -10,16 +10,12 @@ eleventyComputed:
   title: "{{ post.title }}"
   description: "{{ post.excerpt }}"
 ---
-{%- set articleLd = {
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": post.title,
-  "description": post.excerpt,
-  "datePublished": post.created_at,
-  "dateModified": post.updated_at,
-  "author": { "@type": "Organization", "name": site.company_name }
-} -%}
-<script type="application/ld+json">{{ articleLd | dump | safe }}</script>
+{%- if post.article_ld %}
+<script type="application/ld+json">{{ post.article_ld | jsonLd | safe }}</script>
+{%- endif %}
+{%- if post.faq_ld %}
+<script type="application/ld+json">{{ post.faq_ld | jsonLd | safe }}</script>
+{%- endif %}
 <main class="site-page"><div class="site-page-inner site-post-content">
   <a href="/blog" class="site-back-link">← Volver al blog</a>
   <h1>{{ post.title }}</h1>
