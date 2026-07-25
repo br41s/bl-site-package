@@ -37,6 +37,22 @@ Si ya completaste el formulario de compra en biglobster.top/agentes-en-alquiler.
 
 ---
 
+**1b-bis. Imágenes con IA (opcional)**
+
+Tu web puede llevar imágenes generadas por IA: una portada en cada artículo del
+blog y una imagen en cada página. Se generan con tu propia cuenta de FAL
+(fal.ai), igual que los textos usan tu clave de IA — así el coste de las
+imágenes va a tu cuenta, no a la nuestra. Son muy baratas (céntimos por imagen).
+
+- ¿Quieres imágenes con IA? Sí / No
+- Si sí, tu clave de FAL (fal.ai → Dashboard → Keys), con formato `id:secreto`:
+
+El modelo de imagen concreto lo eliges después en tu panel
+(**Mi sitio web → Modelo IA → Modelo de imágenes**); por defecto usamos uno
+rápido y económico.
+
+---
+
 **1c. Tu web actual (opcional)**
 
 ¿Tienes una web actual que quieras que usemos como base para redactar el

@@ -51,12 +51,13 @@ En Zeabur → tu servicio → Variables:
 
 - [ ] Mi sitio web → Logo → subir logo del cliente
 - [ ] Mi sitio web → Páginas → rellenar textos de las 5 páginas (o usar el agente)
+- [ ] Mi sitio web → Modelo IA → **Modelo de imágenes** → elegir el modelo FAL para las portadas del blog y las imágenes de página (por defecto FLUX 2 Klein, rápido y barato). Las imágenes se facturan a la cuenta FAL del cliente (BYOK), como el modelo de texto
 - [ ] Mi sitio web → Notificaciones → configurar email del cliente
 - [ ] Mi sitio web → Datos legales → rellenar razón social, NIF/CIF, domicilio y email legal (del formulario, sección 1a). Estos datos los tecleas tú o el cliente — el agente de chat no puede escribirlos, a propósito
 - [ ] Blog → crear 2-3 artículos iniciales con el agente
 - [ ] Verificar que la web pública muestra el contenido correctamente, incluidas `/privacidad` y `/condiciones` (con datos legales, o con el texto genérico si el cliente aún no los tiene)
 
-**Si el cliente contrató agentes adicionales** (Content Gap Hunter, SEO/GEO On-Site, Infographic Engineer, Off-Site GEO Scout): estos **no tienen aprovisionamiento automático todavía** — no hay nada que activar aquí. Hoy el alta es manual vía un perfil de Hermes dedicado (ver `BIGLOBSTER_SETUP.md` en el repo `hermes-sandbox`); contacta con quien gestione Hermes para darlo de alta caso por caso.
+**Si el cliente contrató agentes adicionales** (Content Gap Hunter, SEO/GEO On-Site, Infographic Engineer, Off-Site GEO Scout): estos **no tienen aprovisionamiento automático todavía** — no hay nada que activar aquí. Hoy el alta es manual vía un perfil de Hermes dedicado (ver `AGENT_RENTAL_SETUP.md` en el repo `hermes-sandbox`); contacta con quien gestione Hermes para darlo de alta caso por caso. Los agentes que generan imágenes (Content Gap Hunter y el Agente de Contenido Inicial) necesitan además la **clave FAL del cliente** (BYOK, para facturarle las imágenes) — pásasela a quien gestione Hermes junto con el resto de datos. Sin clave FAL publican solo texto, sin imágenes.
 
 ### 6. Dominio (si procede)
 
@@ -70,6 +71,7 @@ En Zeabur → tu servicio → Variables:
 ## Entrega al cliente (30 minutos)
 
 - [ ] Confirmar que la API Key de OpenRouter configurada en **Modelo IA** es la del cliente, no una temporal de BigLobster
+- [ ] Si el cliente usa imágenes con IA: confirmar que la clave FAL en su perfil de Hermes es la suya (BYOK), y que el modelo de imágenes elegido en **Modelo IA → Modelo de imágenes** es el que quiere
 - [ ] Compartir URL del panel + contraseña
 - [ ] Mostrar cómo publicar un artículo
 - [ ] Mostrar cómo usar el agente de chat
