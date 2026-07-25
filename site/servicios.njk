@@ -11,6 +11,9 @@ permalink: "/servicios.html"
   {%- if site.page_servicios_subtitle %}
   <p class="site-page-subtitle reveal">{{ site.page_servicios_subtitle | safe }}</p>
   {%- endif %}
+  {%- if site.page_servicios_image %}
+  <img src="{{ site.page_servicios_image }}" alt="{{ site.page_servicios_image_alt or site.page_servicios_title }}" class="site-page-image reveal" loading="lazy" decoding="async">
+  {%- endif %}
   {%- if site.page_servicios_desc %}
   <div class="site-page-body reveal">{{ site.page_servicios_desc_html | safe }}</div>
   {%- endif %}

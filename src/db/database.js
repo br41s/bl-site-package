@@ -14,19 +14,28 @@ export const PUBLIC_CONFIG_KEYS = [
   "page_index_subtitle",
   "page_index_desc",
   "page_index_body",
+  "page_index_image",
+  "page_index_image_alt",
   "page_quienes_title",
   "page_quienes_subtitle",
   "page_quienes_desc",
+  "page_quienes_image",
+  "page_quienes_image_alt",
   "page_servicios_title",
   "page_servicios_subtitle",
   "page_servicios_desc",
+  "page_servicios_image",
+  "page_servicios_image_alt",
   "page_contacto_title",
   "page_contacto_subtitle",
   "page_contacto_desc",
+  "page_contacto_image",
+  "page_contacto_image_alt",
   "page_blog_title",
   "page_blog_subtitle",
   "logo_ext",
   "ai_model",
+  "image_model",
   "whatsapp_number",
   "legal_name",
   "legal_id",
@@ -171,6 +180,11 @@ function ensureColumn(table, column, definition) {
 
 ensureColumn("articles", "cta_url", "TEXT");
 ensureColumn("articles", "cta_label", "TEXT");
+// Cover image URL (points at an /uploads/*.webp produced by the upload
+// endpoint) and its alt text. Additive like cta_* above — the base CREATE
+// TABLE stays the original schema; every later field arrives via ensureColumn.
+ensureColumn("articles", "image_url", "TEXT");
+ensureColumn("articles", "image_alt", "TEXT");
 
 // Seeds a config default without triggering scheduleRebuild() (unlike
 // setConfig) and without overwriting a value an admin already set.

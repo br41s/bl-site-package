@@ -20,6 +20,9 @@ eleventyComputed:
   <a href="/blog" class="site-back-link">← Volver al blog</a>
   <h1>{{ post.title }}</h1>
   <span class="site-post-date">{{ post.dateEs }}</span>
+  {%- if post.image_url %}
+  <img src="{{ post.image_url }}" alt="{{ post.image_alt or post.title }}" class="site-post-cover" loading="lazy" decoding="async">
+  {%- endif %}
   <div class="site-post-body">{{ post.contentHtml | safe }}</div>
   {%- if post.cta_url %}
   <a href="{{ post.cta_url }}" class="site-btn site-post-cta" target="_blank" rel="noopener noreferrer">{{ post.cta_label or "Ver ficha original" }}</a>

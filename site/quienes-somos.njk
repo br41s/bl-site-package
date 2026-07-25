@@ -11,6 +11,9 @@ permalink: "/quienes-somos.html"
   {%- if site.page_quienes_subtitle %}
   <p class="site-page-subtitle reveal">{{ site.page_quienes_subtitle | safe }}</p>
   {%- endif %}
+  {%- if site.page_quienes_image %}
+  <img src="{{ site.page_quienes_image }}" alt="{{ site.page_quienes_image_alt or site.page_quienes_title }}" class="site-page-image reveal" loading="lazy" decoding="async">
+  {%- endif %}
   {%- if site.page_quienes_desc %}
   <div class="site-page-body reveal">{{ site.page_quienes_desc_html | safe }}</div>
   {%- endif %}
