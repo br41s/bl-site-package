@@ -22,6 +22,28 @@ El agente usa por defecto `gpt-oss-20b:free`, un modelo gratuito de OpenRouter q
 - Contacto
 - Blog
 
+## Contenido de las páginas (Markdown)
+
+Los cuerpos de página se escriben en **Markdown** y el sitio los renderiza con el
+mismo pipeline saneado que el blog (`marked` + `sanitize-html`). Puedes usar
+encabezados (`##`/`###`), listas, **negrita**, enlaces y tablas: se convierten en
+HTML con estilos propios. El texto plano sigue funcionando igual que antes (los
+saltos de línea se respetan), así que los sitios existentes no se ven afectados.
+
+Modelo de campos por página:
+
+| Campo | Rol | Formato |
+| ----- | --- | ------- |
+| `page_index_desc` | Blurb corto del héroe de la portada (y meta-descripción SEO) | Texto corto |
+| `page_index_body` | Cuerpo rico de la portada, se muestra **debajo** del héroe y los botones | Markdown |
+| `page_quienes_desc` / `page_servicios_desc` | Cuerpo completo de la página | Markdown |
+| `page_contacto_desc` | Intro sobre el formulario de contacto | Markdown |
+| `page_*_subtitle` | Subtítulo (en páginas interiores alimenta la meta-descripción SEO) | Texto corto |
+
+> `page_index_body` es el campo del cuerpo de la portada: mantén `page_index_desc`
+> corto (una o dos frases de gancho) y escribe el contenido extenso y estructurado
+> de la home en `page_index_body`.
+
 ## Funcionalidades del panel
 
 - Gestión de blog: crear, editar, publicar y eliminar artículos.
