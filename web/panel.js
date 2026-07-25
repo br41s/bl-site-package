@@ -486,14 +486,28 @@ document.addEventListener("DOMContentLoaded", function () {
           siteUrlInput.value = cfg.site_url || "";
         }
 
-        ["legal_name", "legal_id", "legal_address", "legal_email"].forEach(
-          function (key) {
-            var input = document.getElementById(
-              key.replace(/_/g, "-") + "-input",
-            );
-            if (input) input.value = cfg[key] || "";
-          },
-        );
+        [
+          "legal_name",
+          "legal_id",
+          "legal_address",
+          "legal_email",
+          "biz_type",
+          "biz_street",
+          "biz_city",
+          "biz_postal_code",
+          "biz_region",
+          "biz_country",
+          "biz_phone",
+          "biz_geo_lat",
+          "biz_geo_lng",
+          "biz_hours",
+          "biz_price_range",
+          "biz_facebook",
+          "biz_instagram",
+        ].forEach(function (key) {
+          var input = document.getElementById(key.replace(/_/g, "-") + "-input");
+          if (input) input.value = cfg[key] || "";
+        });
 
         if (cfg.logo_ext) {
           var img = document.getElementById("logo-preview");
@@ -769,6 +783,55 @@ document.addEventListener("DOMContentLoaded", function () {
             .getElementById("legal-email-input")
             .value.trim(),
         };
+
+        try {
+          var res = await fetch("/api/site/texts", {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify(payload),
+          });
+          var data = await res.json();
+          msg.textContent = data.success ? "✓ Guardado" : data.error || "Error";
+          msg.style.color = data.success ? "var(--accent)" : "var(--error)";
+          msg.style.display = "inline";
+          if (data.success) {
+            siteConfig = Object.assign(siteConfig, payload);
+          }
+          setTimeout(function () {
+            msg.style.display = "none";
+          }, 2500);
+        } catch {
+          msg.textContent = "Error de conexión";
+          msg.style.color = "var(--error)";
+          msg.style.display = "inline";
+        }
+      });
+
+    // Business profile settings (LocalBusiness JSON-LD + contact page)
+    document
+      .getElementById("save-biz-btn")
+      .addEventListener("click", async function () {
+        var msg = document.getElementById("save-biz-msg");
+        var keys = [
+          "biz_type",
+          "biz_street",
+          "biz_city",
+          "biz_postal_code",
+          "biz_region",
+          "biz_country",
+          "biz_phone",
+          "biz_geo_lat",
+          "biz_geo_lng",
+          "biz_hours",
+          "biz_price_range",
+          "biz_facebook",
+          "biz_instagram",
+        ];
+        var payload = {};
+        keys.forEach(function (key) {
+          var input = document.getElementById(key.replace(/_/g, "-") + "-input");
+          payload[key] = input ? input.value.trim() : "";
+        });
 
         try {
           var res = await fetch("/api/site/texts", {

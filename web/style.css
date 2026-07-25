@@ -205,6 +205,26 @@ body {
   max-width: 55ch;
 }
 
+/* Contact page business info (address / phone / hours) — driven by the
+   biz_* config fields, shown above the form when present. */
+.site-contact-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 2.5rem;
+  margin: 1.5rem 0 2rem;
+}
+.site-contact-info-item {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+.site-contact-info-item strong {
+  color: var(--text-primary);
+}
+.site-contact-info-item a {
+  color: var(--accent);
+}
+
 /* RENDERED MARKDOWN (page bodies + blog posts) — the *_html fields and blog
    contentHtml go through the same marked+sanitize pipeline, so both share these
    prose styles. Without them the global reset zeroes all margins and headings/

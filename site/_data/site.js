@@ -1,5 +1,6 @@
 import { getConfig, PUBLIC_CONFIG_KEYS } from "../../src/db/database.js";
 import { formatContent } from "../../src/content/format-content.js";
+import { buildLocalBusinessLd } from "../../src/content/structured-data.js";
 
 // Eleventy global data — same key set as GET /api/site/config, read directly
 // at build time instead of over HTTP.
@@ -22,5 +23,10 @@ export default function () {
   // Staging (X-Robots-Tag noindex in src/server.js) gates whether SEO
   // artifacts advertise the site — robots.txt/sitemap.xml consult this.
   config.staging = process.env.STAGING === "true";
+  // LocalBusiness/Store JSON-LD emitted in the site <head> on every page (see
+  // _includes/base.njk). Built after site_url/logo_ext are resolved above so
+  // absolute url/image and the geo/address gating use the final values. Null
+  // when there isn't enough business data — the template then emits nothing.
+  config.local_business_ld = buildLocalBusinessLd(config);
   return config;
 }

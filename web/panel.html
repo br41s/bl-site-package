@@ -1018,6 +1018,154 @@
                   ></span>
                 </div>
               </div>
+
+              <div class="misite-block">
+                <h3>Ficha de negocio (SEO local)</h3>
+                <p class="misite-hint">
+                  Estos datos generan la ficha de tu negocio para Google
+                  (dirección, teléfono, horario, mapa) y se muestran en tu
+                  página de Contacto. Cuanto más rellenes, mejor apareces en
+                  búsquedas locales. Todo es opcional: lo que dejes vacío
+                  simplemente no se muestra.
+                </p>
+
+                <div class="misite-page-form" style="max-width: 560px">
+                  <div>
+                    <label for="biz-type-input">Tipo de negocio (Schema)</label>
+                    <input
+                      type="text"
+                      id="biz-type-input"
+                      placeholder="LocalBusiness"
+                    />
+                    <p class="misite-hint" style="margin-top: 0.25rem">
+                      Déjalo así o usa un tipo más específico de schema.org:
+                      <code>Store</code>, <code>OfficeEquipmentStore</code>,
+                      <code>Restaurant</code>… Si dudas, deja
+                      <code>LocalBusiness</code>.
+                    </p>
+                  </div>
+                  <div>
+                    <label for="biz-street-input">Dirección (calle y número)</label>
+                    <input
+                      type="text"
+                      id="biz-street-input"
+                      placeholder="Rúa do Progreso 12"
+                    />
+                  </div>
+                  <div>
+                    <label for="biz-city-input">Localidad</label>
+                    <input type="text" id="biz-city-input" placeholder="Ourense" />
+                  </div>
+                  <div>
+                    <label for="biz-postal-code-input">Código postal</label>
+                    <input
+                      type="text"
+                      id="biz-postal-code-input"
+                      placeholder="32003"
+                    />
+                  </div>
+                  <div>
+                    <label for="biz-region-input">Provincia</label>
+                    <input
+                      type="text"
+                      id="biz-region-input"
+                      placeholder="Ourense"
+                    />
+                  </div>
+                  <div>
+                    <label for="biz-country-input">País</label>
+                    <input
+                      type="text"
+                      id="biz-country-input"
+                      placeholder="ES"
+                    />
+                  </div>
+                  <div>
+                    <label for="biz-phone-input">Teléfono</label>
+                    <input
+                      type="text"
+                      id="biz-phone-input"
+                      placeholder="+34 988 000 000"
+                    />
+                  </div>
+                  <div>
+                    <label for="biz-geo-lat-input">Latitud (mapa)</label>
+                    <input
+                      type="text"
+                      id="biz-geo-lat-input"
+                      placeholder="42.3358"
+                    />
+                  </div>
+                  <div>
+                    <label for="biz-geo-lng-input">Longitud (mapa)</label>
+                    <input
+                      type="text"
+                      id="biz-geo-lng-input"
+                      placeholder="-7.8639"
+                    />
+                    <p class="misite-hint" style="margin-top: 0.25rem">
+                      En Google Maps, clic derecho sobre tu local → copia los dos
+                      números (latitud, longitud).
+                    </p>
+                  </div>
+                  <div>
+                    <label for="biz-hours-input">Horario</label>
+                    <input
+                      type="text"
+                      id="biz-hours-input"
+                      placeholder="Mo-Fr 09:30-13:30,16:30-20:00; Sa 10:00-14:00"
+                    />
+                    <p class="misite-hint" style="margin-top: 0.25rem">
+                      Formato Google/Schema (días en inglés abreviado:
+                      Mo Tu We Th Fr Sa Su). Ejemplo:
+                      <code>Mo-Fr 09:30-13:30,16:30-20:00; Sa 10:00-14:00</code>.
+                      Si lo escribes de otra forma se mostrará igual en Contacto,
+                      pero no se enviará a Google.
+                    </p>
+                  </div>
+                  <div>
+                    <label for="biz-price-range-input">Rango de precios</label>
+                    <input
+                      type="text"
+                      id="biz-price-range-input"
+                      placeholder="€€"
+                    />
+                  </div>
+                  <div>
+                    <label for="biz-facebook-input">Facebook (URL)</label>
+                    <input
+                      type="url"
+                      id="biz-facebook-input"
+                      placeholder="https://facebook.com/tunegocio"
+                    />
+                  </div>
+                  <div>
+                    <label for="biz-instagram-input">Instagram (URL)</label>
+                    <input
+                      type="url"
+                      id="biz-instagram-input"
+                      placeholder="https://instagram.com/tunegocio"
+                    />
+                  </div>
+                </div>
+
+                <div
+                  style="
+                    margin-top: 1.5rem;
+                    display: flex;
+                    gap: 1rem;
+                    align-items: center;
+                  "
+                >
+                  <button class="btn-primary-sm" id="save-biz-btn">
+                    Guardar ficha de negocio
+                  </button>
+                  <span
+                    id="save-biz-msg"
+                    style="font-size: 0.8125rem; display: none"
+                  ></span>
+                </div>
+              </div>
             </div>
           </section>
 

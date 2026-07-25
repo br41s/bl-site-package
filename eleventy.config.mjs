@@ -22,6 +22,14 @@ export default function (eleventyConfig) {
     return String(base).replace(/\/+$/, "") + clean;
   });
 
+  // Serializes a JSON-LD object for a <script type="application/ld+json"> block.
+  // Escapes "<" as < so a stray "</script>" (or any "<") inside a value
+  // can't break out of the script element — the standard XSS-safe way to inline
+  // JSON in HTML. Templates emit `{{ obj | jsonLd | safe }}`.
+  eleventyConfig.addFilter("jsonLd", (obj) =>
+    JSON.stringify(obj).replace(/</g, "\\u003c"),
+  );
+
   return {
     dir: {
       input: "site",

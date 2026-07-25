@@ -75,6 +75,19 @@ router.post("/texts", requireAuth, (req, res) => {
     "legal_id",
     "legal_address",
     "legal_email",
+    "biz_type",
+    "biz_street",
+    "biz_city",
+    "biz_postal_code",
+    "biz_region",
+    "biz_country",
+    "biz_phone",
+    "biz_geo_lat",
+    "biz_geo_lng",
+    "biz_hours",
+    "biz_price_range",
+    "biz_facebook",
+    "biz_instagram",
   ];
   for (const key of allowed) {
     if (req.body[key] !== undefined) setConfig(key, req.body[key]);
