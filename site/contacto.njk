@@ -6,6 +6,9 @@ permalink: "/contacto.html"
 <main class="site-page"><div class="site-page-inner">
   <h1 class="reveal">{{ (site.page_contacto_title or "Contacto") | safe }}</h1>
   <p class="site-page-subtitle reveal">{{ (site.page_contacto_subtitle or "Escríbenos y te responderemos lo antes posible.") | safe }}</p>
+  {%- if site.page_contacto_image %}
+  <img src="{{ site.page_contacto_image }}" alt="{{ site.page_contacto_image_alt or site.page_contacto_title }}" class="site-page-image reveal" loading="lazy" decoding="async">
+  {%- endif %}
   {%- if site.page_contacto_desc_html %}
   <div class="site-page-body reveal">{{ site.page_contacto_desc_html | safe }}</div>
   {%- else %}

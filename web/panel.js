@@ -517,6 +517,10 @@ document.addEventListener("DOMContentLoaded", function () {
             .classList.remove("selected");
           customLabel.classList.add("selected");
         }
+        var imageModelSelect = document.getElementById("image-model-select");
+        if (imageModelSelect && cfg.image_model) {
+          imageModelSelect.value = cfg.image_model;
+        }
       })
       .catch(function () {});
 
@@ -633,6 +637,31 @@ document.addEventListener("DOMContentLoaded", function () {
             method: "POST",
             headers: authHeaders(),
             body: JSON.stringify({ ai_model: selected.value }),
+          });
+          var data = await res.json();
+          msg.textContent = data.success ? "✓ Guardado" : data.error || "Error";
+          msg.style.color = data.success ? "var(--accent)" : "var(--error)";
+          msg.style.display = "inline";
+          setTimeout(function () {
+            msg.style.display = "none";
+          }, 2500);
+        } catch {
+          msg.textContent = "Error";
+          msg.style.display = "inline";
+        }
+      });
+
+    // Image model save
+    document
+      .getElementById("save-image-model-btn")
+      .addEventListener("click", async function () {
+        var select = document.getElementById("image-model-select");
+        var msg = document.getElementById("save-image-model-msg");
+        try {
+          var res = await fetch("/api/site/texts", {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({ image_model: select.value }),
           });
           var data = await res.json();
           msg.textContent = data.success ? "✓ Guardado" : data.error || "Error";

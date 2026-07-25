@@ -15,6 +15,11 @@ navActive: index
   {%- endif %}
   <div class="site-hero-actions reveal"><a href="/servicios" class="site-btn">Ver servicios</a><a href="/contacto" class="site-btn-ghost">Contactar</a></div>
 </div></main>
+{%- if site.page_index_image %}
+<section class="site-page"><div class="site-page-inner">
+  <img src="{{ site.page_index_image }}" alt="{{ site.page_index_image_alt or site.page_index_title }}" class="site-page-image reveal" loading="lazy" decoding="async">
+</div></section>
+{%- endif %}
 {%- if site.page_index_body_html %}
 <section class="site-page"><div class="site-page-inner">
   <div class="site-page-body reveal">{{ site.page_index_body_html | safe }}</div>

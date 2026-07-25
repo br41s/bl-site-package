@@ -14,6 +14,9 @@ permalink: "/blog/index.html"
     {%- else %}
     {%- for post in articles %}
     <article class="site-post-card">
+      {%- if post.image_url %}
+      <a href="/blog/{{ post.slug }}" class="site-post-card-media"><img src="{{ post.image_url }}" alt="{{ post.image_alt or post.title }}" loading="lazy" decoding="async"></a>
+      {%- endif %}
       <h2><a href="/blog/{{ post.slug }}">{{ post.title }}</a></h2>
       {%- if post.excerpt %}
       <p>{{ post.excerpt }}</p>

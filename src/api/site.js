@@ -1,10 +1,12 @@
 import express from "express";
 import multer from "multer";
 import { mkdirSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getConfig, setConfig, PUBLIC_CONFIG_KEYS } from "../db/database.js";
 import { requireAuth } from "../middleware/auth.js";
+import { optimizeToWebp } from "../media/optimize-image.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const uploadsDir = join(__dirname, "../../data/uploads");
@@ -70,6 +72,15 @@ router.post("/texts", requireAuth, (req, res) => {
     "smtp_pass",
     "notify_email",
     "ai_model",
+    "image_model",
+    "page_index_image",
+    "page_index_image_alt",
+    "page_quienes_image",
+    "page_quienes_image_alt",
+    "page_servicios_image",
+    "page_servicios_image_alt",
+    "page_contacto_image",
+    "page_contacto_image_alt",
     "whatsapp_number",
     "legal_name",
     "legal_id",
@@ -97,6 +108,23 @@ router.post("/logo", requireAuth, (req, res) => {
     setConfig("logo_ext", ext);
     res.json({ success: true, path: "/uploads/logo." + ext });
   });
+});
+
+// POST /api/site/upload-image — store a generated/uploaded image.
+// Body: { image_base64 } (bare base64 or a data: URI). The bytes are decoded,
+// validated as a safe raster format, downscaled and re-encoded to WebP (see
+// optimizeToWebp — re-encoding is the security boundary), then written under
+// data/uploads with a content-hash filename so identical images dedupe and the
+// name is never client-controlled. Returns the public /uploads URL. The large
+// base64 body is parsed by a route-scoped express.json limit (see server.js).
+router.post("/upload-image", requireAuth, async (req, res) => {
+  try {
+    const { buffer, filename } = await optimizeToWebp(req.body?.image_base64);
+    await writeFile(join(uploadsDir, filename), buffer);
+    res.json({ success: true, url: "/uploads/" + filename });
+  } catch (err) {
+    res.status(400).json({ error: err.message || "No se pudo procesar la imagen" });
+  }
 });
 
 // GET /api/site/models?q=term — proxy OpenRouter model list

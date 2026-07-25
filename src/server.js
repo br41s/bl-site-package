@@ -24,6 +24,12 @@ mkdirSync(uploadsDir, { recursive: true });
 
 // No CORS middleware on purpose: site, panel and every /api consumer are
 // served from this same origin, so cross-origin API access stays blocked.
+//
+// The image-upload route carries a base64 image in its JSON body, well over the
+// default 100kb. A route-scoped parser with a higher limit runs first; once it
+// sets req._body the global parser below no-ops for this path, so every other
+// route keeps the tight default limit (smaller JSON-bomb surface).
+app.use("/api/site/upload-image", express.json({ limit: "15mb" }));
 app.use(express.json());
 
 // En subdominios de staging (STAGING=true en las variables de entorno),

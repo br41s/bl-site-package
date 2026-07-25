@@ -378,6 +378,34 @@ body {
   display: inline-block;
   margin-top: 2rem;
 }
+
+/* AI-generated / uploaded imagery — blog covers, index/page hero images and
+   blog-card thumbnails. All served as optimized WebP from /uploads and
+   lazy-loaded. Widths are fluid (max 100%) so pages stay responsive. */
+.site-post-cover,
+.site-page-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 1.75rem 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.site-page-image {
+  max-width: 68ch;
+}
+.site-post-card-media {
+  display: block;
+  margin-bottom: 0.9rem;
+}
+.site-post-card-media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
 .site-empty,
 .site-loading {
   color: var(--text-muted);

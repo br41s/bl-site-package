@@ -806,6 +806,46 @@
                   ></span>
                 </div>
               </div>
+
+              <div class="misite-block">
+                <h3>Modelo de imágenes</h3>
+                <p class="misite-hint">
+                  Modelo usado para generar las imágenes de portada del blog y
+                  de las páginas. Los costes se cargan a tu cuenta de FAL. Si no
+                  estás seguro, deja el modelo por defecto (rápido y económico).
+                </p>
+                <div class="model-search-wrap">
+                  <select id="image-model-select">
+                    <option value="fal-ai/flux-2/klein/9b">FLUX 2 Klein 9B — rápido, texto nítido (&lt;1s · $0.006/MP)</option>
+                    <option value="fal-ai/z-image/turbo">Z-Image Turbo — bilingüe EN/CN (~2s · $0.005/MP)</option>
+                    <option value="fal-ai/flux-2-pro">FLUX 2 Pro — fotorrealismo de estudio (~6s · $0.03/MP)</option>
+                    <option value="fal-ai/ideogram/v3">Ideogram V3 — mejor tipografía (~5s · $0.03-0.09/img)</option>
+                    <option value="fal-ai/qwen-image">Qwen Image — texto complejo (~12s · $0.02/MP)</option>
+                    <option value="fal-ai/recraft/v4/pro/text-to-image">Recraft V4 Pro — diseño y marca (~8s · $0.25/img)</option>
+                    <option value="fal-ai/nano-banana-pro">Nano Banana Pro (Gemini 3) — razonamiento y texto (~8s · $0.15/img)</option>
+                    <option value="fal-ai/gpt-image-1.5">GPT Image 1.5 — adherencia al prompt (~15s · $0.034/img)</option>
+                    <option value="fal-ai/gpt-image-2">GPT Image 2 — texto/CJK y fotorrealismo (~20s · $0.04-0.06/img)</option>
+                    <option value="fal-ai/krea/v2/medium/text-to-image">Krea 2 Medium — ilustración y estilos artísticos (~15-25s · $0.030/img)</option>
+                    <option value="fal-ai/krea/v2/large/text-to-image">Krea 2 Large — fotorrealismo con textura de film (~25-60s · $0.060/img)</option>
+                  </select>
+                </div>
+                <div
+                  style="
+                    margin-top: 1.5rem;
+                    display: flex;
+                    gap: 1rem;
+                    align-items: center;
+                  "
+                >
+                  <button class="btn-primary-sm" id="save-image-model-btn">
+                    Guardar modelo de imágenes
+                  </button>
+                  <span
+                    id="save-image-model-msg"
+                    style="font-size: 0.8125rem; display: none"
+                  ></span>
+                </div>
+              </div>
             </div>
 
             <!-- TAB: NOTIFICACIONES -->
@@ -1394,7 +1434,8 @@
         position: relative;
         margin-bottom: 1rem;
       }
-      .model-search-wrap input {
+      .model-search-wrap input,
+      .model-search-wrap select {
         width: 100%;
         padding: 0.5rem 0.75rem;
         border: 1px solid var(--border);
@@ -1405,7 +1446,8 @@
         outline: none;
         transition: border-color 150ms;
       }
-      .model-search-wrap input:focus {
+      .model-search-wrap input:focus,
+      .model-search-wrap select:focus {
         border-color: var(--accent);
       }
       .model-search-results {
