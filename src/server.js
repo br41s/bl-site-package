@@ -14,6 +14,7 @@ import productsRouter from "./api/products.js";
 import reservationsRouter from "./api/reservations.js";
 import syncRouter from "./api/sync.js";
 import { startLiderpapelScheduler } from "./sync/liderpapel/scheduler.js";
+import { startUploadsCleanupScheduler } from "./media/cleanup-uploads.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -109,6 +110,7 @@ app.use((req, res) => {
 
 await buildOnStartup();
 startLiderpapelScheduler();
+startUploadsCleanupScheduler();
 
 app.listen(PORT, () => {
   console.log(`🦞 bl-site-package running on port ${PORT}`);

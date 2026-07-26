@@ -123,6 +123,32 @@ rebuild en caliente (`scheduleRebuild`). Consecuencia práctica al desplegar:
 
 ---
 
+## Limpieza de imágenes subidas (`data/uploads`)
+
+Las imágenes de portada de blog (`articles.image_url`) y las de página
+(`page_*_image`) se guardan como WebP con nombre por hash de contenido en
+`data/uploads`, sobre el volumen persistente. Al reemplazar una portada o borrar
+un artículo, el fichero antiguo queda huérfano. Con el gap-hunter de Hermes
+regenerando portadas a diario, sin limpieza el directorio crecería sin límite.
+
+`src/media/cleanup-uploads.js` hace un barrido periódico (al arrancar y luego a
+diario, `30 4 * * *`) que borra los `*.webp` de `data/uploads` **no referenciados
+por ninguna** `articles.image_url` ni config `page_*_image`. Detalles del diseño:
+
+- **Solo toca ficheros con nombre-hash** (`^[a-f0-9]{32}\.webp$`, lo que produce
+  `optimizeToWebp`). Los `logo.*` y cualquier otro fichero quedan intactos por
+  construcción, no por un caso especial.
+- **Hash compartido a salvo**: si varias filas apuntan al mismo fichero, basta
+  con que una lo referencie para conservarlo.
+- **Ventana de gracia de 1 h**: una subida se escribe en disco antes de que la
+  petición posterior guarde la fila que la referencia; saltarse los ficheros
+  recién modificados evita borrar una subida a medio flujo.
+
+No requiere configuración ni intervención en el despliegue. No borra nada que
+esté referenciado.
+
+---
+
 ## Estructura de directorios y document root (seguridad)
 
 **Regla de oro: el document root del servidor web solo puede servir estáticos
