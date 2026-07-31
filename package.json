@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "build": "eleventy"
+    "build": "eleventy",
+    "test": "node --test"
   },
   "dependencies": {
     "@11ty/eleventy": "^3.1.6",
