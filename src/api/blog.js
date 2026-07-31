@@ -17,25 +17,30 @@ function generateSlug(title) {
     .replace(/-+/g, "-");
 }
 
-// GET /api/blog/posts — list (public: only published; authenticated: all)
-router.get("/posts", (req, res) => {
+// Is this request carrying a valid panel JWT? Read-only routes use this to
+// decide whether drafts are visible; it never rejects on its own (unlike
+// verifyJWT), because an anonymous caller is legitimate here — it just sees
+// less. Accepts the token as a Bearer header or the panel's x-panel-token.
+function isAuthenticated(req) {
   const authHeader = req.headers["authorization"];
   const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
   const panelToken = req.headers["x-panel-token"];
   const token = bearer || (typeof panelToken === "string" ? panelToken : null);
+  if (!token) return false;
 
-  let isAuth = false;
-  if (token) {
-    const secret = process.env.JWT_SECRET || getConfig("jwt_secret");
-    if (secret) {
-      try {
-        jwt.verify(token, secret);
-        isAuth = true;
-      } catch {
-        isAuth = false;
-      }
-    }
+  const secret = process.env.JWT_SECRET || getConfig("jwt_secret");
+  if (!secret) return false;
+  try {
+    jwt.verify(token, secret);
+    return true;
+  } catch {
+    return false;
   }
+}
+
+// GET /api/blog/posts — list (public: only published; authenticated: all)
+router.get("/posts", (req, res) => {
+  const isAuth = isAuthenticated(req);
 
   const articles = isAuth
     ? db.prepare("SELECT * FROM articles ORDER BY created_at DESC").all()
@@ -47,12 +52,18 @@ router.get("/posts", (req, res) => {
   res.json({ posts: articles });
 });
 
-// GET /api/blog/posts/:slug — single article by slug (public)
+// GET /api/blog/posts/:slug — single article by slug or id
+// (public: published only; authenticated: drafts too)
 router.get("/posts/:slug", (req, res) => {
   const article = db
     .prepare("SELECT * FROM articles WHERE slug = ? OR id = ?")
     .get(req.params.slug, req.params.slug);
-  if (!article)
+  // Drafts are only for the panel and the client's own rented agents. Slugs
+  // are generated from titles and so are guessable, which previously made
+  // every unpublished post world-readable. An anonymous caller gets the same
+  // 404 as a slug that doesn't exist, so the response never confirms that a
+  // hidden post is there.
+  if (!article || (article.status !== "published" && !isAuthenticated(req)))
     return res.status(404).json({ error: "Artículo no encontrado" });
   res.json(article);
 });
