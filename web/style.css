@@ -289,6 +289,28 @@ body {
   border-left: 3px solid var(--border);
   color: var(--text-muted);
 }
+/* Code-drawn infographics inserted into article bodies by the Infographic
+   Engineer agent. The SVG carries no colours of its own — it inherits
+   currentColor — so setting `color` here is what themes it in light and dark. */
+.site-page-body .article-infographic,
+.site-post-body .article-infographic {
+  margin: 1.75rem 0;
+  padding: 0;
+  color: var(--text-primary);
+}
+.site-page-body .article-infographic svg,
+.site-post-body .article-infographic svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.site-page-body .article-infographic figcaption,
+.site-post-body .article-infographic figcaption {
+  margin-top: 0.6rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
+}
 .site-page-body table,
 .site-post-body table {
   width: 100%;
