@@ -1,0 +1,47 @@
+---
+layout: base.njk
+title: "Uso de inteligencia artificial"
+description: "Cómo se usa la inteligencia artificial en este sitio web: qué contenidos se generan con asistencia de IA, dónde interviene una persona y transparencia conforme al artículo 50 del Reglamento (UE) 2024/1689."
+permalink: "/uso-de-ia.html"
+---
+<main class="site-page"><div class="site-page-inner">
+  <h1 class="reveal">Uso de inteligencia artificial</h1>
+
+  <div class="site-page-desc reveal" style="text-align:left;max-width:720px;margin-inline:auto;">
+
+    <p><strong>Aviso de transparencia.</strong> Parte de los contenidos de este sitio web se generan con asistencia de sistemas de inteligencia artificial, siempre con revisión humana antes de su publicación.</p>
+
+    <h2>1. Por qué publicamos este aviso</h2>
+    <p>Desde el <strong>2 de agosto de 2026</strong> son aplicables las obligaciones de transparencia del <strong>artículo 50 del Reglamento (UE) 2024/1689</strong>, el Reglamento Europeo de Inteligencia Artificial. Entre otras cosas exige informar a las personas cuando interactúan con un sistema de IA y señalar los contenidos generados o manipulados artificialmente.</p>
+    <p>{{ site.company_name or "Esta empresa" }} publica este aviso para cumplir esa obligación de forma clara y accesible desde cualquier página del sitio.</p>
+
+    <h2>2. Dónde se usa la IA en este sitio</h2>
+    <ul>
+      <li><strong>Textos de páginas y artículos del blog.</strong> Se redactan con asistencia de un modelo de lenguaje{% if site.ai_model %} ({{ site.ai_model }}){% endif %} a partir de las indicaciones y los datos que facilita la empresa.</li>
+      <li><strong>Imágenes ilustrativas.</strong> Algunas imágenes del sitio están generadas artificialmente{% if site.image_model %} con {{ site.image_model }}{% endif %}. No representan personas, lugares ni hechos reales, y no deben interpretarse como fotografías documentales.</li>
+      <li><strong>Formulario de contacto y reservas.</strong> No intervienen sistemas de IA: los mensajes los recibe y responde una persona.</li>
+    </ul>
+
+    <h2>3. Dónde interviene una persona</h2>
+    <p>La IA asiste en la redacción y la generación de imágenes; no decide nada por su cuenta. En concreto, hay revisión humana en:</p>
+    <ul>
+      <li>La aprobación de cualquier texto o imagen antes de publicarse.</li>
+      <li>Los datos de producto, precios, disponibilidad y condiciones comerciales, que los introduce y verifica la empresa.</li>
+      <li>La atención a consultas, reservas y reclamaciones.</li>
+    </ul>
+    <p>No se adoptan decisiones automatizadas con efectos jurídicos sobre las personas ni que las afecten significativamente de modo similar, en el sentido del artículo 22 del Reglamento (UE) 2016/679. El tratamiento de datos personales se rige por la <a href="/privacidad">Política de Privacidad</a>.</p>
+
+    <h2>4. Qué no hacemos</h2>
+    <ul>
+      <li>No generamos contenido que suplante la identidad de personas reales ni imágenes que puedan confundirse con hechos reales (<em>deepfakes</em>).</li>
+      <li>No empleamos IA para categorización biométrica, evaluación crediticia, cribado de candidatos ni ningún otro uso incluido en el anexo III del Reglamento.</li>
+      <li>No usamos los datos de clientes ni el contenido de los mensajes recibidos para entrenar modelos.</li>
+    </ul>
+
+    <h2>5. Contacto</h2>
+    <p>Si quieres saber si un contenido concreto de este sitio se generó con asistencia de IA, o solicitar su revisión, escríbenos{% if site.legal_email %} a <a href="mailto:{{ site.legal_email }}">{{ site.legal_email }}</a>{% else %} a través del <a href="/contacto">formulario de contacto</a>{% endif %}.</p>
+
+    <p style="margin-top:2rem;"><a href="/privacidad">Política de Privacidad</a> · <a href="/condiciones">Aviso legal y condiciones</a></p>
+
+  </div>
+</div></main>
