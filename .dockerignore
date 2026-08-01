@@ -1,0 +1,44 @@
+# El Dockerfile hace `COPY . .` en la etapa de runtime. Docker NO consulta
+# .gitignore: copia lo que haya en el contexto de build local. Sin este fichero,
+# un `docker build` desde una copia de trabajo hornea en la imagen del cliente:
+#
+#   data/app.db  → contraseña del panel en claro, secreto JWT y la API key de
+#                  OpenRouter del cliente (ver el comentario en src/db/database.js)
+#   .env         → el resto de secretos
+#   _site/       → salida rancia de builds anteriores; Eleventy escribe encima
+#                  pero no borra lo que ya no genera, así que páginas retiradas
+#                  siguen sirviéndose (ejemplo real: _site/blog.html de julio,
+#                  cuando blog.njk pasó a generar /blog/index.html)
+#
+# La app crea data/ vacío al arrancar (`RUN mkdir -p data`) y reconstruye _site/
+# en runtime (src/build/rebuild.js), así que excluirlos es seguro.
+
+# Secretos y estado del cliente — nunca en la imagen
+data
+.env
+.env.*
+*.db
+*.sqlite
+*.sqlite3
+
+# Salida de build: se regenera en runtime
+_site
+
+# npm ci ya instaló las dependencias en la etapa de build, con better-sqlite3
+# compilado para musl. Copiar las locales encima las rompería.
+node_modules
+
+# Herramientas y ruido local
+.git
+.gitignore
+.claude
+.worktrees
+.gstack
+.vscode
+.DS_Store
+*.log
+npm-debug.log*
+
+# Documentación y utilidades que el runtime no necesita
+fixtures
+*.pdf

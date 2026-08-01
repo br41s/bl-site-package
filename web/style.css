@@ -711,6 +711,25 @@ body {
 .site-footer-links a:hover {
   color: var(--text-primary);
 }
+.site-footer-ai {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+.site-footer-ai p {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.site-footer-ai a {
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.site-footer-ai a:hover {
+  color: var(--text-primary);
+}
 
 /* WHATSAPP FLOAT */
 .whatsapp-float {
