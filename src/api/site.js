@@ -1,16 +1,34 @@
 import express from "express";
 import multer from "multer";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { getConfig, setConfig, PUBLIC_CONFIG_KEYS } from "../db/database.js";
+import db, { getConfig, setConfig, PUBLIC_CONFIG_KEYS } from "../db/database.js";
 import { requireAuth } from "../middleware/auth.js";
+import { rateLimit } from "../middleware/rateLimit.js";
 import { optimizeToWebp } from "../media/optimize-image.js";
+import { getBuildState } from "../build/rebuild.js";
+import { formatContent } from "../content/format-content.js";
+import {
+  getMailSettings,
+  isSmtpConfigured,
+  isNotifyEmailConfigured,
+  sendMail,
+  getLastContactEmail,
+} from "../mail/mailer.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const uploadsDir = join(__dirname, "../../data/uploads");
 mkdirSync(uploadsDir, { recursive: true });
+
+// The deployed release, so a monitoring caller can tell an instance running an
+// old build from an up-to-date one. package.json is the only version this repo
+// has — there is no git checkout in the container (the Dockerfile COPYs the
+// tree) — so bumping it in a release is what makes this field move.
+const APP_VERSION = JSON.parse(
+  readFileSync(join(__dirname, "../../package.json"), "utf8"),
+).version;
 
 // Accepted logo formats. SVG is intentionally excluded: an SVG with an inline
 // <script> served from /uploads (same-origin, and the CSP allows
@@ -137,6 +155,119 @@ router.post("/upload-image", requireAuth, async (req, res) => {
     res.json({ success: true, url: "/uploads/" + filename });
   } catch (err) {
     res.status(400).json({ error: err.message || "No se pudo procesar la imagen" });
+  }
+});
+
+// GET /api/site/status — operational health for the maintenance agent.
+//
+// Authenticated: this is the panel's own view of the instance, not something a
+// visitor needs. It answers three questions that are otherwise unanswerable
+// from outside a client's deploy: is this instance on the current release, did
+// the last background rebuild succeed, and can the instance send mail at all.
+//
+// Presence booleans only, never values. The SMTP host, user, password and the
+// notification address are all in the same config table as the panel password
+// and the client's OpenRouter key; this endpoint reports whether they are set
+// and nothing more.
+router.get("/status", requireAuth, (req, res) => {
+  const settings = getMailSettings();
+  const build = getBuildState();
+
+  const counts = Object.fromEntries(
+    db
+      .prepare("SELECT status, COUNT(*) AS n FROM articles GROUP BY status")
+      .all()
+      .map((row) => [row.status, row.n]),
+  );
+
+  res.json({
+    version: APP_VERSION,
+    built_at: build.at,
+    last_build_ok: build.ok,
+    smtp_configured: isSmtpConfigured(settings),
+    notify_email_configured: isNotifyEmailConfigured(settings),
+    posts: {
+      published: counts.published || 0,
+      draft: counts.draft || 0,
+    },
+    // Outcome of the last contact-form notification e-mail, or null if this
+    // process has not attempted one. Error class only (e.g. "EAUTH") — SMTP
+    // rejection strings routinely echo the username back.
+    last_contact_email: getLastContactEmail(),
+  });
+});
+
+// Rate limit for /notify. The legitimate caller is the maintenance agent's
+// monthly report — one call a month — so a handful a day is generous by orders
+// of magnitude while still meaning a leaked panel password cannot turn a
+// client's site into a mailer.
+const notifyLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 10,
+  message: "Demasiadas notificaciones enviadas, inténtalo mañana.",
+});
+
+const MAX_SUBJECT = 200;
+const MAX_BODY = 50000;
+
+// POST /api/site/notify — send an operational e-mail to the site owner.
+// Body: { subject, body_markdown }. Goes out through the instance's own SMTP
+// (src/mail/mailer.js, the same pathway the contact form uses) to its
+// configured notify_email. The recipient is never taken from the request:
+// this endpoint reaches the site owner and nobody else, so a stolen panel
+// token cannot aim it at a third party.
+router.post("/notify", requireAuth, notifyLimiter, async (req, res) => {
+  const subject =
+    typeof req.body?.subject === "string" ? req.body.subject.trim() : "";
+  const bodyMarkdown =
+    typeof req.body?.body_markdown === "string"
+      ? req.body.body_markdown.trim()
+      : "";
+
+  if (!subject || !bodyMarkdown) {
+    return res.status(400).json({
+      error: "invalid_body",
+      message: "subject y body_markdown son obligatorios",
+    });
+  }
+  if (subject.length > MAX_SUBJECT || bodyMarkdown.length > MAX_BODY) {
+    return res.status(400).json({
+      error: "invalid_body",
+      message: "subject o body_markdown demasiado largo",
+    });
+  }
+
+  const settings = getMailSettings();
+  if (!isSmtpConfigured(settings) || !isNotifyEmailConfigured(settings)) {
+    return res.status(503).json({
+      error: "smtp_not_configured",
+      message: "El envío de email no está configurado en esta instalación",
+    });
+  }
+
+  try {
+    await sendMail(
+      {
+        from: `"${getConfig("company_name") || "Web"}" <${settings.user}>`,
+        to: settings.notifyEmail,
+        subject,
+        // Plain text keeps the markdown source readable in any client; the
+        // HTML part goes through the site's own markdown pipeline, so this
+        // endpoint adds no second sanitizer to keep in sync.
+        text: bodyMarkdown,
+        html: formatContent(bodyMarkdown),
+      },
+      settings,
+    );
+    res.json({ success: true });
+  } catch (err) {
+    // Unlike the contact form, this failure is surfaced: the caller is a
+    // monitoring agent whose whole job is to notice it.
+    console.error("Error enviando notificación:", err.message);
+    res.status(502).json({
+      error: "send_failed",
+      message: "No se pudo enviar el email de notificación",
+    });
   }
 });
 

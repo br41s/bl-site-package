@@ -1,8 +1,14 @@
 import { Router } from "express";
-import nodemailer from "nodemailer";
-import db, { getConfig } from "../db/database.js";
+import db from "../db/database.js";
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
+import {
+  getMailSettings,
+  isSmtpConfigured,
+  isNotifyEmailConfigured,
+  sendMail,
+  recordContactEmailResult,
+} from "../mail/mailer.js";
 
 const router = Router();
 
@@ -58,33 +64,28 @@ router.post("/", contactLimiter, async (req, res) => {
     "INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)",
   ).run(name, email, message);
 
-  const smtpHost = process.env.SMTP_HOST || getConfig("smtp_host");
-  const smtpPort = parseInt(
-    process.env.SMTP_PORT || getConfig("smtp_port") || "587",
-    10,
-  );
-  const smtpUser = process.env.SMTP_USER || getConfig("smtp_user");
-  const smtpPass = process.env.SMTP_PASS || getConfig("smtp_pass");
-  const notifyEmail = process.env.NOTIFY_EMAIL || getConfig("notify_email");
+  const settings = getMailSettings();
 
-  if (smtpHost && smtpUser && smtpPass && notifyEmail) {
+  if (isSmtpConfigured(settings) && isNotifyEmailConfigured(settings)) {
     try {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: { user: smtpUser, pass: smtpPass },
-      });
-
-      await transporter.sendMail({
-        from: `"${name}" <${smtpUser}>`,
-        to: notifyEmail,
-        subject: `Nuevo mensaje de contacto de ${name}`,
-        text: `Nombre: ${name}\nEmail: ${email}\n\nMensaje:\n${message}`,
-        html: `<p><strong>Nombre:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><hr><p>${escapeHtml(message).replace(/\n/g, "<br>")}</p>`,
-      });
+      await sendMail(
+        {
+          from: `"${name}" <${settings.user}>`,
+          to: settings.notifyEmail,
+          subject: `Nuevo mensaje de contacto de ${name}`,
+          text: `Nombre: ${name}\nEmail: ${email}\n\nMensaje:\n${message}`,
+          html: `<p><strong>Nombre:</strong> ${escapeHtml(name)}</p><p><strong>Email:</strong> ${escapeHtml(email)}</p><hr><p>${escapeHtml(message).replace(/\n/g, "<br>")}</p>`,
+        },
+        settings,
+      );
+      recordContactEmailResult(true);
     } catch (err) {
+      // The visitor still gets {success:true}: the message is already stored,
+      // and the client's SMTP problems are not theirs to see. The failure is
+      // recorded so GET /api/site/status can report it — before that existed,
+      // a silently broken mailer only showed up in the container logs.
       console.error("Error enviando email de notificación:", err.message);
+      recordContactEmailResult(false, err);
     }
   }
 

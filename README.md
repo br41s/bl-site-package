@@ -77,13 +77,15 @@ bl-site-package/
 │   │   └── auth.js        # Middleware JWT
 │   ├── db/
 │   │   └── database.js    # SQLite init + schema
+│   ├── mail/
+│   │   └── mailer.js      # Única vía de envío SMTP (contacto + notificaciones)
 │   └── api/
 │       ├── auth.js        # POST /api/auth/login
 │       ├── chat.js        # POST /api/chat/send
 │       ├── blog.js        # CRUD /api/blog/posts
 │       ├── contact.js     # GET/POST /api/contact
 │       ├── setup.js       # GET/POST/DELETE /api/setup
-│       └── site.js        # Config, logo y modelos OpenRouter
+│       └── site.js        # Config, logo, modelos OpenRouter, estado y notificaciones
 └── web/
     ├── index.html         # Sitio público
     ├── quienes-somos.html # Página Quiénes somos
