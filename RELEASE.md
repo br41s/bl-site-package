@@ -23,18 +23,26 @@ cada uno se verifica por separado.
 ## Flujo (staging-first)
 
 1. **Cambio en una rama** → abre PR contra `main`.
-2. **Revisión** → corre `/review` sobre la rama (los cambios de nivel sistema
+2. **Bump de versión** en la rama, antes de mergear: `npm version patch`
+   (o `minor`/`major` según el alcance) — actualiza `package.json` +
+   `package-lock.json` y crea un tag `vX.Y.Z` local. Push del tag junto con
+   la rama: `git push origin <rama> --tags`. Todas las instancias
+   comparten el mismo `package.json`, así que sin este paso `GET
+   /api/site/status` reporta la misma versión para siempre y el check de
+   "instancia desactualizada" del agente de mantenimiento (hermes-sandbox)
+   queda inerte — ver el aviso en la sección de abajo.
+3. **Revisión** → corre `/review` sobre la rama (los cambios de nivel sistema
    son *advisory*: los revisa una persona antes de mergear).
-3. **Merge a `main`.**
-4. **Zeabur auto-despliega** desde `main` en nuestra instancia de pruebas
+4. **Merge a `main`.**
+5. **Zeabur auto-despliega** desde `main` en nuestra instancia de pruebas
    (`https://blcliente.zeabur.app`).
-5. **Smoke test** contra pruebas:
+6. **Smoke test** contra pruebas:
    ```bash
    scripts/smoke-test.sh https://blcliente.zeabur.app
    ```
    Debe salir en verde (exit 0). Si falla, **para**: no se toca a ningún
    cliente hasta arreglarlo.
-6. **Solo con pruebas en verde**, despliega en el entorno de cada cliente uno
+7. **Solo con pruebas en verde**, despliega en el entorno de cada cliente uno
    a uno, y corre el smoke test contra cada uno:
    ```bash
    scripts/smoke-test.sh https://prueba.shoroban.com   # staging del cliente
@@ -43,6 +51,12 @@ cada uno se verifica por separado.
 
 Regla de oro: **nunca** se despliega directamente a un cliente sin que el
 cambio haya estado verde en pruebas (Zeabur) primero.
+
+**Comprueba la versión tras el deploy**: `curl -s <url>/api/site/status | grep
+version` debe mostrar el `vX.Y.Z` del paso 2 en pruebas, y en cada cliente tras
+su propio despliegue. Si no coincide, ese entorno sigue en el `package.json`
+viejo — no se reinició (ver la sección de rebuild/restart más abajo) o el
+`git pull`/deploy no se completó.
 
 ---
 
@@ -67,7 +81,7 @@ Pruebas **no** detecta problemas específicos del entorno de cada cliente:
 - Variables de entorno o almacenamiento mal configurados en un cliente concreto.
 - Estado del dominio/DNS/HTTPS de cada cliente.
 
-Por eso la verificación por cliente (paso 6) sigue siendo obligatoria aunque
+Por eso la verificación por cliente (paso 7) sigue siendo obligatoria aunque
 pruebas esté en verde.
 
 ---
