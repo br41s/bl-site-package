@@ -1,0 +1,73 @@
+name: Require version bump
+
+# RELEASE.md step 2: every PR that changes code must bump package.json's
+# version (npm version patch|minor|major) before merge, so GET /api/site/status
+# reports something real for the hermes-sandbox maintenance agent's
+# outdated-instance check. Without this gate that step is opt-in and, per the
+# incident that prompted it, gets skipped in practice.
+#
+# Doc-only PRs (e.g. RELEASE.md itself) are exempt — see the "docs-only" skip
+# below. If you're adding a new doc/text-only path, add its pattern there
+# rather than bumping the version for a change with no runtime effect.
+#
+# All untrusted values (branch names, changed file paths — both attacker-
+# controlled in a PR from a fork) are passed via `env:` and read as shell
+# variables, never interpolated directly into `run:` via ${{ }}, so a
+# maliciously named file or branch can't break out into command injection.
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-version-bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed files
+        id: diff
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch origin "$BASE_REF" --depth=1
+          changed=$(git diff --name-only "origin/$BASE_REF"...HEAD)
+          echo "changed<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$changed" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "$changed"
+
+      - name: Skip if docs-only
+        id: skip
+        env:
+          CHANGED: ${{ steps.diff.outputs.changed }}
+        run: |
+          docs_only=true
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              *.md|.github/*) ;;
+              *) docs_only=false ;;
+            esac
+          done <<< "$CHANGED"
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+
+      - name: Compare package.json version against base branch
+        if: steps.skip.outputs.docs_only != 'true'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          base_version=$(git show "origin/$BASE_REF:package.json" | node -pe 'JSON.parse(require("fs").readFileSync(0,"utf8")).version')
+          head_version=$(node -pe 'require("./package.json").version')
+          echo "base:  $base_version"
+          echo "head:  $head_version"
+          if [ "$base_version" = "$head_version" ]; then
+            echo "::error::package.json version unchanged ($head_version). Run 'npm version patch|minor|major' on this branch before merging — see RELEASE.md step 2. Doc-only PRs (.md files) are exempt."
+            exit 1
+          fi
+
+      - name: Docs-only, skipping version check
+        if: steps.skip.outputs.docs_only == 'true'
+        run: echo "Only documentation files changed — version bump not required."
