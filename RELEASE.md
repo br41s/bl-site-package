@@ -31,6 +31,14 @@ cada uno se verifica por separado.
    /api/site/status` reporta la misma versión para siempre y el check de
    "instancia desactualizada" del agente de mantenimiento (hermes-sandbox)
    queda inerte — ver el aviso en la sección de abajo.
+
+   Antes de mergear, verifica que el bump está hecho:
+   ```bash
+   node scripts/check-version-bump.mjs
+   ```
+   Esta cuenta de GitHub no tiene Actions, así que **este script es la única
+   puerta**: nadie lo ejecuta por ti. Sale en `FAIL` si la rama cambia código
+   sin bump (los cambios solo de documentación están exentos).
 3. **Revisión** → corre `/review` sobre la rama (los cambios de nivel sistema
    son *advisory*: los revisa una persona antes de mergear).
 4. **Merge a `main`.**
