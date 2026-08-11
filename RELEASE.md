@@ -52,11 +52,33 @@ cada uno se verifica por separado.
 Regla de oro: **nunca** se despliega directamente a un cliente sin que el
 cambio haya estado verde en pruebas (Zeabur) primero.
 
-**Comprueba la versión tras el deploy**: `curl -s <url>/api/site/status | grep
-version` debe mostrar el `vX.Y.Z` del paso 2 en pruebas, y en cada cliente tras
-su propio despliegue. Si no coincide, ese entorno sigue en el `package.json`
-viejo — no se reinició (ver la sección de rebuild/restart más abajo) o el
-`git pull`/deploy no se completó.
+**Comprueba la versión tras el deploy** con el chequeo de flota:
+
+```bash
+FLEET_PASSWORD_SHOROBAN_STAGING=... FLEET_PASSWORD_SHOROBAN_PROD=... \
+  node scripts/fleet-check.mjs
+```
+
+Cada despliegue de `fleet/manifest.json` debe reportar el `vX.Y.Z` del paso 2.
+Una instancia `DESACTUALIZADA` sigue en el `package.json` viejo — no se
+reinició (ver la sección de rebuild/restart más abajo) o el `git pull`/deploy
+no se completó. (`GET /api/site/status` requiere autenticación; el script hace
+el login por ti con la contraseña del panel de cada instancia.)
+
+---
+
+## Inventario de la flota (`fleet/manifest.json`)
+
+Qué despliegues existen, de qué cliente son, dónde corren y cómo se
+actualizan vive en `fleet/manifest.json` — no en la memoria de nadie. Dar de
+alta un cliente nuevo es añadir sus entradas ahí en una PR (`npm test` valida
+el fichero). Detalle de campos y uso en `fleet/README.md`.
+
+`scripts/fleet-check.mjs` recorre el manifest y reporta, por despliegue,
+disponibilidad y versión frente a la última publicada en `main`. Sale con
+código ≠ 0 si algo está caído o desactualizado, igual que el smoke test. El
+agente de mantenimiento (hermes) hace este mismo chequeo en continuo con las
+credenciales de su perfil; el script es la vista bajo demanda del operador.
 
 ---
 

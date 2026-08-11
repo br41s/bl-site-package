@@ -1,0 +1,39 @@
+{
+  "package": "br41s/bl-site-package",
+  "latest_version_url": "https://raw.githubusercontent.com/br41s/bl-site-package/main/package.json",
+  "deployments": [
+    {
+      "id": "blcliente",
+      "name": "Instancia de pruebas BigLobster",
+      "customer": null,
+      "role": "reference",
+      "url": "https://blcliente.zeabur.app",
+      "host": "zeabur",
+      "driver": "zeabur",
+      "hermes_profile": "bl-site-package",
+      "password_env": "FLEET_PASSWORD_BLCLIENTE"
+    },
+    {
+      "id": "shoroban-staging",
+      "name": "Shoroban — staging",
+      "customer": "Shoroban",
+      "role": "staging",
+      "url": "https://prueba.shoroban.com",
+      "host": "plesk-passenger",
+      "driver": "manual",
+      "hermes_profile": "shoroban",
+      "password_env": "FLEET_PASSWORD_SHOROBAN_STAGING"
+    },
+    {
+      "id": "shoroban-prod",
+      "name": "Shoroban — producción",
+      "customer": "Shoroban",
+      "role": "production",
+      "url": "https://shoroban.com",
+      "host": "plesk-passenger",
+      "driver": "manual",
+      "hermes_profile": "shoroban",
+      "password_env": "FLEET_PASSWORD_SHOROBAN_PROD"
+    }
+  ]
+}
