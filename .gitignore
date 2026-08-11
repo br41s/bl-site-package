@@ -5,3 +5,6 @@ data/
 .DS_Store
 _site/
 .gstack/
+
+# Session planning files (Claude worktrees)
+tasks/
