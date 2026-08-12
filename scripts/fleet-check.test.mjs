@@ -1,6 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { validateManifest, loadManifest, classify } from "./fleet-check.mjs";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  validateManifest,
+  loadManifest,
+  classify,
+  rolloutKey,
+  newRolloutEntries,
+} from "./fleet-check.mjs";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const entry = (over = {}) => ({
   id: "x-prod",
@@ -70,4 +81,53 @@ test("classify: drift states", () => {
   assert.equal(classify({ ...base, version: null }), "status_unreadable");
   assert.equal(classify({ up: false, version: null, hasCredentials: true, latest: "1.2.0" }), "down");
   assert.equal(classify({ up: true, version: null, hasCredentials: false, latest: "1.2.0" }), "no_credentials");
+});
+
+test("rolloutKey pairs deployment and version", () => {
+  assert.equal(rolloutKey("shoroban-staging", "1.0.2"), "shoroban-staging@1.0.2");
+});
+
+test("newRolloutEntries: only 'ok' results not already on record are logged", () => {
+  const results = [
+    { id: "a", state: "ok", version: "1.0.2" },
+    { id: "b", state: "outdated", version: "1.0.0" }, // never rolled out — not logged
+    { id: "c", state: "ok", version: "1.0.2" },
+  ];
+  const existing = new Set(["c@1.0.2"]); // already recorded on a prior run
+  const entries = newRolloutEntries(results, existing, "2026-08-11T00:00:00.000Z");
+  assert.deepEqual(entries, [
+    {
+      deployment_id: "a",
+      version: "1.0.2",
+      confirmed_at: "2026-08-11T00:00:00.000Z",
+      source: "fleet-check",
+    },
+  ]);
+});
+
+test("newRolloutEntries: same version across repeated runs produces nothing new", () => {
+  const results = [{ id: "a", state: "ok", version: "1.0.2" }];
+  const existing = new Set(["a@1.0.2"]);
+  assert.deepEqual(newRolloutEntries(results, existing, "2026-08-11T00:00:00.000Z"), []);
+});
+
+test("rollout log, if present, is well-formed JSONL", () => {
+  // Tolerates a missing file (nothing has ever been confirmed via fleet-check
+  // in this checkout/CI) but validates shape once entries exist, so a
+  // malformed line — e.g. a hand edit — fails npm test.
+  let text;
+  try {
+    text = readFileSync(join(ROOT, "fleet/rollout-log.jsonl"), "utf8");
+  } catch (err) {
+    if (err.code === "ENOENT") return;
+    throw err;
+  }
+  const lines = text.split("\n").filter(Boolean);
+  for (const line of lines) {
+    const entry = JSON.parse(line);
+    assert.equal(typeof entry.deployment_id, "string");
+    assert.equal(typeof entry.version, "string");
+    assert.ok(!Number.isNaN(Date.parse(entry.confirmed_at)), "confirmed_at must be a valid date");
+    assert.equal(typeof entry.source, "string");
+  }
 });

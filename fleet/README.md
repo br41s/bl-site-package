@@ -36,3 +36,24 @@ por disponibilidad (la versión requiere autenticación).
 
 El chequeo continuo lo hace el agente de mantenimiento (hermes) con las
 credenciales de cada perfil; este script es la vista bajo demanda del operador.
+
+## Historial de rollouts (`rollout-log.jsonl`)
+
+Cada vez que `fleet-check.mjs` confirma por primera vez que un despliegue está
+en una versión concreta (`state: ok`), añade una línea a
+`fleet/rollout-log.jsonl`:
+
+```json
+{"deployment_id":"shoroban-staging","version":"1.0.2","confirmed_at":"2026-08-11T13:02:00.000Z","source":"fleet-check"}
+```
+
+Un mismo `(deployment_id, version)` solo se registra una vez, así que correr
+el chequeo repetidas veces sobre un despliegue ya al día no genera ruido.
+`confirmed_at` es cuándo este script lo *comprobó* por primera vez, no
+necesariamente el instante exacto del deploy — el driver `manual` (Plesk) no
+deja rastro propio de cuándo se pulsó "Restart App".
+
+Es un fichero versionado (parte del historial del repo, no un log rotable):
+sirve para responder "¿cuándo llegó la vX.Y.Z a Shoroban?" sin tener que
+rebuscar en esta conversación o en Slack. `npm test` valida que cada línea
+tenga forma correcta.
