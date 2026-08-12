@@ -20,6 +20,18 @@ export default function () {
       "SELECT * FROM articles WHERE status = 'published' ORDER BY created_at DESC",
     )
     .all();
+
+  // Related posts: the 3 most recent OTHER published posts. Rows are already
+  // sorted created_at DESC, so this needs no extra query or relevance model —
+  // and unlike a hand-picked list, it can never point at a post that later
+  // gets unpublished or deleted.
+  const asRelated = (a) => ({
+    slug: a.slug,
+    title: a.title,
+    image_url: a.image_url,
+    image_alt: a.image_alt,
+  });
+
   return rows.map((a) => ({
     ...a,
     contentHtml: formatContent(a.content),
@@ -28,5 +40,6 @@ export default function () {
     // per post in site/blog-post.njk. buildFaqLd returns null when no FAQ.
     article_ld: buildArticleLd(a, site),
     faq_ld: buildFaqLd(a.content),
+    related: rows.filter((r) => r.id !== a.id).slice(0, 3).map(asRelated),
   }));
 }
