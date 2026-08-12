@@ -20,7 +20,7 @@
 // Usage:
 //   FLEET_PASSWORD_SHOROBAN_PROD=... node scripts/fleet-check.mjs
 
-import { readFileSync } from "node:fs";
+import { readFileSync, appendFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -162,6 +162,61 @@ async function checkDeployment(d, latest) {
   return result;
 }
 
+// --- rollout log --------------------------------------------------------------
+//
+// fleet/rollout-log.jsonl records when each deployment was first CONFIRMED on
+// a given version — not when the deploy button was clicked, which this repo
+// has no way to observe for a manual/Plesk driver. One line per
+// (deployment, version) pair, ever: a deployment sitting on the same version
+// across many runs produces no new lines, so the log grows only on real
+// rollouts and stays cheap to read as history.
+
+export function rolloutKey(deploymentId, version) {
+  return `${deploymentId}@${version}`;
+}
+
+function parseRolloutLines(text) {
+  return text
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
+// Pure so it's testable without touching the filesystem: given this run's
+// results and the set of (deployment, version) pairs already on record,
+// returns the new entries to append.
+export function newRolloutEntries(results, existingKeys, nowIso) {
+  return results
+    .filter((r) => r.state === "ok" && !existingKeys.has(rolloutKey(r.id, r.version)))
+    .map((r) => ({
+      deployment_id: r.id,
+      version: r.version,
+      confirmed_at: nowIso,
+      source: "fleet-check",
+    }));
+}
+
+function recordRollout(results) {
+  const path = join(ROOT, "fleet/rollout-log.jsonl");
+  let existing = [];
+  try {
+    existing = parseRolloutLines(readFileSync(path, "utf8"));
+  } catch (err) {
+    if (err.code !== "ENOENT") throw err;
+  }
+  const existingKeys = new Set(
+    existing.map((e) => rolloutKey(e.deployment_id, e.version)),
+  );
+  const entries = newRolloutEntries(results, existingKeys, new Date().toISOString());
+  if (entries.length) {
+    appendFileSync(path, entries.map((e) => JSON.stringify(e)).join("\n") + "\n");
+    for (const e of entries) {
+      console.log(`📝 rollout registrado: ${e.deployment_id} → v${e.version}`);
+    }
+  }
+  return entries;
+}
+
 // --- report -----------------------------------------------------------------
 
 const STATE_LABEL = {
@@ -186,6 +241,8 @@ export async function run() {
     const detail = r.detail ? `  (${r.detail})` : "";
     console.log(`${STATE_LABEL[r.state]}  ${r.id}  ${version}  ${r.url}${detail}`);
   }
+
+  recordRollout(results);
 
   const bad = results.filter((r) => ["down", "outdated", "status_unreadable"].includes(r.state));
   if (bad.length) {
