@@ -420,6 +420,66 @@ body {
   display: inline-block;
   margin-top: 2rem;
 }
+.site-post-summary {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  border-left: 3px solid var(--accent);
+  padding-left: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+.site-post-toc {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin: 0 0 2rem;
+}
+.site-post-toc-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.site-post-toc ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.site-post-toc-sub {
+  list-style: none;
+  margin-left: 1rem;
+}
+.site-post-toc a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.site-post-toc a:hover {
+  color: var(--accent);
+}
+.site-related-posts {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.site-related-posts h2 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+.site-related-posts ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.site-related-posts a {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.site-related-posts a:hover {
+  color: var(--accent);
+}
 
 /* AI-generated / uploaded imagery — blog covers, index/page hero images and
    blog-card thumbnails. All served as optimized WebP from /uploads and

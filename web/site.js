@@ -69,6 +69,48 @@ function initCookieConsent() {
   }
 }
 
+/* TABLE OF CONTENTS (blog posts) — auto-built from the article's own H2/H3s,
+   skipped on short posts where a TOC would just be noise. */
+function initTOC() {
+  var body = document.querySelector(".site-post-body");
+  if (!body) return;
+  var headings = body.querySelectorAll("h2, h3");
+  if (headings.length < 3) return;
+
+  var counter = 0;
+  headings.forEach(function (h) {
+    if (!h.id) h.id = "section-" + ++counter;
+  });
+
+  var toc = document.createElement("nav");
+  toc.className = "site-post-toc";
+  toc.setAttribute("aria-label", "Tabla de contenidos");
+
+  var title = document.createElement("p");
+  title.className = "site-post-toc-title";
+  title.textContent = "Contenido del art\u00edculo";
+  toc.appendChild(title);
+
+  var ol = document.createElement("ol");
+  headings.forEach(function (h) {
+    var li = document.createElement("li");
+    if (h.tagName === "H3") li.classList.add("site-post-toc-sub");
+    var a = document.createElement("a");
+    a.href = "#" + h.id;
+    a.textContent = h.textContent.trim();
+    a.addEventListener("click", function (e) {
+      e.preventDefault();
+      h.scrollIntoView({ behavior: "smooth", block: "start" });
+      history.replaceState(null, "", "#" + h.id);
+    });
+    li.appendChild(a);
+    ol.appendChild(li);
+  });
+  toc.appendChild(ol);
+
+  body.parentNode.insertBefore(toc, body);
+}
+
 function initContactForm() {
   var form = document.getElementById("contact-form");
   if (!form) return;
@@ -125,4 +167,5 @@ document.addEventListener("DOMContentLoaded", function () {
   initCookieConsent();
   initReveals();
   initContactForm();
+  initTOC();
 });
