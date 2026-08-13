@@ -253,6 +253,7 @@
                   <path d="M8 12h5" />
                 </svg>
                 <span>Mensajes</span>
+                <span id="messages-unread-badge" class="sidebar-badge" hidden></span>
               </button>
             </li>
             <li>
@@ -589,9 +590,34 @@
           <section data-panel="messages" class="panel-section" hidden>
             <div class="section-header">
               <h2>Mensajes</h2>
-              <p>Mensajes recibidos desde el formulario de contacto.</p>
+              <p>Mensajes recibidos por el formulario de contacto y por WhatsApp.</p>
             </div>
-            <div id="messages-list" class="messages-list"></div>
+
+            <div class="misite-tabs messages-tabs">
+              <button class="misite-tab active" data-messages-tab="formulario">Formulario</button>
+              <button class="misite-tab" data-messages-tab="whatsapp">WhatsApp</button>
+            </div>
+
+            <div class="misite-panel" id="messages-tab-formulario">
+              <div id="messages-list" class="messages-list"></div>
+            </div>
+
+            <div class="misite-panel" id="messages-tab-whatsapp" style="display: none">
+              <div class="conv-filters">
+                <button class="conv-filter active" data-filter="needs_attention">Necesita atención</button>
+                <button class="conv-filter" data-filter="bot">Bot</button>
+                <button class="conv-filter" data-filter="human">Humano</button>
+                <button class="conv-filter" data-filter="resolved">Resueltas</button>
+              </div>
+              <div id="conv-list" class="conv-list"></div>
+              <div id="conv-detail" class="conv-detail" hidden>
+                <button id="conv-back-btn" class="site-btn" type="button">← Volver a la lista</button>
+                <div id="conv-detail-body"></div>
+              </div>
+              <p id="conv-unavailable" class="conv-unavailable" hidden>
+                El asistente de WhatsApp no está configurado en esta instalación.
+              </p>
+            </div>
           </section>
 
           <!-- MI SITIO WEB -->

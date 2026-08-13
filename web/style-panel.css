@@ -1013,3 +1013,223 @@ body {
     font-size: 0.85rem;
   }
 }
+
+/* ============================================================
+   WHATSAPP INBOX (Chatwoot-backed conversations tab)
+   ============================================================ */
+
+.sidebar-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--accent, #d9603b);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+/* An explicit `display` on .sidebar-badge otherwise beats the browser's
+   default [hidden] { display: none } UA rule (author stylesheet wins the
+   cascade regardless of the hidden attribute) -- without this, the badge
+   stayed visible even while its `hidden` attribute was set. */
+.sidebar-badge[hidden] {
+  display: none;
+}
+
+.conv-unavailable {
+  color: var(--text-muted, #888);
+  padding: 2rem 0;
+}
+
+.conv-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+.conv-filter {
+  border: 1px solid var(--border-color, #ddd);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.conv-filter.active {
+  background: var(--accent, #d9603b);
+  border-color: var(--accent, #d9603b);
+  color: #fff;
+}
+
+.conv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.conv-item {
+  border: 1px solid var(--border-color, #eee);
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  cursor: pointer;
+  background: #fff;
+}
+
+.conv-item:hover {
+  border-color: var(--accent, #d9603b);
+}
+
+.conv-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.conv-item-name {
+  font-weight: 600;
+}
+
+.conv-item-phone {
+  color: var(--text-muted, #888);
+  font-size: 0.85rem;
+}
+
+.conv-item-badge {
+  margin-left: auto;
+  background: var(--accent, #d9603b);
+  color: #fff;
+  border-radius: 999px;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+}
+
+.conv-item-need,
+.conv-item-reason {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #555);
+}
+
+.conv-item-reason {
+  color: var(--accent, #d9603b);
+}
+
+.conv-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.conv-status {
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.conv-status-pending {
+  background: #fff3e0;
+  color: #b06a00;
+}
+
+.conv-status-open {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.conv-status-resolved {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.conv-lead-card {
+  background: var(--bg-base, #f7f6f2);
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.conv-lead-card p {
+  margin: 0.25rem 0;
+}
+
+.conv-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.conv-transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+.conv-bubble {
+  max-width: 75%;
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+}
+
+.conv-bubble p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.conv-bubble-in {
+  align-self: flex-start;
+  background: #f0f0f0;
+}
+
+.conv-bubble-out {
+  align-self: flex-end;
+  background: var(--accent, #d9603b);
+  color: #fff;
+}
+
+.conv-bubble-meta {
+  display: block;
+  font-size: 0.7rem;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}
+
+.conv-composer {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-end;
+  margin-top: 1rem;
+}
+
+.conv-composer textarea {
+  flex: 1;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  padding: 0.6rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
+.conv-window-lapsed {
+  color: var(--text-muted, #888);
+  font-size: 0.85rem;
+  font-style: italic;
+}
