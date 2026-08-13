@@ -120,7 +120,13 @@ document.addEventListener("DOMContentLoaded", function () {
       s.hidden = !active;
     });
     if (name === "blog") loadArticles();
-    if (name === "messages") loadMessages();
+    if (name === "messages") {
+      loadMessages();
+      initMessagesTabs();
+      refreshUnreadBadge();
+    } else {
+      stopConvPolling();
+    }
     if (name === "misite") initMiSite();
     if (name === "productos") initProductos();
   }
@@ -442,6 +448,351 @@ document.addEventListener("DOMContentLoaded", function () {
             '<p style="color:var(--text-muted);padding:2rem 0">No se pudieron cargar los mensajes.</p>';
         }
       });
+  }
+
+  // ── MESSAGES: FORMULARIO / WHATSAPP TABS ────────────────────────────
+  var messagesTabsInitialized = false;
+  function initMessagesTabs() {
+    if (messagesTabsInitialized) return;
+    messagesTabsInitialized = true;
+    document.querySelectorAll(".messages-tabs .misite-tab").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        document.querySelectorAll(".messages-tabs .misite-tab").forEach(function (t) {
+          t.classList.remove("active");
+        });
+        tab.classList.add("active");
+        var formTab = document.getElementById("messages-tab-formulario");
+        var waTab = document.getElementById("messages-tab-whatsapp");
+        var showWhatsapp = tab.dataset.messagesTab === "whatsapp";
+        formTab.style.display = showWhatsapp ? "none" : "block";
+        waTab.style.display = showWhatsapp ? "block" : "none";
+        if (showWhatsapp) {
+          initWhatsapp();
+          startConvPolling();
+        } else {
+          stopConvPolling();
+        }
+      });
+    });
+  }
+
+  // ── WHATSAPP INBOX (Chatwoot-backed) ─────────────────────────────
+  var whatsappInitialized = false;
+  var currentFilter = "needs_attention";
+  var currentConversationId = null;
+  var convPollTimer = null;
+  var CONV_POLL_MS = 12000;
+
+  var FILTER_LABELS = {
+    needs_attention: "Necesita atención",
+    bot: "Bot",
+    human: "Humano",
+    resolved: "Resuelta",
+  };
+
+  function convFetch(path, opts) {
+    opts = opts || {};
+    opts.headers = authHeaders();
+    return fetch("/api/conversations" + path, opts).then(function (r) {
+      return r.json().then(function (data) {
+        return { ok: r.ok, status: r.status, data: data };
+      });
+    });
+  }
+
+  function initWhatsapp() {
+    if (whatsappInitialized) return;
+    whatsappInitialized = true;
+
+    document.querySelectorAll(".conv-filter").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".conv-filter").forEach(function (b) {
+          b.classList.remove("active");
+        });
+        btn.classList.add("active");
+        currentFilter = btn.dataset.filter;
+        closeConvDetail();
+        loadConversations();
+      });
+    });
+
+    document.getElementById("conv-back-btn").addEventListener("click", closeConvDetail);
+
+    loadConversations();
+    refreshUnreadBadge();
+  }
+
+  function startConvPolling() {
+    stopConvPolling();
+    convPollTimer = setInterval(function () {
+      if (currentConversationId) {
+        openConversation(currentConversationId, { silent: true });
+      } else {
+        loadConversations({ silent: true });
+      }
+      refreshUnreadBadge();
+    }, CONV_POLL_MS);
+  }
+
+  function stopConvPolling() {
+    if (convPollTimer) {
+      clearInterval(convPollTimer);
+      convPollTimer = null;
+    }
+  }
+
+  function refreshUnreadBadge() {
+    convFetch("?filter=needs_attention").then(function (res) {
+      var badge = document.getElementById("messages-unread-badge");
+      if (!badge) return;
+      if (!res.ok) {
+        badge.hidden = true;
+        return;
+      }
+      var count = (res.data.conversations || []).length;
+      if (count > 0) {
+        badge.textContent = String(count);
+        badge.hidden = false;
+      } else {
+        badge.hidden = true;
+      }
+    });
+  }
+
+  function closeConvDetail() {
+    currentConversationId = null;
+    document.getElementById("conv-detail").hidden = true;
+    document.getElementById("conv-list").hidden = false;
+  }
+
+  function loadConversations(opts) {
+    opts = opts || {};
+    var list = document.getElementById("conv-list");
+    var unavailable = document.getElementById("conv-unavailable");
+    convFetch("?filter=" + encodeURIComponent(currentFilter)).then(function (res) {
+      if (res.status === 404) {
+        unavailable.hidden = false;
+        list.innerHTML = "";
+        return;
+      }
+      unavailable.hidden = true;
+      if (!res.ok) {
+        if (!opts.silent) {
+          list.innerHTML =
+            '<p style="color:var(--text-muted);padding:2rem 0">No se pudieron cargar las conversaciones.</p>';
+        }
+        return;
+      }
+      renderConvList(res.data.conversations || []);
+    });
+  }
+
+  function renderConvList(conversations) {
+    var list = document.getElementById("conv-list");
+    list.innerHTML = "";
+    if (!conversations.length) {
+      var empty = document.createElement("p");
+      empty.style.color = "var(--text-muted)";
+      empty.style.padding = "2rem 0";
+      empty.textContent = "No hay conversaciones en " + FILTER_LABELS[currentFilter] + ".";
+      list.appendChild(empty);
+      return;
+    }
+    conversations.forEach(function (c) {
+      var item = document.createElement("article");
+      item.className = "conv-item";
+
+      var header = document.createElement("div");
+      header.className = "conv-item-header";
+
+      var name = document.createElement("span");
+      name.className = "conv-item-name";
+      name.textContent = c.visitorName || "Visitante";
+      header.appendChild(name);
+
+      var phone = document.createElement("span");
+      phone.className = "conv-item-phone";
+      phone.textContent = c.visitorPhone;
+      header.appendChild(phone);
+
+      if (c.unreadCount > 0) {
+        var badge = document.createElement("span");
+        badge.className = "conv-item-badge";
+        badge.textContent = c.unreadCount;
+        header.appendChild(badge);
+      }
+
+      item.appendChild(header);
+
+      if (c.leadNeed) {
+        var need = document.createElement("p");
+        need.className = "conv-item-need";
+        need.textContent = c.leadNeed;
+        item.appendChild(need);
+      }
+
+      if (c.escalationReason) {
+        var reason = document.createElement("p");
+        reason.className = "conv-item-reason";
+        reason.textContent = "Motivo: " + c.escalationReason;
+        item.appendChild(reason);
+      }
+
+      item.addEventListener("click", function () {
+        openConversation(c.id);
+      });
+      list.appendChild(item);
+    });
+  }
+
+  function openConversation(id, opts) {
+    opts = opts || {};
+    currentConversationId = id;
+    if (!opts.silent) {
+      document.getElementById("conv-list").hidden = true;
+      document.getElementById("conv-detail").hidden = false;
+    }
+    convFetch("/" + id).then(function (res) {
+      if (!res.ok) {
+        if (!opts.silent) closeConvDetail();
+        return;
+      }
+      renderConvDetail(res.data);
+    });
+  }
+
+  function renderConvDetail(c) {
+    var body = document.getElementById("conv-detail-body");
+    body.innerHTML = "";
+
+    var header = document.createElement("div");
+    header.className = "conv-detail-header";
+    var title = document.createElement("h3");
+    title.textContent = (c.visitorName || "Visitante") + " · " + c.visitorPhone;
+    header.appendChild(title);
+    var status = document.createElement("span");
+    status.className = "conv-status conv-status-" + c.status;
+    status.textContent = c.status === "pending" ? "Bot" : c.status === "open" ? "Humano" : "Resuelta";
+    header.appendChild(status);
+    body.appendChild(header);
+
+    if (c.leadName || c.leadEmail || c.leadNeed || c.escalationReason) {
+      var lead = document.createElement("div");
+      lead.className = "conv-lead-card";
+      [
+        ["Nombre", c.leadName],
+        ["Email", c.leadEmail],
+        ["Necesidad", c.leadNeed],
+        ["Motivo de escalado", c.escalationReason],
+      ].forEach(function (pair) {
+        if (!pair[1]) return;
+        var row = document.createElement("p");
+        var label = document.createElement("strong");
+        label.textContent = pair[0] + ": ";
+        row.appendChild(label);
+        row.appendChild(document.createTextNode(pair[1]));
+        lead.appendChild(row);
+      });
+      body.appendChild(lead);
+    }
+
+    var actions = document.createElement("div");
+    actions.className = "conv-actions";
+    if (c.status === "pending") {
+      actions.appendChild(makeActionButton("Tomar control", function () {
+        convAction(c.id, "takeover");
+      }));
+    }
+    if (c.status === "open") {
+      actions.appendChild(makeActionButton("Devolver al bot", function () {
+        convAction(c.id, "release");
+      }));
+      actions.appendChild(makeActionButton("Resolver", function () {
+        convAction(c.id, "resolve");
+      }));
+    }
+    if (c.status !== "resolved") {
+      body.appendChild(actions);
+    }
+
+    var transcript = document.createElement("div");
+    transcript.className = "conv-transcript";
+    (c.messages || []).forEach(function (m) {
+      var bubble = document.createElement("div");
+      bubble.className = "conv-bubble conv-bubble-" + m.direction;
+      var text = document.createElement("p");
+      text.textContent = m.content;
+      bubble.appendChild(text);
+      var meta = document.createElement("span");
+      meta.className = "conv-bubble-meta";
+      var when = m.createdAt ? new Date(m.createdAt).toLocaleString("es-ES") : "";
+      meta.textContent = m.direction === "out" && m.status ? when + " · " + m.status : when;
+      bubble.appendChild(meta);
+      transcript.appendChild(bubble);
+    });
+    body.appendChild(transcript);
+
+    var composerWrap = document.createElement("div");
+    composerWrap.className = "conv-composer";
+    if (c.status === "open" && c.window && c.window.withinWindow) {
+      var textarea = document.createElement("textarea");
+      textarea.placeholder = "Escribe una respuesta…";
+      textarea.rows = 2;
+      var sendBtn = makeActionButton("Enviar", function () {
+        var content = textarea.value.trim();
+        if (!content) return;
+        sendBtn.disabled = true;
+        convFetch("/" + c.id + "/messages", {
+          method: "POST",
+          body: JSON.stringify({ content: content }),
+        }).then(function (res) {
+          sendBtn.disabled = false;
+          if (res.ok) {
+            textarea.value = "";
+            openConversation(c.id);
+          } else {
+            alert(res.data.message || "No se pudo enviar el mensaje");
+          }
+        });
+      });
+      composerWrap.appendChild(textarea);
+      composerWrap.appendChild(sendBtn);
+    } else if (c.status === "open") {
+      var lapsed = document.createElement("p");
+      lapsed.className = "conv-window-lapsed";
+      lapsed.textContent =
+        "Han pasado más de 24 horas desde el último mensaje del cliente. WhatsApp no permite responder libremente; espera a que el cliente escriba de nuevo.";
+      composerWrap.appendChild(lapsed);
+    } else {
+      var info = document.createElement("p");
+      info.className = "conv-window-lapsed";
+      info.textContent =
+        c.status === "pending"
+          ? "El bot está gestionando esta conversación. Toma el control para poder responder."
+          : "Conversación resuelta.";
+      composerWrap.appendChild(info);
+    }
+    body.appendChild(composerWrap);
+  }
+
+  function makeActionButton(label, onClick) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "site-btn";
+    btn.textContent = label;
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
+
+  function convAction(id, action) {
+    convFetch("/" + id + "/" + action, { method: "POST" }).then(function (res) {
+      if (res.ok) {
+        openConversation(id);
+        loadConversations({ silent: true });
+      } else {
+        alert(res.data.message || "No se pudo completar la acción");
+      }
+    });
   }
 
   // ── MI SITIO WEB ─────────────────────────────────────────────────

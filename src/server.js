@@ -14,6 +14,7 @@ import productsRouter from "./api/products.js";
 import reservationsRouter from "./api/reservations.js";
 import syncRouter from "./api/sync.js";
 import knowledgeRouter from "./api/knowledge.js";
+import conversationsRouter from "./api/conversations.js";
 import { startLiderpapelScheduler } from "./sync/liderpapel/scheduler.js";
 import { startUploadsCleanupScheduler } from "./media/cleanup-uploads.js";
 
@@ -80,6 +81,7 @@ app.use("/api/products", productsRouter);
 app.use("/api/reservations", reservationsRouter);
 app.use("/api/sync", syncRouter);
 app.use("/api/knowledge", knowledgeRouter);
+app.use("/api/conversations", conversationsRouter);
 
 // Panel & Setup
 app.get("/setup", (req, res) =>
