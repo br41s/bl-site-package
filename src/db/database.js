@@ -37,6 +37,8 @@ export const PUBLIC_CONFIG_KEYS = [
   "ai_model",
   "image_model",
   "whatsapp_number",
+  // Feature flag for the rented WhatsApp AI chatbot add-on; "1" = on, default off.
+  "whatsapp_bot_enabled",
   "legal_name",
   "legal_id",
   "legal_address",
@@ -195,6 +197,7 @@ function seedConfigDefault(key, value) {
 seedConfigDefault("liderpapel_sftp_host", "sftp.liderpapel.com");
 seedConfigDefault("liderpapel_sftp_port", "22");
 seedConfigDefault("liderpapel_sftp_user", "20603");
+seedConfigDefault("whatsapp_bot_enabled", "0");
 
 export function getConfig(key) {
   const row = db.prepare("SELECT value FROM config WHERE key = ?").get(key);
