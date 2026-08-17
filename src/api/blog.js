@@ -70,7 +70,7 @@ router.get("/posts/:slug", (req, res) => {
 
 // POST /api/blog/posts — create
 router.post("/posts", verifyJWT, (req, res) => {
-  const { title, content, excerpt, status = "draft", cta_url, cta_label, image_url, image_alt } = req.body;
+  const { title, content, excerpt, status = "draft", cta_url, cta_label, image_url, image_alt, badges } = req.body;
   if (!title || !content)
     return res.status(400).json({ error: "Título y contenido requeridos" });
   if (cta_url) {
@@ -94,9 +94,9 @@ router.post("/posts", verifyJWT, (req, res) => {
 
   const result = db
     .prepare(
-      "INSERT INTO articles (title, slug, content, excerpt, status, cta_url, cta_label, image_url, image_alt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO articles (title, slug, content, excerpt, status, cta_url, cta_label, image_url, image_alt, badges) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
-    .run(title, slug, content, excerpt || "", status, cta_url || null, cta_label || null, image_url || null, image_alt || null);
+    .run(title, slug, content, excerpt || "", status, cta_url || null, cta_label || null, image_url || null, image_alt || null, badges || null);
 
   const article = db
     .prepare("SELECT * FROM articles WHERE id = ?")
@@ -107,7 +107,7 @@ router.post("/posts", verifyJWT, (req, res) => {
 
 // PUT /api/blog/posts/:id — update
 router.put("/posts/:id", verifyJWT, (req, res) => {
-  const { title, content, excerpt, status, cta_url, cta_label, image_url, image_alt } = req.body;
+  const { title, content, excerpt, status, cta_url, cta_label, image_url, image_alt, badges } = req.body;
   const article = db
     .prepare("SELECT * FROM articles WHERE id = ?")
     .get(req.params.id);
@@ -131,9 +131,10 @@ router.put("/posts/:id", verifyJWT, (req, res) => {
       cta_label = COALESCE(?, cta_label),
       image_url = COALESCE(?, image_url),
       image_alt = COALESCE(?, image_alt),
+      badges = COALESCE(?, badges),
       updated_at = datetime('now')
     WHERE id = ?`,
-  ).run(title, content, excerpt, status, cta_url, cta_label, image_url, image_alt, req.params.id);
+  ).run(title, content, excerpt, status, cta_url, cta_label, image_url, image_alt, badges, req.params.id);
 
   scheduleRebuild();
   res.json({

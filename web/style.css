@@ -416,6 +416,22 @@ body {
   font-size: 0.8rem;
   color: var(--text-muted);
 }
+.site-post-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.site-post-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  background: var(--accent-light);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+}
 .site-post-cta {
   display: inline-block;
   margin-top: 2rem;

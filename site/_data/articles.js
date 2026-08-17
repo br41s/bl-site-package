@@ -1,6 +1,6 @@
 import db, { getConfig } from "../../src/db/database.js";
 import { formatContent } from "../../src/content/format-content.js";
-import { buildArticleLd, buildFaqLd } from "../../src/content/structured-data.js";
+import { buildArticleLd, buildFaqLd, mdToPlain } from "../../src/content/structured-data.js";
 
 export default function () {
   // Minimal site context for the per-post JSON-LD (publisher name, absolute
@@ -41,5 +41,13 @@ export default function () {
     article_ld: buildArticleLd(a, site),
     faq_ld: buildFaqLd(a.content),
     related: rows.filter((r) => r.id !== a.id).slice(0, 3).map(asRelated),
+    badgesList: (a.badges || "").split(",").map((s) => s.trim()).filter(Boolean),
+    // Standard 200wpm estimate off the plain-text word count (same markdown
+    // stripping the FAQ JSON-LD reuses) — derived from content, not authored,
+    // so it can never drift from the actual article.
+    readingTime: Math.max(
+      1,
+      Math.round(mdToPlain(a.content).split(/\s+/).filter(Boolean).length / 200),
+    ),
   }));
 }
