@@ -18,8 +18,15 @@ eleventyComputed:
 {%- endif %}
 <main class="site-page"><div class="site-page-inner site-post-content">
   <a href="/blog" class="site-back-link">← Volver al blog</a>
+  {%- if post.badgesList.length %}
+  <div class="site-post-badges">
+    {%- for b in post.badgesList %}
+    <span class="site-post-badge">{{ b }}</span>
+    {%- endfor %}
+  </div>
+  {%- endif %}
   <h1>{{ post.title }}</h1>
-  <span class="site-post-date">{{ post.dateEs }}</span>
+  <span class="site-post-date">{{ post.dateEs }} · {{ post.readingTime }} min de lectura</span>
   {%- if post.excerpt %}
   <p class="site-post-summary">{{ post.excerpt }}</p>
   {%- endif %}

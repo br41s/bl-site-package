@@ -187,6 +187,10 @@ ensureColumn("articles", "cta_label", "TEXT");
 // TABLE stays the original schema; every later field arrives via ensureColumn.
 ensureColumn("articles", "image_url", "TEXT");
 ensureColumn("articles", "image_alt", "TEXT");
+// Comma-separated free-text topic tags (e.g. "seo, marketing, pymes"),
+// authored by the content agent per post. No fixed taxonomy — clients span
+// too many sectors for one vocabulary to fit.
+ensureColumn("articles", "badges", "TEXT");
 
 // Seeds a config default without triggering scheduleRebuild() (unlike
 // setConfig) and without overwriting a value an admin already set.

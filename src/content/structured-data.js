@@ -52,7 +52,7 @@ function toIso(dt) {
 // Flatten a markdown answer to plain text for a schema.org Answer.text. Keeps
 // link labels, drops the markup — Answer.text is meant to be human-readable
 // prose, and plain text is always valid.
-function mdToPlain(md) {
+export function mdToPlain(md) {
   return String(md || "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/[*_`#>]/g, "")
