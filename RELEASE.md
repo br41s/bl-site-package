@@ -13,10 +13,13 @@ todo cambio pasa primero por pruebas antes de tocar a ningún cliente.
 auto-despliega desde `main`.
 
 **Los entornos de cliente son distintos entre sí.** El primer cliente,
-Shoroban, corre sobre **Plesk/Passenger (Debian)** en `prueba.shoroban.com`
-(staging) → `shoroban.com` (producción). Otros clientes futuros pueden usar un
-hosting, distribución o panel diferentes. No asumas que "cliente" == "Plesk":
-cada uno se verifica por separado.
+Shoroban, corre sobre **Plesk/Passenger (Debian)** en `shoroban.com`
+(producción, dominio principal desde 2026-08-19). `prueba.shoroban.com` fue el
+staging usado para validar antes del corte y ahora solo hace un redirect 301
+a `shoroban.com` — su app Node ya no corre, así que no sirve como entorno de
+pruebas independiente (ver aviso más abajo sobre `fleet/manifest.json`). Otros
+clientes futuros pueden usar un hosting, distribución o panel diferentes. No
+asumas que "cliente" == "Plesk": cada uno se verifica por separado.
 
 ---
 
@@ -53,9 +56,12 @@ cada uno se verifica por separado.
 7. **Solo con pruebas en verde**, despliega en el entorno de cada cliente uno
    a uno, y corre el smoke test contra cada uno:
    ```bash
-   scripts/smoke-test.sh https://prueba.shoroban.com   # staging del cliente
    scripts/smoke-test.sh https://shoroban.com          # producción del cliente
    ```
+   Shoroban ya no tiene un staging propio (`prueba.shoroban.com` quedó
+   retirado, ver arriba) — decidir si se necesita uno nuevo antes del próximo
+   release, o si el smoke test contra la instancia de pruebas compartida
+   (paso 6) es suficiente para este cliente.
 
 Regla de oro: **nunca** se despliega directamente a un cliente sin que el
 cambio haya estado verde en pruebas (Zeabur) primero.
@@ -72,6 +78,14 @@ Una instancia `DESACTUALIZADA` sigue en el `package.json` viejo — no se
 reinició (ver la sección de rebuild/restart más abajo) o el `git pull`/deploy
 no se completó. (`GET /api/site/status` requiere autenticación; el script hace
 el login por ti con la contraseña del panel de cada instancia.)
+
+**Aviso (2026-08-19):** la entrada `shoroban-staging` de `fleet/manifest.json`
+apunta a `https://prueba.shoroban.com`, que ahora solo redirige (301) a
+`shoroban.com` — su Node ya no corre. `fleet-check.mjs` seguirá reportando
+algo para esa entrada (la redirección aterriza en la misma app que
+`shoroban-prod`), pero ya no representa un entorno de staging real. Pendiente
+decidir: borrar la entrada, o levantar un staging nuevo para Shoroban antes
+del próximo release.
 
 ---
 

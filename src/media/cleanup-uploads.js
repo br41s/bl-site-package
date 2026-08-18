@@ -1,10 +1,8 @@
 import cron from "node-cron";
 import { readdir, stat, unlink } from "node:fs/promises";
-import { join, dirname, basename } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, basename } from "node:path";
 import db, { getConfig, PUBLIC_CONFIG_KEYS } from "../db/database.js";
-
-const uploadsDir = join(dirname(fileURLToPath(import.meta.url)), "../../data/uploads");
+import { UPLOADS_DIR as uploadsDir } from "./uploads-dir.js";
 
 // Only content-hash WebP files produced by optimizeToWebp are ever deletion
 // candidates (see src/media/optimize-image.js: 32 hex chars + ".webp"). This

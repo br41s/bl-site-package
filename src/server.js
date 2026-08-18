@@ -1,9 +1,9 @@
 import express from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { mkdirSync } from "node:fs";
 import { getConfig, DB_PATH } from "./db/database.js";
 import { buildOnStartup } from "./build/rebuild.js";
+import { UPLOADS_DIR as uploadsDir } from "./media/uploads-dir.js";
 import authRouter from "./api/auth.js";
 import chatRouter from "./api/chat.js";
 import blogRouter from "./api/blog.js";
@@ -21,9 +21,6 @@ import { startUploadsCleanupScheduler } from "./media/cleanup-uploads.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-const uploadsDir = join(__dirname, "../data/uploads");
-mkdirSync(uploadsDir, { recursive: true });
 
 // No CORS middleware on purpose: site, panel and every /api consumer are
 // served from this same origin, so cross-origin API access stays blocked.
