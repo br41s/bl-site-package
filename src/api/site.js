@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +8,7 @@ import db, { getConfig, setConfig, PUBLIC_CONFIG_KEYS } from "../db/database.js"
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 import { optimizeToWebp } from "../media/optimize-image.js";
+import { UPLOADS_DIR as uploadsDir } from "../media/uploads-dir.js";
 import { getBuildState } from "../build/rebuild.js";
 import { formatContent } from "../content/format-content.js";
 import {
@@ -19,8 +20,6 @@ import {
 } from "../mail/mailer.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const uploadsDir = join(__dirname, "../../data/uploads");
-mkdirSync(uploadsDir, { recursive: true });
 
 // The deployed release, so a monitoring caller can tell an instance running an
 // old build from an up-to-date one. package.json is the only version this repo
