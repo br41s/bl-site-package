@@ -1,4 +1,4 @@
-/* Client-side cart for the reserve-and-pickup catalog. Cart state lives in
+/* Client-side cart for the reserve-without-payment catalog. Cart state lives in
    localStorage (no server session) — checkout POSTs it to /api/reservations,
    which recomputes prices server-side from the current catalog. */
 
@@ -330,7 +330,7 @@ function initCartPage() {
         form.hidden = true;
         successBox.hidden = false;
         successBox.textContent =
-          "Reserva confirmada (nº " + result.data.id + "). Te avisaremos cuando esté lista para recoger en tienda.";
+          "Reserva confirmada (nº " + result.data.id + "). Te avisaremos para confirmar la entrega.";
         successBox.style.color = "var(--text-primary)";
       })
       .catch(function () {

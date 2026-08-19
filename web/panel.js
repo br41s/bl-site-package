@@ -1525,7 +1525,7 @@ document.addEventListener("DOMContentLoaded", function () {
   var RESERVATION_STATUSES = [
     ["pending", "Pendiente"],
     ["confirmed", "Confirmada"],
-    ["ready_for_pickup", "Lista para recoger"],
+    ["ready_for_pickup", "Lista para entregar"],
     ["completed", "Completada"],
     ["cancelled", "Cancelada"],
   ];
