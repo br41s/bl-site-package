@@ -23,7 +23,15 @@ function resolveFeedFiles(names) {
 // deploy) and returns local paths. sftp.fastGet() already streams file-to-
 // file without buffering the whole transfer in memory, so this needed no
 // rewrite for the large real files (up to ~100MB).
-export async function fetchViaSftp({ host, port, username, password, remoteDir = "/" }) {
+// "/download" is Liderpapel's own export path convention (confirmed against
+// Shoroban's real account), not a per-customer setting — same as the host.
+export async function fetchViaSftp({
+  host,
+  port,
+  username,
+  password,
+  remoteDir = process.env.LIDERPAPEL_SFTP_REMOTE_DIR || "/download",
+}) {
   mkdirSync(SCRATCH_DIR, { recursive: true });
   const sftp = new Client();
   try {
