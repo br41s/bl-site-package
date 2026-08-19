@@ -200,7 +200,14 @@ function seedConfigDefault(key, value) {
 
 seedConfigDefault("liderpapel_sftp_host", "sftp.liderpapel.com");
 seedConfigDefault("liderpapel_sftp_port", "22");
-seedConfigDefault("liderpapel_sftp_user", "20603");
+// No account-specific default: sftp_user and supplier_code identify one
+// customer's Liderpapel account and must be set per deployment in the panel
+// (Productos → Sincronización), not baked into the shared package.
+seedConfigDefault("liderpapel_sftp_user", "");
+seedConfigDefault("liderpapel_supplier_code", "");
+// Markup applied to the feed's ex-VAT purchase price (see
+// src/sync/liderpapel/parse.js); a whole-number percentage, e.g. "40" = 40%.
+seedConfigDefault("liderpapel_margin_pct", "40");
 seedConfigDefault("whatsapp_bot_enabled", "0");
 
 export function getConfig(key) {

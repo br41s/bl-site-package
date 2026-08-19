@@ -11,6 +11,8 @@ router.get("/liderpapel/status", requireAuth, (req, res) => {
     host: process.env.LIDERPAPEL_SFTP_HOST || getConfig("liderpapel_sftp_host"),
     port: process.env.LIDERPAPEL_SFTP_PORT || getConfig("liderpapel_sftp_port"),
     user: process.env.LIDERPAPEL_SFTP_USER || getConfig("liderpapel_sftp_user"),
+    supplierCode:
+      process.env.LIDERPAPEL_SUPPLIER_CODE || getConfig("liderpapel_supplier_code"),
     hasPassword: Boolean(process.env.LIDERPAPEL_SFTP_PASS || getConfig("liderpapel_sftp_pass")),
     lastSyncStatus: getConfig("liderpapel_last_sync_status"),
     lastSyncAt: getConfig("liderpapel_last_sync_at"),
@@ -26,6 +28,7 @@ router.post("/liderpapel/config", requireAuth, (req, res) => {
     "liderpapel_sftp_port",
     "liderpapel_sftp_user",
     "liderpapel_sftp_pass",
+    "liderpapel_supplier_code",
     "liderpapel_sync_schedule",
   ];
   for (const key of allowed) {

@@ -49,7 +49,16 @@ export async function runLiderpapelSync() {
       paths = await fetchViaSftp({ host, port, username, password });
     }
 
-    const products = joinLiderpapelCatalog(paths);
+    const supplierCode =
+      process.env.LIDERPAPEL_SUPPLIER_CODE || getConfig("liderpapel_supplier_code");
+    if (!supplierCode) {
+      throw new Error("Código de proveedor de Liderpapel no configurado");
+    }
+    // Explicit null/empty check, not `||` — a deployment can legitimately
+    // set margin to "0" (sell at purchase price), and Number("0") is falsy.
+    const rawMargin = getConfig("liderpapel_margin_pct");
+    const marginPct = (rawMargin != null && rawMargin !== "" ? Number(rawMargin) : 40) / 100;
+    const products = joinLiderpapelCatalog(paths, { supplierCode, marginPct });
     upsertProducts(Array.from(products.values()));
 
     setConfig("liderpapel_last_sync_status", "ok");
