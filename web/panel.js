@@ -1561,9 +1561,11 @@ document.addEventListener("DOMContentLoaded", function () {
         var hostInput = document.getElementById("sync-host-input");
         var portInput = document.getElementById("sync-port-input");
         var userInput = document.getElementById("sync-user-input");
+        var supplierInput = document.getElementById("sync-supplier-input");
         if (!hostInput.dataset.touched) hostInput.value = data.host || "";
         if (!portInput.dataset.touched) portInput.value = data.port || "";
         if (!userInput.dataset.touched) userInput.value = data.user || "";
+        if (!supplierInput.dataset.touched) supplierInput.value = data.supplierCode || "";
         document.getElementById("sync-pass-hint").textContent = data.hasPassword
           ? "Contraseña configurada. Déjala en blanco para no cambiarla."
           : "Todavía no se ha configurado ninguna contraseña.";
@@ -1607,7 +1609,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
 
-    ["sync-host-input", "sync-port-input", "sync-user-input"].forEach(function (id) {
+    ["sync-host-input", "sync-port-input", "sync-user-input", "sync-supplier-input"].forEach(function (id) {
       document.getElementById(id).addEventListener("input", function (e) {
         e.target.dataset.touched = "1";
       });
@@ -1620,6 +1622,7 @@ document.addEventListener("DOMContentLoaded", function () {
         liderpapel_sftp_host: document.getElementById("sync-host-input").value.trim(),
         liderpapel_sftp_port: document.getElementById("sync-port-input").value.trim(),
         liderpapel_sftp_user: document.getElementById("sync-user-input").value.trim(),
+        liderpapel_supplier_code: document.getElementById("sync-supplier-input").value.trim(),
       };
       var pass = document.getElementById("sync-pass-input").value;
       if (pass) payload.liderpapel_sftp_pass = pass;

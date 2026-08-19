@@ -1,23 +1,15 @@
 import { readFileSync } from "node:fs";
-import { parse } from "csv-parse/sync";
 import {
-  CSV_OPTIONS,
-  CATALOG_COLUMNS,
-  PRICES_COLUMNS,
-  STOCKS_COLUMNS,
-  CATEGORIES_COLUMNS,
-  DESCRIPTIONS_COLUMNS,
-  MULTIMEDIA_COLUMNS,
+  DEFAULT_SUPPLIER_CODE,
+  SELLABLE_STATUS,
+  TITLE_DESC_CODE,
+  BODY_DESC_CODE,
+  DEFAULT_MARGIN,
+  DEFAULT_VAT_RATE,
 } from "./mapping.js";
 
-function parseCsvFile(path) {
-  const raw = readFileSync(path, { encoding: CSV_OPTIONS.encoding });
-  return parse(raw, {
-    delimiter: CSV_OPTIONS.delimiter,
-    columns: true,
-    skip_empty_lines: true,
-    trim: true,
-  });
+function readJson(path) {
+  return JSON.parse(readFileSync(path, "utf8"));
 }
 
 function toSlug(text) {
@@ -31,55 +23,106 @@ function toSlug(text) {
     .replace(/-+/g, "-");
 }
 
-function toCents(value) {
-  const n = parseFloat(String(value ?? "").replace(",", "."));
-  return Number.isFinite(n) ? Math.round(n * 100) : 0;
+function supplierProducts(data, supplierCode) {
+  const block = data.root.Products.find((b) => b.supplierCode === supplierCode);
+  return block?.Product || [];
 }
 
-// Joins the 7 CSVs by SKU into normalized product objects, keyed by SKU.
-// RelationedProducts is parsed for plumbing but deliberately not joined in
-// (cross-sell is out of scope for this phase).
-export function joinLiderpapelCatalog(paths) {
-  const catalogRows = parseCsvFile(paths.catalog);
-  const priceRows = parseCsvFile(paths.prices);
-  const stockRows = parseCsvFile(paths.stocks);
-  const categoryRows = parseCsvFile(paths.categories);
-  const descriptionRows = parseCsvFile(paths.descriptions);
-  const multimediaRows = parseCsvFile(paths.multimedia);
+function textValue(descriptions, code) {
+  const entry = descriptions?.find((d) => d.DescCode === code);
+  return entry?.Texts?.Text?.[0]?.Value || "";
+}
 
-  const priceBySku = new Map(priceRows.map((r) => [r[PRICES_COLUMNS.sku], r]));
-  const stockBySku = new Map(stockRows.map((r) => [r[STOCKS_COLUMNS.sku], r]));
-  const descriptionBySku = new Map(
-    descriptionRows.map((r) => [r[DESCRIPTIONS_COLUMNS.sku], r]),
+// Classifications carries every ancestor level (e.g. level 1 "Escolar",
+// level 2 "Agendas escolares") — the deepest one is the most useful category.
+function mostSpecificCategory(classifications) {
+  if (!classifications?.length) return "";
+  const deepest = classifications.reduce((a, b) =>
+    Number(b.Level) > Number(a.Level) ? b : a,
   );
-  const categoryNameByCode = new Map(
-    categoryRows.map((r) => [r[CATEGORIES_COLUMNS.categoryCode], r[CATEGORIES_COLUMNS.categoryName]]),
-  );
-  const imageBySku = new Map();
-  for (const row of multimediaRows) {
-    const sku = row[MULTIMEDIA_COLUMNS.sku];
-    if (sku && !imageBySku.has(sku)) imageBySku.set(sku, row[MULTIMEDIA_COLUMNS.imageUrl]);
+  return deepest.ClassDescription || "";
+}
+
+// Prices is an array of date-ranged blocks; take the first "purchase" entry
+// found (products in this feed only ever carry one active price block).
+function purchasePriceExVat(priceBlocks) {
+  for (const block of priceBlocks || []) {
+    const entry = block.Price?.find((p) => p.priceType === "purchase");
+    const line = entry?.PriceLines?.PriceLine?.[0];
+    if (line) return parseFloat(line.PriceExcTax) || 0;
+  }
+  return 0;
+}
+
+function activeImageUrl(links) {
+  const active = links?.find((l) => l.Active === "1" && l.Url);
+  return active?.Url || null;
+}
+
+function sumStock(stockByWarehouse, id) {
+  let total = 0;
+  for (const qtyById of stockByWarehouse) total += qtyById.get(id) || 0;
+  return total;
+}
+
+// Joins the 5 feed files by numeric product `id` (used as our sku) into
+// normalized product rows. Only Status === "VAL" products are included.
+// RelationedProducts (variant/family grouping — color, alternative, compared,
+// complementary) is not ingested: it's a separate ~200MB feed, unrelated to
+// catalog/price/stock, and not needed for catalog → cart → reservation.
+export function joinLiderpapelCatalog(
+  paths,
+  {
+    supplierCode = DEFAULT_SUPPLIER_CODE,
+    marginPct = DEFAULT_MARGIN,
+    vatRate = DEFAULT_VAT_RATE,
+  } = {},
+) {
+  if (!supplierCode) {
+    throw new Error("Código de proveedor de Liderpapel no configurado");
   }
 
+  const catalog = supplierProducts(readJson(paths.catalog), supplierCode);
+  const descriptions = supplierProducts(readJson(paths.descriptions), supplierCode);
+  const prices = supplierProducts(readJson(paths.prices), supplierCode);
+  const multimedia = supplierProducts(readJson(paths.multimedia), supplierCode);
+
+  const stocksData = readJson(paths.stocks);
+  const warehouseBlock = stocksData.root.Storage.find(
+    (b) => b.supplierCode === supplierCode,
+  );
+  const stockByWarehouse = (warehouseBlock?.Stocks || []).map((wh) => {
+    const qtyById = new Map();
+    for (const p of wh.Products?.Product || []) {
+      qtyById.set(p.id, parseInt(p.Stock?.[0]?.AvailableQuantity, 10) || 0);
+    }
+    return qtyById;
+  });
+
+  const descById = new Map(descriptions.map((p) => [p.id, p.Descriptions?.Description]));
+  const priceById = new Map(prices.map((p) => [p.id, p.Prices]));
+  const imageById = new Map(
+    multimedia.map((p) => [p.id, p.MultimediaLinks?.MultimediaLink]),
+  );
+
   const products = new Map();
-  for (const row of catalogRows) {
-    const sku = row[CATALOG_COLUMNS.sku];
-    if (!sku) continue;
+  for (const p of catalog) {
+    if (p.Status !== SELLABLE_STATUS || !p.id) continue;
+    const id = p.id;
 
-    const priceRow = priceBySku.get(sku);
-    const stockRow = stockBySku.get(sku);
-    const descRow = descriptionBySku.get(sku);
-    const name = row[CATALOG_COLUMNS.name] || sku;
+    const descs = descById.get(id);
+    const name = textValue(descs, TITLE_DESC_CODE) || id;
+    const purchase = purchasePriceExVat(priceById.get(id));
 
-    products.set(sku, {
-      sku,
-      slug: toSlug(`${sku}-${name}`),
+    products.set(id, {
+      sku: id,
+      slug: toSlug(`${id}-${name}`),
       name,
-      description: descRow?.[DESCRIPTIONS_COLUMNS.descriptionHtml] || "",
-      category: categoryNameByCode.get(row[CATALOG_COLUMNS.categoryCode]) || "",
-      price_cents: priceRow ? toCents(priceRow[PRICES_COLUMNS.priceEur]) : 0,
-      stock_qty: stockRow ? parseInt(stockRow[STOCKS_COLUMNS.stockQty], 10) || 0 : 0,
-      image_url: imageBySku.get(sku) || null,
+      description: textValue(descs, BODY_DESC_CODE),
+      category: mostSpecificCategory(p.Classifications?.Classification),
+      price_cents: Math.round(purchase * (1 + marginPct) * (1 + vatRate) * 100),
+      stock_qty: sumStock(stockByWarehouse, id),
+      image_url: activeImageUrl(imageById.get(id)),
       feed_active: 1,
     });
   }

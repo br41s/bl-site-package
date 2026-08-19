@@ -17,8 +17,12 @@ function resolveFeedFiles(names) {
   return resolved;
 }
 
-// Downloads the 7 feed files into data/tmp/liderpapel/ (must live under
-// data/, the only persistent volume on deploy) and returns local paths.
+// Downloads the 5 feed files (real Liderpapel JSON, matched by prefix
+// regardless of extension — see FILENAME_PREFIXES in mapping.js) into
+// data/tmp/liderpapel/ (must live under data/, the only persistent volume on
+// deploy) and returns local paths. sftp.fastGet() already streams file-to-
+// file without buffering the whole transfer in memory, so this needed no
+// rewrite for the large real files (up to ~100MB).
 export async function fetchViaSftp({ host, port, username, password, remoteDir = "/" }) {
   mkdirSync(SCRATCH_DIR, { recursive: true });
   const sftp = new Client();
