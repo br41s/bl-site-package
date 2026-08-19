@@ -1,6 +1,7 @@
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import db from "../../src/db/database.js";
+import { enrichProduct } from "./lib/enrichProduct.js";
 
 marked.setOptions({ breaks: true });
 
@@ -24,14 +25,7 @@ export default function () {
     )
     .all();
   return rows.map((p) => ({
-    ...p,
+    ...enrichProduct(p),
     descriptionHtml: formatDescription(p.description),
-    priceDisplay: (p.price_cents / 100).toLocaleString("es-ES", {
-      style: "currency",
-      currency: "EUR",
-    }),
-    // Only a boolean is exposed publicly — stock_qty is a point-in-time
-    // sync snapshot, not a live/locked count.
-    inStock: p.stock_qty > 0,
   }));
 }

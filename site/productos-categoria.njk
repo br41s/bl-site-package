@@ -1,0 +1,24 @@
+---
+layout: base.njk
+navActive: productos
+pagination:
+  data: productCategoryGroups
+  size: 1
+  alias: group
+permalink: "/productos/categoria/{{ group.slug }}/index.html"
+eleventyComputed:
+  title: "{{ group.category }}"
+  activeCategorySlug: "{{ group.slug }}"
+---
+<main class="site-page"><div class="site-page-inner">
+  <a href="/productos" class="site-back-link">← Volver al catálogo</a>
+  <h1 class="reveal">{{ group.category }}</h1>
+
+  {% include "category-pills.njk" %}
+
+  <div class="product-grid">
+    {%- for product in group.products %}
+    {% include "product-card.njk" %}
+    {%- endfor %}
+  </div>
+</div></main>

@@ -26,11 +26,14 @@ router.get("/", (req, res) => {
     }
   }
 
-  const products = isAuth
-    ? db.prepare("SELECT * FROM products ORDER BY category, name COLLATE NOCASE").all()
-    : db
-        .prepare("SELECT * FROM products WHERE active = 1 ORDER BY category, name COLLATE NOCASE")
-        .all();
+  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const activeClause = isAuth ? "" : "WHERE active = 1";
+  const searchClause = q ? `${activeClause ? "AND" : "WHERE"} (name LIKE @q OR category LIKE @q)` : "";
+  const products = db
+    .prepare(
+      `SELECT * FROM products ${activeClause} ${searchClause} ORDER BY category, name COLLATE NOCASE`,
+    )
+    .all(q ? { q: `%${q}%` } : {});
   res.json({ products });
 });
 

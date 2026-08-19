@@ -1,0 +1,21 @@
+<article class="product-card">
+  <a href="/productos/{{ product.slug }}" class="product-card-image">
+    <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" onerror="this.onerror=null;this.src='/img/placeholder-product.svg';">
+  </a>
+  <div class="product-card-body">
+    <h2><a href="/productos/{{ product.slug }}">{{ product.name }}</a></h2>
+    <span class="product-price">{{ product.priceDisplay }}</span>
+    {%- if not product.inStock %}
+    <span class="product-stock-badge out">Agotado</span>
+    {%- endif %}
+    <button
+      type="button"
+      class="site-btn product-add-btn"
+      data-add-to-cart
+      data-sku="{{ product.sku }}"
+      data-name="{{ product.name }}"
+      data-price-cents="{{ product.price_cents }}"
+      {%- if not product.inStock %} disabled{% endif %}
+    >Añadir</button>
+  </div>
+</article>

@@ -1,0 +1,11 @@
+{%- if productCategoryGroups.length %}
+<details class="category-pills-wrap"{% if productCategoryGroups.length <= 12 %} open{% endif %}>
+  <summary class="category-pills-summary">Categorías ({{ productCategoryGroups.length }})</summary>
+  <div class="category-pills">
+    <a href="/productos/" class="category-pill{% if not activeCategorySlug %} active{% endif %}">Todos</a>
+    {%- for group in productCategoryGroups %}
+    <a href="/productos/categoria/{{ group.slug }}/" class="category-pill{% if group.slug == activeCategorySlug %} active{% endif %}">{{ group.category }}</a>
+    {%- endfor %}
+  </div>
+</details>
+{%- endif %}
