@@ -665,9 +665,28 @@ body {
   text-decoration: none;
   color: var(--text-primary);
 }
+.b2b-banner {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  padding: 0.875rem 1.125rem;
+  margin: 1.5rem 0;
+  font-size: 0.9375rem;
+}
+.b2b-banner a {
+  color: var(--accent);
+  font-weight: 600;
+}
 .product-price {
   font-weight: 600;
   color: var(--accent);
+}
+.price-vat-note {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
 }
 .product-stock-badge.out {
   font-size: 0.75rem;
@@ -773,6 +792,12 @@ body {
 }
 .cart-table tfoot td {
   font-weight: 700;
+}
+.cart-table tfoot .price-vat-note {
+  display: table-cell;
+  font-weight: 400;
+  border-bottom: none;
+  padding-top: 0;
 }
 .cart-item-remove {
   background: none;

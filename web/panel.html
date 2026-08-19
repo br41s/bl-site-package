@@ -1013,6 +1013,52 @@
               </div>
 
               <div class="misite-block">
+                <h3>Protección anti-spam (Turnstile)</h3>
+                <p class="misite-hint">
+                  Añade un captcha de Cloudflare Turnstile al formulario de
+                  contacto. Consigue las claves gratis en
+                  <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" rel="noopener">dash.cloudflare.com</a>.
+                  Deja los campos vacíos para no mostrar el captcha.
+                </p>
+
+                <div class="misite-page-form" style="max-width: 560px">
+                  <div>
+                    <label for="turnstile-sitekey-input">Site key</label>
+                    <input
+                      type="text"
+                      id="turnstile-sitekey-input"
+                      placeholder="0x4AAAAAAA..."
+                    />
+                  </div>
+                  <div>
+                    <label for="turnstile-secretkey-input">Secret key</label>
+                    <input
+                      type="password"
+                      id="turnstile-secretkey-input"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+
+                <div
+                  style="
+                    margin-top: 1.5rem;
+                    display: flex;
+                    gap: 1rem;
+                    align-items: center;
+                  "
+                >
+                  <button class="btn-primary-sm" id="save-turnstile-settings">
+                    Guardar configuración de Turnstile
+                  </button>
+                  <span
+                    id="save-turnstile-msg"
+                    style="font-size: 0.8125rem; display: none"
+                  ></span>
+                </div>
+              </div>
+
+              <div class="misite-block">
                 <h3>Dirección del sitio (SEO)</h3>
                 <p class="misite-hint">
                   La URL pública definitiva de tu web (por ejemplo

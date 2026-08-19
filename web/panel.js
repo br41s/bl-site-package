@@ -832,6 +832,14 @@ document.addEventListener("DOMContentLoaded", function () {
         if (whatsappNumberInput) {
           whatsappNumberInput.value = cfg.whatsapp_number || "";
         }
+        var turnstileSitekeyInput = document.getElementById(
+          "turnstile-sitekey-input",
+        );
+        if (turnstileSitekeyInput) {
+          turnstileSitekeyInput.value = cfg.turnstile_site_key || "";
+        }
+        // The secret key is never sent back by GET /api/site/config (it's
+        // not in PUBLIC_CONFIG_KEYS) — same write-only pattern as smtp-pass.
         var siteUrlInput = document.getElementById("site-url-input");
         if (siteUrlInput) {
           siteUrlInput.value = cfg.site_url || "";
@@ -1122,6 +1130,51 @@ document.addEventListener("DOMContentLoaded", function () {
           msg.style.display = "inline";
           if (data.success) {
             siteConfig = Object.assign(siteConfig, payload);
+          }
+          setTimeout(function () {
+            msg.style.display = "none";
+          }, 2500);
+        } catch {
+          msg.textContent = "Error de conexión";
+          msg.style.color = "var(--error)";
+          msg.style.display = "inline";
+        }
+      });
+
+    // Turnstile settings
+    document
+      .getElementById("save-turnstile-settings")
+      .addEventListener("click", async function () {
+        var msg = document.getElementById("save-turnstile-msg");
+        var secretInput = document.getElementById(
+          "turnstile-secretkey-input",
+        );
+        var payload = {
+          turnstile_site_key: document
+            .getElementById("turnstile-sitekey-input")
+            .value.trim(),
+        };
+        // Only send the secret when the client typed a new one — GET
+        // /api/site/config never returns it, so an empty field here means
+        // "unchanged", not "clear it" (unlike smtp_pass, which is always
+        // sent as-is and so gets wiped on a save with a blank field).
+        if (secretInput.value) {
+          payload.turnstile_secret_key = secretInput.value;
+        }
+
+        try {
+          var res = await fetch("/api/site/texts", {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify(payload),
+          });
+          var data = await res.json();
+          msg.textContent = data.success ? "✓ Guardado" : data.error || "Error";
+          msg.style.color = data.success ? "var(--accent)" : "var(--error)";
+          msg.style.display = "inline";
+          if (data.success) {
+            siteConfig = Object.assign(siteConfig, payload);
+            secretInput.value = "";
           }
           setTimeout(function () {
             msg.style.display = "none";

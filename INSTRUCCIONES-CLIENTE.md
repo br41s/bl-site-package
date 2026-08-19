@@ -33,7 +33,7 @@ Configura los textos de cada página de tu web:
 - **Logo** — sube la imagen de tu empresa (PNG, JPG o SVG, máximo 2MB)
 - **Páginas** — edita el título, subtítulo y descripción de cada página: Inicio, Quiénes somos, Servicios, Contacto y Blog
 - **Modelo IA** — selecciona el modelo de inteligencia artificial para el agente (por defecto: gratuito)
-- **Notificaciones** — configura tu email para recibir avisos cuando alguien te contacte
+- **Notificaciones** — configura tu email para recibir avisos cuando alguien te contacte, y activa el captcha anti-spam del formulario de contacto
 
 ### Blog
 
@@ -60,6 +60,16 @@ Para recibir un aviso cada vez que alguien te envíe un mensaje desde tu web:
 > **Nota para Gmail:** Google requiere una contraseña de aplicación específica.
 > Ve a myaccount.google.com → Seguridad → Verificación en 2 pasos → Contraseñas de aplicación.
 > Genera una nueva y úsala en el campo Contraseña.
+
+### Protección anti-spam del formulario de contacto (Turnstile)
+
+Si recibes mensajes de spam o bots a través del formulario de contacto, puedes activar un captcha gratuito de Cloudflare Turnstile:
+
+1. Crea una cuenta gratuita en [dash.cloudflare.com](https://dash.cloudflare.com/?to=/:account/turnstile) y da de alta tu dominio para conseguir una **Site key** y una **Secret key**
+2. Entra en el panel → **Mi sitio web** → pestaña **Notificaciones** → bloque **Protección anti-spam (Turnstile)**
+3. Pega ambas claves y haz click en **Guardar configuración de Turnstile**
+
+En cuanto guardes, el formulario de contacto de tu web mostrará el captcha automáticamente. Si dejas los campos vacíos, el formulario sigue funcionando igual que hasta ahora, sin captcha.
 
 ### Agente de marketing
 

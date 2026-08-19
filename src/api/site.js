@@ -18,6 +18,7 @@ import {
   sendMail,
   getLastContactEmail,
 } from "../mail/mailer.js";
+import { isTurnstileConfigured } from "../turnstile.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -120,6 +121,8 @@ router.post("/texts", requireAuth, (req, res) => {
     "radius_style",
     "theme_default",
     "hero_density",
+    "turnstile_site_key",
+    "turnstile_secret_key",
   ];
   // Appearance fields are picked from a fixed <select> in the panel, but they
   // still land in this endpoint as free text — and accent_color in particular
@@ -206,6 +209,7 @@ router.get("/status", requireAuth, (req, res) => {
     last_build_ok: build.ok,
     smtp_configured: isSmtpConfigured(settings),
     notify_email_configured: isNotifyEmailConfigured(settings),
+    turnstile_configured: isTurnstileConfigured(),
     posts: {
       published: counts.published || 0,
       draft: counts.draft || 0,

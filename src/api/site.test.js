@@ -101,6 +101,7 @@ describe("GET /api/site/status", () => {
       "notify_email_configured",
       "posts",
       "smtp_configured",
+      "turnstile_configured",
       "version",
     ]);
   });
@@ -109,6 +110,17 @@ describe("GET /api/site/status", () => {
     const body = await (await call("GET", "/api/site/status", { token: TOKEN })).json();
     assert.equal(body.smtp_configured, false);
     assert.equal(body.notify_email_configured, false);
+    assert.equal(body.turnstile_configured, false);
+  });
+
+  test("turnstile_configured flips once both keys are set, without leaking them", async () => {
+    setRawConfig("turnstile_site_key", "1x00000000000000000000AA");
+    setRawConfig("turnstile_secret_key", "1x0000000000000000000000000000000AA");
+    const res = await call("GET", "/api/site/status", { token: TOKEN });
+    const raw = await res.text();
+
+    assert.equal(JSON.parse(raw).turnstile_configured, true);
+    assert.ok(!raw.includes("1x0000000000000000000000000000000AA"));
   });
 
   test("mail booleans flip once configured, without leaking the values", async () => {

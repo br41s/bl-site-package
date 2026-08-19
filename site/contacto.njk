@@ -45,7 +45,13 @@ permalink: "/contacto.html"
     <input type="text" id="contact-name" placeholder="Nombre" required>
     <input type="email" id="contact-email" placeholder="Email" required>
     <textarea rows="5" id="contact-message" placeholder="Mensaje" required></textarea>
+    {%- if site.turnstile_site_key %}
+    <div class="cf-turnstile" id="contact-turnstile" data-sitekey="{{ site.turnstile_site_key }}"></div>
+    {%- endif %}
     <button type="submit" class="site-btn" id="contact-submit">Enviar</button>
     <p class="site-form-msg" id="contact-form-msg" aria-live="polite"></p>
   </form>
 </div></main>
+{%- if site.turnstile_site_key %}
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+{%- endif %}
