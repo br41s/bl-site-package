@@ -855,10 +855,20 @@ document.addEventListener("DOMContentLoaded", function () {
           "biz_price_range",
           "biz_facebook",
           "biz_instagram",
+          "radius_style",
+          "theme_default",
+          "hero_density",
         ].forEach(function (key) {
           var input = document.getElementById(key.replace(/_/g, "-") + "-input");
           if (input) input.value = cfg[key] || "";
         });
+        // <input type="color"> has no "empty" state, so an unset accent_color
+        // is seeded with the CSS default (see web/style.css :root --accent)
+        // instead of the browser's black fallback.
+        var accentColorInput = document.getElementById("accent-color-input");
+        if (accentColorInput) {
+          accentColorInput.value = cfg.accent_color || "#b8391c";
+        }
 
         if (cfg.logo_ext) {
           var img = document.getElementById("logo-preview");
@@ -1162,6 +1172,41 @@ document.addEventListener("DOMContentLoaded", function () {
           legal_email: document
             .getElementById("legal-email-input")
             .value.trim(),
+        };
+
+        try {
+          var res = await fetch("/api/site/texts", {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify(payload),
+          });
+          var data = await res.json();
+          msg.textContent = data.success ? "✓ Guardado" : data.error || "Error";
+          msg.style.color = data.success ? "var(--accent)" : "var(--error)";
+          msg.style.display = "inline";
+          if (data.success) {
+            siteConfig = Object.assign(siteConfig, payload);
+          }
+          setTimeout(function () {
+            msg.style.display = "none";
+          }, 2500);
+        } catch {
+          msg.textContent = "Error de conexión";
+          msg.style.color = "var(--error)";
+          msg.style.display = "inline";
+        }
+      });
+
+    // Appearance settings (accent color, border radius, default theme, hero layout)
+    document
+      .getElementById("save-appearance-btn")
+      .addEventListener("click", async function () {
+        var msg = document.getElementById("save-appearance-msg");
+        var payload = {
+          accent_color: document.getElementById("accent-color-input").value,
+          radius_style: document.getElementById("radius-style-input").value,
+          theme_default: document.getElementById("theme-default-input").value,
+          hero_density: document.getElementById("hero-density-input").value,
         };
 
         try {

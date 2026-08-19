@@ -203,6 +203,52 @@ describe("POST /api/site/notify", () => {
   });
 });
 
+describe("POST /api/site/texts — appearance fields", () => {
+  test("rejects an accent_color that isn't a 6-digit hex", async () => {
+    for (const bad of ["red", "#fff", "#12345g", "javascript:alert(1)", "#fff}</style><script>x"]) {
+      const res = await call("POST", "/api/site/texts", {
+        token: TOKEN,
+        body: { accent_color: bad },
+      });
+      assert.equal(res.status, 400, `expected 400 for ${bad}`);
+    }
+  });
+
+  test("accepts a valid hex accent_color", async () => {
+    const res = await call("POST", "/api/site/texts", {
+      token: TOKEN,
+      body: { accent_color: "#2563eb" },
+    });
+    assert.equal(res.status, 200);
+  });
+
+  test("rejects values outside the fixed option sets", async () => {
+    const cases = [
+      { radius_style: "circle" },
+      { theme_default: "system" },
+      { hero_density: "huge" },
+    ];
+    for (const body of cases) {
+      const res = await call("POST", "/api/site/texts", { token: TOKEN, body });
+      assert.equal(res.status, 400, `expected 400 for ${JSON.stringify(body)}`);
+    }
+  });
+
+  test("accepts each option's allowed values, including empty string to reset", async () => {
+    const cases = [
+      { radius_style: "sharp" },
+      { radius_style: "rounded" },
+      { radius_style: "" },
+      { theme_default: "dark" },
+      { hero_density: "compact" },
+    ];
+    for (const body of cases) {
+      const res = await call("POST", "/api/site/texts", { token: TOKEN, body });
+      assert.equal(res.status, 200, `expected 200 for ${JSON.stringify(body)}`);
+    }
+  });
+});
+
 // Runs last on purpose: the limiter's bucket is process-wide and keyed by
 // route + IP, so exhausting it would 429 every later /notify test.
 describe("POST /api/site/notify — rate limit", () => {
