@@ -869,6 +869,22 @@ body {
 .site-footer-ai a:hover {
   color: var(--text-primary);
 }
+.site-footer-credit {
+  margin-top: 1rem;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+.site-footer-credit p {
+  margin: 0;
+}
+.site-footer-credit a {
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.site-footer-credit a:hover {
+  color: var(--text-primary);
+}
 
 /* WHATSAPP FLOAT */
 .whatsapp-float {
