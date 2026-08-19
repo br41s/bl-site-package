@@ -21,8 +21,9 @@ function setTheme(t) {
 
 function initTheme() {
   var s = localStorage.getItem("bl-theme");
+  var configured = document.documentElement.dataset.themeDefault;
   var d = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  setTheme(s || (d ? "dark" : "light"));
+  setTheme(s || configured || (d ? "dark" : "light"));
   var b = document.getElementById("theme-toggle");
   if (b && !b._ready) {
     b._ready = true;

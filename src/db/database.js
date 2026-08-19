@@ -59,6 +59,12 @@ export const PUBLIC_CONFIG_KEYS = [
   "biz_price_range",
   "biz_facebook",
   "biz_instagram",
+  // Appearance settings, all optional — empty means "use the built-in default"
+  // (see src/api/site.js for the accepted values of each).
+  "accent_color",
+  "radius_style",
+  "theme_default",
+  "hero_density",
 ];
 
 // Absolute, normalized path to the SQLite file. Default lives in ./data/app.db;

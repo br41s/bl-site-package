@@ -632,6 +632,7 @@
               <button class="misite-tab active" data-tab="logo">Logo</button>
               <button class="misite-tab" data-tab="paginas">Páginas</button>
               <button class="misite-tab" data-tab="agente">Modelo IA</button>
+              <button class="misite-tab" data-tab="diseno">Diseño</button>
               <button class="misite-tab" data-tab="notificaciones">
                 Notificaciones
               </button>
@@ -868,6 +869,67 @@
                   </button>
                   <span
                     id="save-image-model-msg"
+                    style="font-size: 0.8125rem; display: none"
+                  ></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB: DISEÑO -->
+            <div class="misite-panel" id="misite-diseno" style="display: none">
+              <div class="misite-block">
+                <h3>Apariencia</h3>
+                <p class="misite-hint">
+                  Deja un campo vacío para usar el estilo por defecto.
+                </p>
+
+                <div class="misite-page-form" style="max-width: 560px">
+                  <div>
+                    <label for="accent-color-input">Color destacado</label>
+                    <input
+                      type="color"
+                      id="accent-color-input"
+                      style="height: 42px; padding: 4px"
+                    />
+                  </div>
+                  <div>
+                    <label for="radius-style-input">Estilo de bordes</label>
+                    <select id="radius-style-input">
+                      <option value="">Por defecto</option>
+                      <option value="sharp">Rectos</option>
+                      <option value="rounded">Redondeados</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="theme-default-input">Tema por defecto</label>
+                    <select id="theme-default-input">
+                      <option value="">Según el dispositivo</option>
+                      <option value="light">Claro</option>
+                      <option value="dark">Oscuro</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="hero-density-input">Portada de inicio</label>
+                    <select id="hero-density-input">
+                      <option value="">A pantalla completa</option>
+                      <option value="compact">Compacta</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div
+                  style="
+                    margin-top: 1.5rem;
+                    display: flex;
+                    gap: 1rem;
+                    align-items: center;
+                  "
+                >
+                  <button class="btn-primary-sm" id="save-appearance-btn">
+                    Guardar apariencia
+                  </button>
+                  <span
+                    id="save-appearance-msg"
                     style="font-size: 0.8125rem; display: none"
                   ></span>
                 </div>

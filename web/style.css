@@ -16,8 +16,8 @@
   --text-muted: #5b6375;
   --border: #dde1e9;
   --accent: #b8391c;
-  --accent-hover: #9c2f16;
-  --accent-light: #faecea;
+  --accent-hover: color-mix(in srgb, var(--accent) 82%, black);
+  --accent-light: color-mix(in srgb, var(--accent) 12%, white);
   --radius: 8px;
   --max-w: 960px;
 }
@@ -30,8 +30,8 @@
   --text-muted: #8a91a4;
   --border: #252d3f;
   --accent: #d94f2e;
-  --accent-hover: #b8391c;
-  --accent-light: #2a1410;
+  --accent-hover: color-mix(in srgb, var(--accent) 82%, white);
+  --accent-light: color-mix(in srgb, var(--accent) 18%, black);
 }
 
 body {
@@ -144,6 +144,10 @@ body {
   display: flex;
   align-items: center;
   padding: 4rem 1.5rem;
+}
+.site-hero-compact {
+  min-height: auto;
+  padding: 6rem 1.5rem;
 }
 .site-hero-inner {
   max-width: var(--max-w);
@@ -867,6 +871,22 @@ body {
   text-underline-offset: 2px;
 }
 .site-footer-ai a:hover {
+  color: var(--text-primary);
+}
+.site-footer-credit {
+  margin-top: 1rem;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+.site-footer-credit p {
+  margin: 0;
+}
+.site-footer-credit a {
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.site-footer-credit a:hover {
   color: var(--text-primary);
 }
 

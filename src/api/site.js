@@ -116,9 +116,30 @@ router.post("/texts", requireAuth, (req, res) => {
     "biz_price_range",
     "biz_facebook",
     "biz_instagram",
+    "accent_color",
+    "radius_style",
+    "theme_default",
+    "hero_density",
   ];
+  // Appearance fields are picked from a fixed <select> in the panel, but they
+  // still land in this endpoint as free text — and accent_color in particular
+  // is interpolated into an unescaped <style> block at render time (see
+  // base.njk), so a bad value there is a CSS/markup injection vector, not just
+  // a cosmetic bug. Reject anything outside the accepted shape instead of
+  // storing it.
+  const APPEARANCE_VALIDATORS = {
+    accent_color: (v) => v === "" || /^#[0-9a-fA-F]{6}$/.test(v),
+    radius_style: (v) => ["", "sharp", "default", "rounded"].includes(v),
+    theme_default: (v) => ["", "light", "dark"].includes(v),
+    hero_density: (v) => ["", "compact", "spacious"].includes(v),
+  };
   for (const key of allowed) {
-    if (req.body[key] !== undefined) setConfig(key, req.body[key]);
+    if (req.body[key] === undefined) continue;
+    const validator = APPEARANCE_VALIDATORS[key];
+    if (validator && !validator(req.body[key])) {
+      return res.status(400).json({ error: `Valor no válido para ${key}` });
+    }
+    setConfig(key, req.body[key]);
   }
   res.json({ success: true });
 });

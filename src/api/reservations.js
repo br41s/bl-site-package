@@ -101,7 +101,7 @@ router.post("/", reservationLimiter, async (req, res) => {
       await transporter.sendMail({
         from: `"${customer_name}" <${smtpUser}>`,
         to: notifyEmail,
-        subject: `Nueva reserva de recogida en tienda #${reservationId}`,
+        subject: `Nueva reserva #${reservationId}`,
         text: `Cliente: ${customer_name}\nEmail: ${customer_email}\nTeléfono: ${customer_phone}\n\nProductos:\n${itemsList}\n\nTotal: ${(total_cents / 100).toFixed(2)} €\n\nNotas: ${notes}`,
       });
     } catch (err) {

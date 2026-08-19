@@ -12,13 +12,14 @@
   "servicios": site.page_servicios_subtitle or (site.page_servicios_desc_html | striptags | truncate(160)),
   "contacto": site.page_contacto_subtitle or (site.page_contacto_desc_html | striptags | truncate(160)),
   "blog": site.page_blog_subtitle or "",
-  "productos": "Reserva online y recoge en tienda"
+  "productos": "Reserva online, sin pago por adelantado"
 } -%}
 {%- set resolvedTitle = title or pageTitleMap[navActive] or site.company_name -%}
 {%- set resolvedDesc = description or pageDescMap[navActive] or "" -%}
 {%- set fullTitle = (resolvedTitle + " | " + site.company_name) if (resolvedTitle and site.company_name and resolvedTitle != site.company_name) else (resolvedTitle or site.company_name) -%}
+{%- set radiusMap = {"sharp": "4px", "rounded": "16px"} -%}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es"{% if site.theme_default %} data-theme-default="{{ site.theme_default }}"{% endif %}>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -54,6 +55,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap">
   <link rel="stylesheet" href="/style.css">
+  {%- if site.accent_color or radiusMap[site.radius_style] %}
+  <style>
+    :root, [data-theme="dark"] {
+      {%- if site.accent_color %} --accent: {{ site.accent_color }};{% endif %}
+      {%- if radiusMap[site.radius_style] %} --radius: {{ radiusMap[site.radius_style] }};{% endif %}
+    }
+  </style>
+  {%- endif %}
 </head>
 <body>
   <div id="site-root">
@@ -109,6 +118,9 @@
          que el aviso viaja en la plantilla y aparece en todas las páginas. #}
       <div class="site-footer-inner site-footer-ai">
         <p>Parte de los contenidos de este sitio se generan con asistencia de inteligencia artificial, con revisión humana antes de publicarse. <a href="/uso-de-ia">Más información</a>.</p>
+      </div>
+      <div class="site-footer-inner site-footer-credit">
+        <p>Creado por <a href="https://biglobster.top/" target="_blank" rel="noopener noreferrer">Biglobster</a></p>
       </div>
     </footer>
     <div id="cookie-banner" role="dialog" aria-live="polite" aria-label="Aviso de cookies">
