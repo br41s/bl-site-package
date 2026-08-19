@@ -19,13 +19,14 @@ function upsertProducts(products) {
     db.prepare("UPDATE products SET feed_active = 0 WHERE feed_active = 1").run();
 
     const stmt = db.prepare(`
-      INSERT INTO products (sku, slug, name, description, category, price_cents, stock_qty, image_url, feed_active, active, last_synced_at)
-      VALUES (@sku, @slug, @name, @description, @category, @price_cents, @stock_qty, @image_url, @feed_active, @feed_active, datetime('now'))
+      INSERT INTO products (sku, slug, name, description, category, search_text, price_cents, stock_qty, image_url, feed_active, active, last_synced_at)
+      VALUES (@sku, @slug, @name, @description, @category, @search_text, @price_cents, @stock_qty, @image_url, @feed_active, @feed_active, datetime('now'))
       ON CONFLICT(sku) DO UPDATE SET
         slug = excluded.slug,
         name = excluded.name,
         description = excluded.description,
         category = excluded.category,
+        search_text = excluded.search_text,
         price_cents = excluded.price_cents,
         stock_qty = excluded.stock_qty,
         image_url = excluded.image_url,
