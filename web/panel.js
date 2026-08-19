@@ -929,6 +929,50 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
 
+    // Page image upload (delegated: the form's innerHTML is replaced on every
+    // page-tab switch, so the listener lives on the static container instead
+    // of the generated file inputs)
+    document
+      .getElementById("misite-page-form")
+      .addEventListener("change", function (e) {
+        var fileInput = e.target.closest(".page-image-input");
+        if (!fileInput) return;
+        var file = fileInput.files[0];
+        if (!file) return;
+        var field = fileInput.closest(".page-image-field");
+        var hidden = field.querySelector('input[type="hidden"][data-key]');
+        var preview = field.querySelector(".page-image-preview");
+        var placeholder = field.querySelector(".page-image-placeholder");
+        var msg = field.querySelector(".page-image-msg");
+        var reader = new FileReader();
+        reader.onload = async function () {
+          try {
+            var res = await fetch("/api/site/upload-image", {
+              method: "POST",
+              headers: authHeaders(),
+              body: JSON.stringify({ image_base64: reader.result }),
+            });
+            var data = await res.json();
+            if (data.success) {
+              hidden.value = data.url;
+              preview.src = data.url + "?t=" + Date.now();
+              preview.style.display = "block";
+              placeholder.style.display = "none";
+              msg.textContent = "✓ Imagen subida — pulsa Guardar cambios";
+              msg.style.color = "var(--accent)";
+            } else {
+              msg.textContent = data.error || "Error al subir";
+              msg.style.color = "var(--error)";
+            }
+          } catch {
+            msg.textContent = "Error de conexión";
+            msg.style.color = "var(--error)";
+          }
+          msg.style.display = "inline";
+        };
+        reader.readAsDataURL(file);
+      });
+
     // Save page texts
     document
       .getElementById("save-page-texts")
@@ -1401,6 +1445,12 @@ document.addEventListener("DOMContentLoaded", function () {
       { key: "page_index_title", label: "Título principal", type: "input" },
       { key: "page_index_subtitle", label: "Subtítulo", type: "input" },
       { key: "page_index_desc", label: "Descripción (héroe, texto corto)", type: "textarea" },
+      {
+        key: "page_index_image",
+        altKey: "page_index_image_alt",
+        label: "Imagen de portada",
+        type: "image",
+      },
       { key: "page_index_body", label: "Contenido de la página (Markdown)", type: "textarea" },
     ],
     quienes: [
@@ -1439,6 +1489,34 @@ document.addEventListener("DOMContentLoaded", function () {
             '" rows="4">' +
             (siteConfig[f.key] || "") +
             "</textarea></div>"
+          );
+        }
+        if (f.type === "image") {
+          var imgUrl = (siteConfig[f.key] || "").replace(/"/g, "&quot;");
+          var altVal = (siteConfig[f.altKey] || "").replace(/"/g, "&quot;");
+          return (
+            '<div class="page-image-field"><label>' +
+            f.label +
+            '</label><div class="logo-upload-area"><div class="logo-placeholder page-image-placeholder"' +
+            (imgUrl ? ' style="display: none"' : "") +
+            '><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>Sin imagen</span></div>' +
+            '<img class="page-image-preview" src="' +
+            imgUrl +
+            '" alt="" style="' +
+            (imgUrl ? "" : "display: none; ") +
+            'max-height: 120px; max-width: 280px; object-fit: cover; border-radius: var(--radius-sm)">' +
+            '</div><label class="site-upload-btn">Subir imagen<input type="file" accept="image/png,image/jpeg,image/webp" class="page-image-input" style="display: none"></label>' +
+            '<input type="hidden" data-key="' +
+            f.key +
+            '" value="' +
+            val +
+            '">' +
+            '<span class="page-image-msg" style="font-size: 0.8125rem; display: none; margin-top: 0.375rem"></span></div>' +
+            "<div><label>Texto alternativo (accesibilidad)</label><input type=\"text\" data-key=\"" +
+            f.altKey +
+            '" value="' +
+            altVal +
+            '"></div>'
           );
         }
         return (
