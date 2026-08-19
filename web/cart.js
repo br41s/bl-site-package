@@ -97,25 +97,118 @@ function initAddToCartButtons() {
   });
 }
 
-function initCategoryFilter() {
-  var pillsWrap = document.getElementById("category-pills");
-  var grid = document.getElementById("product-grid");
-  if (!pillsWrap || !grid) return;
+function buildProductCardEl(p) {
+  var article = document.createElement("article");
+  article.className = "product-card";
 
-  pillsWrap.addEventListener("click", function (e) {
-    var pill = e.target.closest(".category-pill");
-    if (!pill) return;
+  var imgLink = document.createElement("a");
+  imgLink.href = "/productos/" + p.slug;
+  imgLink.className = "product-card-image";
+  var img = document.createElement("img");
+  img.src = p.image_url || "/img/placeholder-product.svg";
+  img.alt = p.name;
+  img.loading = "lazy";
+  img.onerror = function () {
+    img.onerror = null;
+    img.src = "/img/placeholder-product.svg";
+  };
+  imgLink.appendChild(img);
 
-    pillsWrap.querySelectorAll(".category-pill").forEach(function (p) {
-      p.classList.remove("active");
-    });
-    pill.classList.add("active");
+  var body = document.createElement("div");
+  body.className = "product-card-body";
 
-    var category = pill.dataset.category;
-    grid.querySelectorAll(".product-card").forEach(function (card) {
-      var show = category === "all" || card.dataset.category === category;
-      card.style.display = show ? "" : "none";
-    });
+  var h2 = document.createElement("h2");
+  var nameLink = document.createElement("a");
+  nameLink.href = "/productos/" + p.slug;
+  nameLink.textContent = p.name;
+  h2.appendChild(nameLink);
+  body.appendChild(h2);
+
+  var price = document.createElement("span");
+  price.className = "product-price";
+  price.textContent = formatEur(p.price_cents);
+  body.appendChild(price);
+
+  var inStock = p.stock_qty > 0;
+  if (!inStock) {
+    var badge = document.createElement("span");
+    badge.className = "product-stock-badge out";
+    badge.textContent = "Agotado";
+    body.appendChild(badge);
+  }
+
+  var btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "site-btn product-add-btn";
+  btn.setAttribute("data-add-to-cart", "");
+  btn.dataset.sku = p.sku;
+  btn.dataset.name = p.name;
+  btn.dataset.priceCents = String(p.price_cents);
+  btn.disabled = !inStock;
+  btn.textContent = "Añadir";
+  body.appendChild(btn);
+
+  article.appendChild(imgLink);
+  article.appendChild(body);
+  return article;
+}
+
+function initProductSearch() {
+  var input = document.getElementById("product-search-input");
+  var resultsGrid = document.getElementById("product-search-results");
+  var emptyMsg = document.getElementById("product-search-empty");
+  var browse = document.getElementById("product-browse");
+  if (!input || !resultsGrid) return;
+
+  var debounceTimer = null;
+  var currentRequestId = 0;
+
+  function showBrowse() {
+    resultsGrid.hidden = true;
+    resultsGrid.textContent = "";
+    if (emptyMsg) emptyMsg.hidden = true;
+    if (browse) browse.hidden = false;
+  }
+
+  function runSearch(query) {
+    var requestId = ++currentRequestId;
+    fetch("/api/products?q=" + encodeURIComponent(query))
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (data) {
+        if (requestId !== currentRequestId) return; // a newer keystroke already fired
+        var products = data.products || [];
+        resultsGrid.textContent = "";
+        if (browse) browse.hidden = true;
+
+        if (products.length === 0) {
+          resultsGrid.hidden = true;
+          if (emptyMsg) emptyMsg.hidden = false;
+          return;
+        }
+
+        if (emptyMsg) emptyMsg.hidden = true;
+        resultsGrid.hidden = false;
+        products.forEach(function (p) {
+          resultsGrid.appendChild(buildProductCardEl(p));
+        });
+      })
+      .catch(function () {
+        if (requestId !== currentRequestId) return;
+      });
+  }
+
+  input.addEventListener("input", function () {
+    var query = input.value.trim();
+    clearTimeout(debounceTimer);
+    if (query.length < 2) {
+      showBrowse();
+      return;
+    }
+    debounceTimer = setTimeout(function () {
+      runSearch(query);
+    }, 300);
   });
 }
 
@@ -254,6 +347,6 @@ function initCartPage() {
 document.addEventListener("DOMContentLoaded", function () {
   updateCartBadge();
   initAddToCartButtons();
-  initCategoryFilter();
+  initProductSearch();
   initCartPage();
 });

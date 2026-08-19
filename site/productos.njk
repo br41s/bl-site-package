@@ -1,7 +1,13 @@
 ---
 layout: base.njk
 navActive: productos
-permalink: "/productos/index.html"
+pagination:
+  data: productPages
+  size: 1
+  alias: pageProducts
+permalink: "{% if pagination.pageNumber == 0 %}/productos/index.html{% else %}/productos/{{ pagination.pageNumber + 1 }}/index.html{% endif %}"
+eleventyComputed:
+  title: "{% if pagination.pageNumber > 0 %}Catálogo (página {{ pagination.pageNumber + 1 }}){% else %}Catálogo{% endif %}"
 ---
 <main class="site-page"><div class="site-page-inner">
   <h1 class="reveal">Catálogo</h1>
@@ -10,39 +16,32 @@ permalink: "/productos/index.html"
   {%- if not products.length %}
   <p class="site-empty">Aún no hay productos disponibles.</p>
   {%- else %}
-  {%- if productCategories.length %}
-  <div class="category-pills" id="category-pills">
-    <button type="button" class="category-pill active" data-category="all">Todos</button>
-    {%- for category in productCategories %}
-    <button type="button" class="category-pill" data-category="{{ category }}">{{ category }}</button>
-    {%- endfor %}
+  <div class="product-search">
+    <input type="search" id="product-search-input" class="product-search-input" placeholder="Buscar productos…" aria-label="Buscar productos">
   </div>
-  {%- endif %}
+  <div class="product-grid" id="product-search-results" hidden></div>
+  <p class="site-empty" id="product-search-empty" hidden>No se encontraron productos.</p>
 
-  <div class="product-grid" id="product-grid">
-    {%- for product in products %}
-    <article class="product-card" data-category="{{ product.category }}">
-      <a href="/productos/{{ product.slug }}" class="product-card-image">
-        <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" onerror="this.onerror=null;this.src='/img/placeholder-product.svg';">
-      </a>
-      <div class="product-card-body">
-        <h2><a href="/productos/{{ product.slug }}">{{ product.name }}</a></h2>
-        <span class="product-price">{{ product.priceDisplay }}</span>
-        {%- if not product.inStock %}
-        <span class="product-stock-badge out">Agotado</span>
-        {%- endif %}
-        <button
-          type="button"
-          class="site-btn product-add-btn"
-          data-add-to-cart
-          data-sku="{{ product.sku }}"
-          data-name="{{ product.name }}"
-          data-price-cents="{{ product.price_cents }}"
-          {%- if not product.inStock %} disabled{% endif %}
-        >Añadir</button>
-      </div>
-    </article>
-    {%- endfor %}
+  <div id="product-browse">
+    {% include "category-pills.njk" %}
+
+    <div class="product-grid">
+      {%- for product in pageProducts %}
+      {% include "product-card.njk" %}
+      {%- endfor %}
+    </div>
+
+    {%- if pagination.pages.length > 1 %}
+    <nav class="pager" aria-label="Paginación de productos">
+      {%- if pagination.href.previous %}
+      <a href="{{ pagination.href.previous }}" class="pager-link">← Anterior</a>
+      {%- endif %}
+      <span class="pager-status">Página {{ pagination.pageNumber + 1 }} de {{ pagination.pages.length }}</span>
+      {%- if pagination.href.next %}
+      <a href="{{ pagination.href.next }}" class="pager-link">Siguiente →</a>
+      {%- endif %}
+    </nav>
+    {%- endif %}
   </div>
   {%- endif %}
 </div></main>

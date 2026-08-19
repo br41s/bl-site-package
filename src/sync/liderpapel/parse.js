@@ -12,7 +12,7 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
-function toSlug(text) {
+export function toSlug(text) {
   return text
     .toLowerCase()
     .normalize("NFD")
