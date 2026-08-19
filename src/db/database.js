@@ -3,6 +3,7 @@ import { mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve, sep } from "node:path";
 import { scheduleRebuild } from "../build/rebuild.js";
+import { normalizeForSearch } from "../utils/text.js";
 
 // Config keys exposed to the public site (GET /api/site/config and the
 // Eleventy build-time data file, site/_data/site.js, both read this list).
@@ -191,6 +192,29 @@ ensureColumn("articles", "image_alt", "TEXT");
 // authored by the content agent per post. No fixed taxonomy — clients span
 // too many sectors for one vocabulary to fit.
 ensureColumn("articles", "badges", "TEXT");
+// Accent- and case-normalized "name category" used for LIKE search (see
+// GET /api/products in src/api/products.js). Kept in sync by the Liderpapel
+// upsert (the only writer of name/category); backfilled once below for rows
+// that predate this column.
+ensureColumn("products", "search_text", "TEXT NOT NULL DEFAULT ''");
+
+const productsNeedingSearchText = db
+  .prepare("SELECT id, name, category FROM products WHERE search_text = ''")
+  .all();
+if (productsNeedingSearchText.length > 0) {
+  const backfillSearchText = db.prepare(
+    "UPDATE products SET search_text = ? WHERE id = ?",
+  );
+  const backfill = db.transaction((rows) => {
+    for (const row of rows) {
+      backfillSearchText.run(
+        normalizeForSearch(`${row.name} ${row.category || ""}`),
+        row.id,
+      );
+    }
+  });
+  backfill(productsNeedingSearchText);
+}
 
 // Seeds a config default without triggering scheduleRebuild() (unlike
 // setConfig) and without overwriting a value an admin already set.
