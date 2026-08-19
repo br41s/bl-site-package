@@ -122,10 +122,20 @@ function initContactForm() {
   var submitButton = document.getElementById("contact-submit");
   var msg = document.getElementById("contact-form-msg");
 
+  var turnstileWidget = document.getElementById("contact-turnstile");
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     submitButton.disabled = true;
     msg.textContent = "";
+
+    // window.turnstile is only present when contacto.njk rendered the widget
+    // (site.turnstile_site_key configured in the panel); on an instance
+    // without it this stays undefined and the field is simply omitted.
+    var turnstileToken =
+      turnstileWidget && window.turnstile
+        ? window.turnstile.getResponse(turnstileWidget)
+        : undefined;
 
     fetch("/api/contact", {
       method: "POST",
@@ -134,6 +144,7 @@ function initContactForm() {
         name: nameInput.value.trim(),
         email: emailInput.value.trim(),
         message: messageInput.value.trim(),
+        turnstile_token: turnstileToken,
       }),
     })
       .then(function (r) {
@@ -146,6 +157,11 @@ function initContactForm() {
           msg.textContent =
             result.data.error || "No se pudo enviar el mensaje.";
           msg.style.color = "var(--accent)";
+          // A rejected or expired token can't be resubmitted as-is — reset
+          // the widget so the visitor gets a fresh challenge on retry.
+          if (turnstileWidget && window.turnstile) {
+            window.turnstile.reset(turnstileWidget);
+          }
           return;
         }
 
@@ -156,6 +172,9 @@ function initContactForm() {
       .catch(function () {
         msg.textContent = "No se pudo enviar el mensaje.";
         msg.style.color = "var(--accent)";
+        if (turnstileWidget && window.turnstile) {
+          window.turnstile.reset(turnstileWidget);
+        }
       })
       .finally(function () {
         submitButton.disabled = false;

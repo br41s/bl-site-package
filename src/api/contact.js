@@ -9,6 +9,7 @@ import {
   sendMail,
   recordContactEmailResult,
 } from "../mail/mailer.js";
+import { isTurnstileConfigured, verifyTurnstileToken } from "../turnstile.js";
 
 const router = Router();
 
@@ -58,6 +59,20 @@ router.post("/", contactLimiter, async (req, res) => {
     message.length > MAX_MESSAGE
   ) {
     return res.status(400).json({ error: "Uno de los campos es demasiado largo" });
+  }
+
+  // Turnstile is opt-in (see src/turnstile.js): an instance with no keys
+  // configured skips this block entirely, so the form keeps working exactly
+  // as before on a deploy that hasn't set it up.
+  if (isTurnstileConfigured()) {
+    const turnstileToken =
+      typeof req.body.turnstile_token === "string" ? req.body.turnstile_token : "";
+    const verified = await verifyTurnstileToken(turnstileToken);
+    if (!verified) {
+      return res
+        .status(400)
+        .json({ error: "No se pudo verificar que no eres un robot. Inténtalo de nuevo." });
+    }
   }
 
   db.prepare(
