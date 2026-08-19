@@ -6,8 +6,18 @@ import { joinLiderpapelCatalog } from "./parse.js";
 // Inserts new SKUs (seeding active = feed_active) and refreshes every
 // feed-owned column on existing SKUs — but never touches `active`, so an
 // admin's manual on/off toggle in the panel survives future syncs.
+//
+// Resets feed_active to 0 for everything first, inside the same transaction,
+// then the upsert below sets it back to 1 for every SKU actually present in
+// this sync — so a SKU that drops out of the feed entirely (discontinued,
+// no longer VAL) ends up feed_active = 0 without needing a NOT-IN-list over
+// thousands of SKUs. Consumers (site/_data/products.js, src/api/knowledge.js)
+// filter on `active = 1 AND feed_active = 1`, so a stale product stops being
+// sold even though `active` — the admin's own toggle — is left untouched.
 function upsertProducts(products) {
   const upsert = db.transaction((rows) => {
+    db.prepare("UPDATE products SET feed_active = 0 WHERE feed_active = 1").run();
+
     const stmt = db.prepare(`
       INSERT INTO products (sku, slug, name, description, category, price_cents, stock_qty, image_url, feed_active, active, last_synced_at)
       VALUES (@sku, @slug, @name, @description, @category, @price_cents, @stock_qty, @image_url, @feed_active, @feed_active, datetime('now'))
@@ -59,6 +69,11 @@ export async function runLiderpapelSync() {
     const rawMargin = getConfig("liderpapel_margin_pct");
     const marginPct = (rawMargin != null && rawMargin !== "" ? Number(rawMargin) : 40) / 100;
     const products = joinLiderpapelCatalog(paths, { supplierCode, marginPct });
+    if (products.size === 0) {
+      // Almost certainly an upstream feed/parse problem, not reality — never
+      // let an empty sync wipe out feed_active on the whole catalog.
+      throw new Error("El feed de Liderpapel no devolvió ningún producto VAL");
+    }
     upsertProducts(Array.from(products.values()));
 
     setConfig("liderpapel_last_sync_status", "ok");

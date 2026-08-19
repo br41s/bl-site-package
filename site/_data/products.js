@@ -19,7 +19,9 @@ function formatDescription(text) {
 
 export default function () {
   const rows = db
-    .prepare("SELECT * FROM products WHERE active = 1 ORDER BY category, name COLLATE NOCASE")
+    .prepare(
+      "SELECT * FROM products WHERE active = 1 AND feed_active = 1 ORDER BY category, name COLLATE NOCASE",
+    )
     .all();
   return rows.map((p) => ({
     ...p,
