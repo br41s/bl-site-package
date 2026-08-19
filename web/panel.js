@@ -866,7 +866,7 @@ document.addEventListener("DOMContentLoaded", function () {
           img.style.display = "block";
           document.getElementById("logo-placeholder").style.display = "none";
         }
-        if (cfg.ai_model && cfg.ai_model !== "gpt-oss-20b:free") {
+        if (cfg.ai_model && cfg.ai_model !== "openai/gpt-oss-20b:free") {
           var customLabel = document.getElementById("model-custom-label");
           var customInput = document.getElementById("model-custom");
           customInput.value = cfg.ai_model;
