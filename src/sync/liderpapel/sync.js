@@ -54,7 +54,10 @@ export async function runLiderpapelSync() {
     if (!supplierCode) {
       throw new Error("Código de proveedor de Liderpapel no configurado");
     }
-    const marginPct = (Number(getConfig("liderpapel_margin_pct")) || 40) / 100;
+    // Explicit null/empty check, not `||` — a deployment can legitimately
+    // set margin to "0" (sell at purchase price), and Number("0") is falsy.
+    const rawMargin = getConfig("liderpapel_margin_pct");
+    const marginPct = (rawMargin != null && rawMargin !== "" ? Number(rawMargin) : 40) / 100;
     const products = joinLiderpapelCatalog(paths, { supplierCode, marginPct });
     upsertProducts(Array.from(products.values()));
 
