@@ -30,7 +30,7 @@ build, so hand edits are silently overwritten.
 Per-customer setup runs through `/setup` and the panel, not through code. Company name,
 sector, OpenRouter key and panel password are wizard inputs.
 
-The agent defaults to `gpt-oss-20b:free` on OpenRouter — free, so a customer deploy costs
+The agent defaults to `openai/gpt-oss-20b:free` on OpenRouter — free, so a customer deploy costs
 nothing to run. **Do not change the default to a paid model** without an explicit
 decision; it changes the unit economics of every deployment.
 

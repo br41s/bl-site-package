@@ -108,7 +108,7 @@ Contacta con tu proveedor de servicio para que restablezca la contraseña desde 
 Actualmente la contraseña se cambia desde el servidor. Próximamente estará disponible desde el propio panel.
 
 **¿El agente de IA tiene coste?**
-El modelo por defecto (`gpt-oss-20b:free`) es gratuito. Si seleccionas un modelo de pago en la sección Modelo IA, los costes corresponden a tu cuenta de OpenRouter.
+El modelo por defecto (`openai/gpt-oss-20b:free`) es gratuito. Si seleccionas un modelo de pago en la sección Modelo IA, los costes corresponden a tu cuenta de OpenRouter.
 
 **¿Qué pasa si el agente dice "El agente está saturado"?**
 El modelo gratuito tiene límites de uso por minuto. Espera unos segundos y vuelve a intentarlo — el sistema prueba automáticamente con modelos alternativos gratuitos.

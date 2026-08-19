@@ -12,7 +12,7 @@ Paquete web deployable para clientes SMB. Incluye sitio público, panel de gesti
 
 ## Modelo por defecto
 
-El agente usa por defecto `gpt-oss-20b:free`, un modelo gratuito de OpenRouter que cubre el flujo base.
+El agente usa por defecto `openai/gpt-oss-20b:free`, un modelo gratuito de OpenRouter que cubre el flujo base.
 
 ## Páginas incluidas
 
@@ -60,7 +60,7 @@ Modelo de campos por página:
 | `PANEL_PASSWORD`      | Contraseña del panel, opcional si se guarda desde el wizard | vacío              |
 | `JWT_SECRET`          | Secret JWT, opcional si se genera desde el wizard           | vacío              |
 | `OPENROUTER_API_KEY`  | API key de OpenRouter                                       | vacío              |
-| `CONTENT_AGENT_MODEL` | Modelo OpenRouter para el agente de contenidos              | `gpt-oss-20b:free` |
+| `CONTENT_AGENT_MODEL` | Modelo OpenRouter para el agente de contenidos              | `openai/gpt-oss-20b:free` |
 | `CLIENT_COMPANY_NAME` | Nombre de la empresa                                        | vacío              |
 | `CLIENT_SECTOR`       | Sector de la empresa                                        | vacío              |
 | `DB_PATH`             | Ruta a la base de datos SQLite                              | `./data/app.db`    |

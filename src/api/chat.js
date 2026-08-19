@@ -13,13 +13,13 @@ const chatLimiter = rateLimit({
   max: 30,
   message: "Demasiadas peticiones al asistente, espera un momento.",
 });
-const DEFAULT_AGENT_MODEL = "gpt-oss-20b:free";
+const DEFAULT_AGENT_MODEL = "openai/gpt-oss-20b:free";
 const FREE_MODELS_FALLBACK = [
-  "gpt-oss-20b:free",
-  "meta-llama/llama-3.1-8b-instruct:free",
-  "mistralai/mistral-7b-instruct:free",
-  "google/gemma-3-4b-it:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
+  "openai/gpt-oss-20b:free",
+  "nvidia/nemotron-nano-9b-v2:free",
+  "liquid/lfm-2.5-2.6b:free",
+  "google/gemma-4-26b-a4b-it:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
 ];
 const ALLOWED_TEXT_KEYS = new Set([
   "page_index_title",
@@ -211,6 +211,12 @@ Si no hay acción que aplicar, no incluyas el bloque ACTION.`,
           },
           ...messages,
         ],
+        // Without a cap, OpenRouter reserves against the model's max output
+        // (up to 65536 tokens on some models) for every request, which can
+        // 402 ("This request requires more credits...") against a key's
+        // monthly limit long before the key is actually out of credit. A
+        // blog article + short <ACTION> block never needs more than this.
+        max_tokens: 4096,
       }),
     },
   );
