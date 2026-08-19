@@ -8,3 +8,8 @@ _site/
 
 # Session planning files (Claude worktrees)
 tasks/
+
+# Real per-customer feed data pulled from a distributor's sFTP account (e.g.
+# Liderpapel) for adapter development/verification. Customer-specific and can
+# be large (100MB+ per file) — never belongs in this shared template repo.
+fixtures/liderpapel/
