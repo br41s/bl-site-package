@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import db, { getConfig } from "../db/database.js";
 import { requireAuth } from "../middleware/auth.js";
 import { scheduleRebuild } from "../build/rebuild.js";
+import { normalizeForSearch } from "../utils/text.js";
 
 const router = Router();
 
@@ -28,12 +29,12 @@ router.get("/", (req, res) => {
 
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
   const activeClause = isAuth ? "" : "WHERE active = 1";
-  const searchClause = q ? `${activeClause ? "AND" : "WHERE"} (name LIKE @q OR category LIKE @q)` : "";
+  const searchClause = q ? `${activeClause ? "AND" : "WHERE"} search_text LIKE @q` : "";
   const products = db
     .prepare(
       `SELECT * FROM products ${activeClause} ${searchClause} ORDER BY category, name COLLATE NOCASE`,
     )
-    .all(q ? { q: `%${q}%` } : {});
+    .all(q ? { q: `%${normalizeForSearch(q)}%` } : {});
   res.json({ products });
 });
 

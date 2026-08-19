@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { normalizeForSearch } from "../../utils/text.js";
 import {
   DEFAULT_SUPPLIER_CODE,
   SELLABLE_STATUS,
@@ -112,6 +113,7 @@ export function joinLiderpapelCatalog(
 
     const descs = descById.get(id);
     const name = textValue(descs, TITLE_DESC_CODE) || id;
+    const category = mostSpecificCategory(p.Classifications?.Classification);
     const purchase = purchasePriceExVat(priceById.get(id));
 
     products.set(id, {
@@ -119,7 +121,8 @@ export function joinLiderpapelCatalog(
       slug: toSlug(`${id}-${name}`),
       name,
       description: textValue(descs, BODY_DESC_CODE),
-      category: mostSpecificCategory(p.Classifications?.Classification),
+      category,
+      search_text: normalizeForSearch(`${name} ${category}`),
       price_cents: Math.round(purchase * (1 + marginPct) * (1 + vatRate) * 100),
       stock_qty: sumStock(stockByWarehouse, id),
       image_url: activeImageUrl(imageById.get(id)),
