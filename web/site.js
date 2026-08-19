@@ -182,10 +182,29 @@ function initContactForm() {
   });
 }
 
+// Product gallery: the thumbnails swap the main image in place. No lightbox
+// and no preloading — every image is already in the page, so switching is a
+// src change the browser has usually cached.
+function initProductGallery() {
+  var main = document.getElementById("product-main-image");
+  var thumbs = document.querySelectorAll("[data-gallery-src]");
+  if (!main || !thumbs.length) return;
+
+  thumbs.forEach(function (thumb) {
+    thumb.addEventListener("click", function () {
+      main.src = thumb.getAttribute("data-gallery-src");
+      thumbs.forEach(function (other) {
+        other.classList.toggle("is-active", other === thumb);
+      });
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   initTheme();
   initCookieConsent();
   initReveals();
   initContactForm();
   initTOC();
+  initProductGallery();
 });

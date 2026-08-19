@@ -11,26 +11,25 @@ eleventyComputed:
   title: "{{ product.name }}"
   description: "{{ (product.descriptionHtml | striptags | truncate(160)) if product.descriptionHtml else product.name }}"
 ---
-{%- set productLd = {
-  "@context": "https://schema.org",
-  "@type": "Product",
-  "name": product.name,
-  "description": product.name,
-  "image": product.image_url,
-  "sku": product.sku,
-  "offers": {
-    "@type": "Offer",
-    "priceCurrency": "EUR",
-    "price": (product.price_cents / 100),
-    "availability": ("https://schema.org/InStock" if product.inStock else "https://schema.org/OutOfStock")
-  }
-} -%}
-<script type="application/ld+json">{{ productLd | dump | safe }}</script>
+<script type="application/ld+json">{{ product.jsonLd | dump | safe }}</script>
 <main class="site-page"><div class="site-page-inner site-post-content">
   <a href="/productos" class="site-back-link">← Volver al catálogo</a>
   <div class="product-detail">
     <div class="product-detail-image">
-      <img src="{{ product.image_url }}" alt="{{ product.name }}" onerror="this.onerror=null;this.src='/img/placeholder-product.svg';">
+      <div class="product-detail-image-main">
+        <img src="{{ product.image_url }}" alt="{{ product.name }}" id="product-main-image" onerror="this.onerror=null;this.src='/img/placeholder-product.svg';">
+      </div>
+      {%- if product.gallery.length > 1 %}
+      <ul class="product-gallery">
+        {%- for image in product.gallery %}
+        <li>
+          <button type="button" class="product-gallery-thumb{% if loop.first %} is-active{% endif %}" data-gallery-src="{{ image }}">
+            <img src="{{ image }}" alt="{{ product.name }} — imagen {{ loop.index }}" loading="lazy" onerror="this.onerror=null;this.closest('li').hidden=true;">
+          </button>
+        </li>
+        {%- endfor %}
+      </ul>
+      {%- endif %}
     </div>
     <div class="product-detail-info">
       <h1>{{ product.name }}</h1>
@@ -43,6 +42,42 @@ eleventyComputed:
       {%- endif %}
       {%- if product.descriptionHtml %}
       <div class="site-post-body product-detail-desc">{{ product.descriptionHtml | safe }}</div>
+      {%- endif %}
+      {%- if product.features.length %}
+      <table class="product-specs">
+        <caption>Características</caption>
+        <tbody>
+          {%- for feature in product.features %}
+          <tr><th scope="row">{{ feature.name }}</th><td>{{ feature.value }}</td></tr>
+          {%- endfor %}
+          {%- if product.dimensions_mm %}
+          <tr><th scope="row">Medidas</th><td>{{ product.dimensions_mm }} mm</td></tr>
+          {%- endif %}
+          {%- if product.weight_grams %}
+          <tr><th scope="row">Peso</th><td>{{ product.weightDisplay }}</td></tr>
+          {%- endif %}
+          {%- if product.gtin %}
+          <tr><th scope="row">EAN</th><td>{{ product.gtin }}</td></tr>
+          {%- endif %}
+          {%- if product.mpn %}
+          <tr><th scope="row">Referencia del fabricante</th><td>{{ product.mpn }}</td></tr>
+          {%- endif %}
+        </tbody>
+      </table>
+      {%- endif %}
+      {%- if product.documents.length %}
+      <div class="product-documents">
+        <h2>Documentación</h2>
+        <ul>
+          {%- for document in product.documents %}
+          <li>
+            <a href="{{ document.url }}" target="_blank" rel="noopener nofollow">
+              <span class="product-document-type">PDF</span>{{ document.title }}
+            </a>
+          </li>
+          {%- endfor %}
+        </ul>
+      </div>
       {%- endif %}
       <div class="product-detail-actions">
         <input type="number" min="1" value="1" class="product-qty-input" id="product-qty" {%- if not product.inStock %} disabled{% endif %}>

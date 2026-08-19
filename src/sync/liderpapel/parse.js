@@ -5,6 +5,12 @@ import {
   SELLABLE_STATUS,
   TITLE_DESC_CODE,
   BODY_DESC_CODE,
+  FALLBACK_BODY_DESC_CODE,
+  GTIN_REF_TYPE,
+  MPN_REF_TYPE,
+  BRAND_FEATURE_NAME,
+  IMAGE_MML_TYPE,
+  DOCUMENT_MML_TYPE,
   DEFAULT_MARGIN,
   DEFAULT_VAT_RATE,
 } from "./mapping.js";
@@ -55,9 +61,47 @@ function purchasePriceExVat(priceBlocks) {
   return 0;
 }
 
-function activeImageUrl(links) {
-  const active = links?.find((l) => l.Active === "1" && l.Url);
-  return active?.Url || null;
+// Every active link of one mmlType, in feed order, deduplicated. The feed
+// repeats URLs across entries and pads products out with inactive rows
+// carrying an empty Url, so both have to be filtered before use.
+function activeLinks(links, mmlType) {
+  const urls = [];
+  for (const link of links || []) {
+    if (link.mmlType !== mmlType || link.Active !== "1" || !link.Url) continue;
+    if (!urls.includes(link.Url)) urls.push(link.Url);
+  }
+  return urls;
+}
+
+// Filename Liderpapel gave the document, used as its label. Falls back to the
+// last path segment, since Name is empty on some entries.
+function documentLabel(link, url) {
+  return link?.Name || decodeURIComponent(url.split("/").pop() || "");
+}
+
+function referenceCode(references, refType) {
+  const match = references?.find((r) => r.RefType === refType && r.RefCode);
+  return match?.RefCode || null;
+}
+
+// Features are already per-language (lang: "es-ES") and carry a display name
+// and value, so they need no taxonomy lookup to be presentable. Order is
+// preserved: the feed lists them roughly by importance.
+function featureList(features) {
+  return (features || [])
+    .filter((f) => f.FeatureName && f.Value)
+    .map((f) => ({ name: f.FeatureName, value: f.Value }));
+}
+
+// Weight is grams as a decimal string ("205.0"); dimensions are the packed
+// unit's "LxWxH" in mm. Both live under AdditionalInfo rather than Features.
+function logisticFacts(additionalInfo) {
+  const weight = parseFloat(additionalInfo?.Weight);
+  return {
+    weight_grams: Number.isFinite(weight) && weight > 0 ? weight : null,
+    dimensions_mm:
+      additionalInfo?.LogisticInfo?.LogisticUMV?.Dimensions || null,
+  };
 }
 
 function sumStock(stockByWarehouse, id) {
@@ -67,7 +111,13 @@ function sumStock(stockByWarehouse, id) {
 }
 
 // Joins the 5 feed files by numeric product `id` (used as our sku) into
-// normalized product rows. Only Status === "VAL" products are included.
+// normalized products. Only Status === "VAL" products are included.
+//
+// Each map entry is `{ row, features, images, documents }`: `row` is the
+// `products` table record, the rest are child collections the sync replaces
+// wholesale. They come from data the feed has always carried and the adapter
+// previously dropped — Features (the spec table), References (EAN and
+// manufacturer reference), and the DOC/IMG multimedia links.
 // RelationedProducts (variant/family grouping — color, alternative, compared,
 // complementary) is not ingested: it's a separate ~200MB feed, unrelated to
 // catalog/price/stock, and not needed for catalog → cart → reservation.
@@ -102,7 +152,7 @@ export function joinLiderpapelCatalog(
 
   const descById = new Map(descriptions.map((p) => [p.id, p.Descriptions?.Description]));
   const priceById = new Map(prices.map((p) => [p.id, p.Prices]));
-  const imageById = new Map(
+  const linksById = new Map(
     multimedia.map((p) => [p.id, p.MultimediaLinks?.MultimediaLink]),
   );
 
@@ -116,17 +166,45 @@ export function joinLiderpapelCatalog(
     const category = mostSpecificCategory(p.Classifications?.Classification);
     const purchase = purchasePriceExVat(priceById.get(id));
 
+    const links = linksById.get(id);
+    const images = activeLinks(links, IMAGE_MML_TYPE);
+    const references = p.References?.Reference;
+    const features = featureList(p.Features?.Feature);
+    const { weight_grams, dimensions_mm } = logisticFacts(p.AdditionalInfo);
+
     products.set(id, {
-      sku: id,
-      slug: toSlug(`${id}-${name}`),
-      name,
-      description: textValue(descs, BODY_DESC_CODE),
-      category,
-      search_text: normalizeForSearch(`${name} ${category}`),
-      price_cents: Math.round(purchase * (1 + marginPct) * (1 + vatRate) * 100),
-      stock_qty: sumStock(stockByWarehouse, id),
-      image_url: activeImageUrl(imageById.get(id)),
-      feed_active: 1,
+      row: {
+        sku: id,
+        slug: toSlug(`${id}-${name}`),
+        name,
+        description:
+          textValue(descs, BODY_DESC_CODE) ||
+          textValue(descs, FALLBACK_BODY_DESC_CODE),
+        category,
+        search_text: normalizeForSearch(`${name} ${category}`),
+        price_cents: Math.round(purchase * (1 + marginPct) * (1 + vatRate) * 100),
+        stock_qty: sumStock(stockByWarehouse, id),
+        image_url: images[0] || null,
+        gtin: referenceCode(references, GTIN_REF_TYPE),
+        mpn: referenceCode(references, MPN_REF_TYPE),
+        brand:
+          features.find((f) => f.name === BRAND_FEATURE_NAME)?.value || null,
+        weight_grams,
+        dimensions_mm,
+        feed_active: 1,
+      },
+      // Child rows, replaced wholesale on every sync (see sync.js). Kept off
+      // `row` so the products upsert can spread it straight into the
+      // statement's named parameters.
+      features,
+      images,
+      documents: activeLinks(links, DOCUMENT_MML_TYPE).map((url) => ({
+        url,
+        label: documentLabel(
+          links?.find((l) => l.Url === url),
+          url,
+        ),
+      })),
     });
   }
 
