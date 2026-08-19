@@ -14,7 +14,17 @@ import { joinLiderpapelCatalog } from "./parse.js";
 // thousands of SKUs. Consumers (site/_data/products.js, src/api/knowledge.js)
 // filter on `active = 1 AND feed_active = 1`, so a stale product stops being
 // sold even though `active` — the admin's own toggle — is left untouched.
-function upsertProducts(products) {
+//
+// `slug` is likewise never updated. It derives from the feed title, so
+// refreshing it meant that any wording change Liderpapel made to INT_VTE
+// silently moved the product's public URL and left the old one 404ing —
+// invisible while these pages had no content, a recurring loss of indexed
+// URLs once they do. The slug is set once, on insert, and pinned from then
+// on; `name` keeps tracking the feed underneath it.
+//
+// Exported for sync.test.js: the alternative is driving runLiderpapelSync,
+// which pulls in the sFTP client and kicks off a real Eleventy rebuild.
+export function upsertProducts(products) {
   const upsert = db.transaction((rows) => {
     db.prepare("UPDATE products SET feed_active = 0 WHERE feed_active = 1").run();
 
@@ -22,7 +32,6 @@ function upsertProducts(products) {
       INSERT INTO products (sku, slug, name, description, category, search_text, price_cents, stock_qty, image_url, feed_active, active, last_synced_at)
       VALUES (@sku, @slug, @name, @description, @category, @search_text, @price_cents, @stock_qty, @image_url, @feed_active, @feed_active, datetime('now'))
       ON CONFLICT(sku) DO UPDATE SET
-        slug = excluded.slug,
         name = excluded.name,
         description = excluded.description,
         category = excluded.category,
