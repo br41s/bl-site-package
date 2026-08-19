@@ -5,10 +5,11 @@ pagination:
   data: products
   size: 1
   alias: product
+  addAllPagesToCollections: true
 permalink: "/productos/{{ product.slug }}.html"
 eleventyComputed:
   title: "{{ product.name }}"
-  description: "{{ product.name }}"
+  description: "{{ (product.descriptionHtml | striptags | truncate(160)) if product.descriptionHtml else product.name }}"
 ---
 {%- set productLd = {
   "@context": "https://schema.org",

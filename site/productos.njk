@@ -5,6 +5,7 @@ pagination:
   data: productPages
   size: 1
   alias: pageProducts
+  addAllPagesToCollections: true
 permalink: "{% if pagination.pageNumber == 0 %}/productos/index.html{% else %}/productos/{{ pagination.pageNumber + 1 }}/index.html{% endif %}"
 eleventyComputed:
   title: "{% if pagination.pageNumber > 0 %}Catálogo (página {{ pagination.pageNumber + 1 }}){% else %}Catálogo{% endif %}"
