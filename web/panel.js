@@ -1774,7 +1774,16 @@ document.addEventListener("DOMContentLoaded", function () {
         } else {
           var when = new Date(data.lastSyncAt).toLocaleString("es-ES");
           if (data.lastSyncStatus === "error") {
-            statusLine.textContent = "Último intento (" + when + "): error — " + data.lastSyncMessage;
+            // lastSyncAt is only written when a sync succeeds — the error path
+            // never updates it. Labelling it "último intento" therefore put the
+            // last GOOD timestamp next to the word "error", which read as though
+            // the failure happened then. It sent a real investigation down the
+            // wrong path for hours; say what the field actually is.
+            statusLine.textContent =
+              "La última sincronización falló: " +
+              data.lastSyncMessage +
+              " · Última correcta: " +
+              when;
           } else {
             statusLine.textContent =
               "Última sincronización (" + when + "): " + (data.lastSyncCount || 0) + " productos.";
@@ -1784,13 +1793,113 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch(function () {});
   }
 
+  // Fichas tab: how much of the catalogue we own, and which owned sheets have
+  // had the ground move under them since they were written.
+  function loadFichas() {
+    fetch("/api/product-content/queue?limit=50", { headers: authHeaders() })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (data) {
+        // Coerced rather than trusted: these land in innerHTML, and a number
+        // is the only thing that belongs there. Everything else on this tab
+        // goes through escapeHtml.
+        var t = data.totals || {};
+        var owned = Number(t.owned) || 0;
+        var total = Number(t.products) || 0;
+        var drifted = Number(t.drifted) || 0;
+        document.getElementById("fichas-totals").innerHTML =
+          '<div class="fichas-stat"><strong>' +
+          owned +
+          "</strong><span>fichas propias</span></div>" +
+          '<div class="fichas-stat"><strong>' +
+          total +
+          "</strong><span>productos en la web</span></div>" +
+          '<div class="fichas-stat' +
+          (drifted ? " is-warning" : "") +
+          '"><strong>' +
+          drifted +
+          "</strong><span>necesitan revisión</span></div>";
+
+        var list = document.getElementById("fichas-review-list");
+        if (!data.review || data.review.length === 0) {
+          list.innerHTML =
+            '<p class="misite-hint">Ninguna ficha necesita revisión ahora mismo.</p>';
+          return;
+        }
+
+        list.innerHTML = data.review
+          .map(function (r) {
+            return (
+              '<div class="fichas-review-item">' +
+              '<div class="fichas-review-title"><strong>' +
+              escapeHtml(r.display_name || r.name) +
+              "</strong>" +
+              '<span class="misite-hint">' +
+              escapeHtml(r.sku) +
+              " · " +
+              // Locale-formatted so it reads "709,31 €" and keeps the amount
+              // and the symbol on one line, rather than "709.31" / "€".
+              (r.price_cents / 100).toLocaleString("es-ES", {
+                style: "currency",
+                currency: "EUR",
+              }) +
+              "</span></div>" +
+              '<div class="fichas-review-actions">' +
+              '<button class="btn-secondary-sm" data-ficha-ack="' +
+              escapeHtml(r.sku) +
+              '">Sigue siendo correcta</button>' +
+              '<button class="btn-secondary-sm" data-ficha-unpublish="' +
+              escapeHtml(r.sku) +
+              '">Volver al texto de Liderpapel</button>' +
+              "</div></div>"
+            );
+          })
+          .join("");
+      })
+      .catch(function () {});
+  }
+
+  // One delegated listener rather than one per row, so it survives every
+  // re-render of the list without stacking duplicates.
+  function initFichasActions() {
+    document.getElementById("fichas-review-list").addEventListener("click", function (e) {
+      var ack = e.target.getAttribute("data-ficha-ack");
+      var unpublish = e.target.getAttribute("data-ficha-unpublish");
+      if (!ack && !unpublish) return;
+
+      var sku = ack || unpublish;
+      var action = ack ? "acknowledge" : "unpublish";
+      if (
+        action === "unpublish" &&
+        !confirm("La web volverá a mostrar el texto de Liderpapel. Tu versión se conserva.")
+      ) {
+        return;
+      }
+
+      e.target.disabled = true;
+      fetch("/api/product-content/" + encodeURIComponent(sku) + "/" + action, {
+        method: "POST",
+        headers: authHeaders(),
+      })
+        .then(function () {
+          loadFichas();
+        })
+        .catch(function () {
+          e.target.disabled = false;
+        });
+    });
+  }
+
   function initProductos() {
     loadProductsList();
     loadReservationsList();
     loadSyncStatus();
+    loadFichas();
 
     if (productosInitialized) return;
     productosInitialized = true;
+    initFichasActions();
 
     document.querySelectorAll(".productos-tab").forEach(function (tab) {
       tab.addEventListener("click", function () {

@@ -189,6 +189,41 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_product_images_sku ON product_images(sku);
   CREATE INDEX IF NOT EXISTS idx_product_documents_sku ON product_documents(sku);
 
+  -- Product copy we own, as opposed to the copy Liderpapel supplies.
+  --
+  -- The whole point of the table is that the sync never writes to it. Once a
+  -- product sheet is better than what the feed gives us, it lives here and the
+  -- daily sync stops being able to overwrite it — while price, stock and the
+  -- physical facts on the products row keep tracking the feed as before. That
+  -- split is also what makes the content survive a change of distributor.
+  --
+  -- gtin/mpn are denormalized copies, not a join key: the live join is by
+  -- sku, but sku is the *distributor's* identifier and would be meaningless
+  -- after a provider switch. Snapshotting the barcode at authoring time is what
+  -- lets a future migration re-match this copy to the same physical product.
+  --
+  -- source_fingerprint is the value of products.source_fingerprint at the
+  -- moment this copy was written. Comparing the two is how we notice Liderpapel
+  -- changed the underlying facts after we took ownership (see the drift query in
+  -- site/_data/products.js). Freezing without that comparison would mean
+  -- publishing a spec the manufacturer has since corrected, forever.
+  CREATE TABLE IF NOT EXISTS product_content (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sku TEXT UNIQUE NOT NULL,
+    display_name TEXT,
+    description_md TEXT,
+    status TEXT NOT NULL DEFAULT 'enriched',
+    tier TEXT,
+    gtin TEXT,
+    mpn TEXT,
+    evidence TEXT,
+    source_fingerprint TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_product_content_status ON product_content(status);
+
   CREATE TABLE IF NOT EXISTS reservations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_name TEXT NOT NULL,
@@ -245,6 +280,12 @@ ensureColumn("products", "search_text", "TEXT NOT NULL DEFAULT ''");
 // source. brand/weight/dimensions are shown on the product page and in its
 // schema.org markup. Feed-owned: never edit these by hand, the next sync
 // wins.
+// Hash of the feed-supplied facts a product sheet is written from — title,
+// description, specs, identifiers, documents. Refreshed on every sync. On its
+// own it means nothing; its job is to be compared against the copy stored in
+// product_content when we took ownership, which is how a frozen sheet notices
+// the distributor corrected something underneath it.
+ensureColumn("products", "source_fingerprint", "TEXT");
 ensureColumn("products", "gtin", "TEXT");
 ensureColumn("products", "mpn", "TEXT");
 ensureColumn("products", "brand", "TEXT");

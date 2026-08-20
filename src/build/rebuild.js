@@ -55,7 +55,17 @@ async function runBuild() {
 
 // Debounces rapid successive content writes (e.g. multiple setConfig calls
 // in one panel save, or a chat-agent edit session) into a single rebuild.
+//
+// BL_SITE_DISABLE_REBUILD=1 turns it off, for tests only. Any test that
+// exercises a write path lands here 400ms later and kicks off a real Eleventy
+// build of the whole catalogue — see the workaround comment in
+// src/api/site.test.js, which avoids setConfig() for exactly this reason. That
+// dodge stops working once the thing under test is a publish, so the escape
+// hatch is explicit rather than another test tiptoeing around it. Never set
+// this in a deployment: the site would stop regenerating and every panel edit
+// would silently fail to appear.
 export function scheduleRebuild(delayMs = 400) {
+  if (process.env.BL_SITE_DISABLE_REBUILD === "1") return;
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     debounceTimer = null;
