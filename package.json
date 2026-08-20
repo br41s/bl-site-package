@@ -1,8 +1,11 @@
 {
   "name": "bl-site-package",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "main": "src/server.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
