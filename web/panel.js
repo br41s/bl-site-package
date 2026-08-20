@@ -106,6 +106,27 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
+  // ── MOBILE MENU ──────────────────────────────────────────────────
+  var menuToggle = document.getElementById("panel-menu-toggle");
+  var panelSidebar = document.getElementById("panel-sidebar");
+
+  function closeMobileMenu() {
+    panelSidebar.classList.remove("open");
+    menuToggle.setAttribute("aria-expanded", "false");
+  }
+
+  menuToggle.addEventListener("click", function () {
+    var isOpen = panelSidebar.classList.toggle("open");
+    menuToggle.setAttribute("aria-expanded", String(isOpen));
+  });
+
+  document.addEventListener("click", function (e) {
+    if (!panelSidebar.classList.contains("open")) return;
+    if (panelSidebar.contains(e.target) || menuToggle.contains(e.target))
+      return;
+    closeMobileMenu();
+  });
+
   // ── NAVIGATION ───────────────────────────────────────────────────
   var navItems = document.querySelectorAll(".sidebar-nav-item");
   var sections = document.querySelectorAll(".panel-section");
@@ -134,6 +155,7 @@ document.addEventListener("DOMContentLoaded", function () {
   navItems.forEach(function (btn) {
     btn.addEventListener("click", function () {
       showSection(btn.dataset.section);
+      closeMobileMenu();
     });
   });
 
