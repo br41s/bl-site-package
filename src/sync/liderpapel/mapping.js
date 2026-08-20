@@ -33,6 +33,40 @@ export const FILENAME_PREFIXES = {
 export const TITLE_DESC_CODE = "INT_VTE"; // "Título del producto"
 export const BODY_DESC_CODE = "AMPL_DESC"; // "Descripción ampliada"
 
+// Liderpapel only writes AMPL_DESC for part of the catalog — on Shoroban's
+// feed, 11,274 of 14,487 sellable products. The rest arrived with an empty
+// description, which is what made their product pages look unpopulated.
+// TXT_RCOM ("Descriptivo") is a shorter but genuine factual descriptor and
+// covers most of the remainder, so it stands in when AMPL_DESC is absent.
+// It is plain text where AMPL_DESC is HTML; both render fine through the
+// site's marked + sanitize-html pipeline (see site/_data/products.js).
+export const FALLBACK_BODY_DESC_CODE = "TXT_RCOM";
+
+// INT_RCOM_CRT ("Título de Oferta") is deliberately NOT used as a fallback:
+// it holds promo boilerplate aimed at Liderpapel's own storefront, e.g.
+// "Pinche sobre la descripción para visualizar los detalles de la Oferta del
+// mes", which is meaningless on a customer's site.
+
+// RefType values used as product identifiers (spec §2.6, p.25).
+//
+// EAN_UNIDAD is the barcode of the sellable unit. The other EAN_* types
+// describe packaging levels — EAN_UMV is the minimum sales unit, EAN_EMBALAJE
+// the outer box, EAN_PALET the pallet — so matching a product on those would
+// pair a single unit against a box of 100. Only EAN_UNIDAD identifies the
+// thing the customer receives.
+export const GTIN_REF_TYPE = "EAN_UNIDAD";
+export const MPN_REF_TYPE = "FABRICANTE_GENERICO"; // manufacturer's own reference
+
+// Feature carrying the brand. Promoted out of the generic feature list
+// because it is the one attribute needed on its own (schema.org/brand).
+export const BRAND_FEATURE_NAME = "Marca";
+
+// MultimediaLinks mmlType values. VIDEO also exists in the feed but every
+// entry on Shoroban's account is inactive with an empty Url, so it is not
+// ingested.
+export const IMAGE_MML_TYPE = "IMG";
+export const DOCUMENT_MML_TYPE = "DOC"; // datasheets, safety sheets, manuals
+
 // price_cents = round(purchase_price_ex_vat * (1 + margin) * (1 + vat) * 100)
 // Margin is configurable via the "liderpapel_margin_pct" config key (see
 // database.js); this is only the fallback default. VAT is fixed at the feed's

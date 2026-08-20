@@ -158,6 +158,37 @@ db.exec(`
     updated_at TEXT DEFAULT (datetime('now'))
   );
 
+  -- Feed-owned child rows for a product: the spec table, the gallery, and
+  -- the manufacturer documents. All three are replaced wholesale on every
+  -- Liderpapel sync (see src/sync/liderpapel/sync.js), so nothing here is
+  -- editable and nothing here survives a SKU leaving the feed.
+  CREATE TABLE IF NOT EXISTS product_features (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sku TEXT NOT NULL,
+    name TEXT NOT NULL,
+    value TEXT NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS product_images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sku TEXT NOT NULL,
+    url TEXT NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS product_documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sku TEXT NOT NULL,
+    url TEXT NOT NULL,
+    label TEXT NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_product_features_sku ON product_features(sku);
+  CREATE INDEX IF NOT EXISTS idx_product_images_sku ON product_images(sku);
+  CREATE INDEX IF NOT EXISTS idx_product_documents_sku ON product_documents(sku);
+
   CREATE TABLE IF NOT EXISTS reservations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_name TEXT NOT NULL,
@@ -207,6 +238,18 @@ ensureColumn("articles", "badges", "TEXT");
 // upsert (the only writer of name/category); backfilled once below for rows
 // that predate this column.
 ensureColumn("products", "search_text", "TEXT NOT NULL DEFAULT ''");
+// Product identifiers and physical facts, all straight from the feed's
+// Catalog file. gtin is the EAN of the sellable unit and mpn the
+// manufacturer's own reference — together they identify the exact article,
+// which is what makes it safe to match this product against an external
+// source. brand/weight/dimensions are shown on the product page and in its
+// schema.org markup. Feed-owned: never edit these by hand, the next sync
+// wins.
+ensureColumn("products", "gtin", "TEXT");
+ensureColumn("products", "mpn", "TEXT");
+ensureColumn("products", "brand", "TEXT");
+ensureColumn("products", "weight_grams", "REAL");
+ensureColumn("products", "dimensions_mm", "TEXT");
 
 const productsNeedingSearchText = db
   .prepare("SELECT id, name, category FROM products WHERE search_text = ''")
