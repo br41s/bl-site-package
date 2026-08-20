@@ -93,6 +93,26 @@
       <header id="panel-topbar" class="panel-topbar">
         <div class="panel-topbar__inner">
           <div class="panel-topbar__left">
+            <button
+              id="panel-menu-toggle"
+              class="panel-menu-toggle"
+              aria-label="Menú"
+              aria-expanded="false"
+              aria-controls="panel-sidebar"
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 64 64"
@@ -133,7 +153,8 @@
               href="/"
               target="_blank"
               rel="noopener noreferrer"
-              >Ver sitio web <span aria-hidden="true">↗</span></a
+              ><span class="panel-site-link__label">Ver sitio web</span>
+              <span aria-hidden="true">↗</span></a
             >
             <button
               id="panel-logout"
