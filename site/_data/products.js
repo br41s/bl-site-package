@@ -105,10 +105,37 @@ export default function () {
     "SELECT sku, url, label FROM product_documents ORDER BY sku, position",
   );
 
+  // Our own copy, where one exists. `owned` is the published state; anything
+  // else is still a draft and the feed keeps rendering, so a half-written sheet
+  // can never reach a visitor.
+  const content = new Map(
+    db
+      .prepare("SELECT * FROM product_content WHERE status = 'owned'")
+      .all()
+      .map((row) => [row.sku, row]),
+  );
+
   return rows.map((p) => {
+    const own = content.get(p.sku);
+
+    // Ours wins over the feed's, field by field — an owned sheet may have a
+    // rewritten title and no body yet, or the reverse. `slug` is never among
+    // them: it is pinned at first publication so the URL survives both the
+    // feed's retitles and ours (see sync.js).
+    const merged = {
+      ...p,
+      name: own?.display_name || p.name,
+      feedName: p.name,
+      owned: Boolean(own),
+      // The facts moved after we took ownership. Derived by comparison rather
+      // than stored as a flag, so it cannot go stale or disagree with reality:
+      // one of the two hashes always changes at the moment the truth does.
+      sourceDrifted: Boolean(own) && own.source_fingerprint !== p.source_fingerprint,
+    };
+
     const enriched = {
-      ...enrichProduct(p),
-      descriptionHtml: formatDescription(p.description),
+      ...enrichProduct(merged),
+      descriptionHtml: formatDescription(own?.description_md || p.description),
       weightDisplay: weightDisplay(p.weight_grams),
       features: features.get(p.sku) || [],
       gallery: (images.get(p.sku) || []).map((i) => i.url),

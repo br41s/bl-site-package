@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { normalizeForSearch } from "../../utils/text.js";
 import {
   DEFAULT_SUPPLIER_CODE,
@@ -77,6 +78,30 @@ function activeLinks(links, mmlType) {
 // last path segment, since Name is empty on some entries.
 function documentLabel(link, url) {
   return link?.Name || decodeURIComponent(url.split("/").pop() || "");
+}
+
+// Fingerprint of the feed facts a product sheet is written from.
+//
+// Deliberately excludes price and stock. Those change constantly and change
+// nothing about the prose — including them would flag every owned sheet for
+// review within a day and the signal would be worthless. What it does cover is
+// everything an author would have read: the title, the description, the spec
+// list, the identifiers and which documents exist.
+//
+// Values are joined with separators that cannot appear in the parts, so
+// {name: "a", value: "b|c"} and {name: "a|b", value: "c"} cannot collide into
+// the same hash.
+function sourceFingerprint({ name, description, features, documents, gtin, mpn, brand }) {
+  const canonical = [
+    name || "",
+    description || "",
+    features.map((f) => `${f.name}\u0000${f.value}`).join("\u0001"),
+    documents.map((d) => d.url).join("\u0001"),
+    gtin || "",
+    mpn || "",
+    brand || "",
+  ].join("\u0002");
+  return createHash("sha256").update(canonical, "utf8").digest("hex").slice(0, 32);
 }
 
 function referenceCode(references, refType) {
@@ -172,25 +197,44 @@ export function joinLiderpapelCatalog(
     const features = featureList(p.Features?.Feature);
     const { weight_grams, dimensions_mm } = logisticFacts(p.AdditionalInfo);
 
+    const description =
+      textValue(descs, BODY_DESC_CODE) || textValue(descs, FALLBACK_BODY_DESC_CODE);
+    const gtin = referenceCode(references, GTIN_REF_TYPE);
+    const mpn = referenceCode(references, MPN_REF_TYPE);
+    const brand = features.find((f) => f.name === BRAND_FEATURE_NAME)?.value || null;
+    const documents = activeLinks(links, DOCUMENT_MML_TYPE).map((url) => ({
+      url,
+      label: documentLabel(
+        links?.find((l) => l.Url === url),
+        url,
+      ),
+    }));
+
     products.set(id, {
       row: {
         sku: id,
         slug: toSlug(`${id}-${name}`),
         name,
-        description:
-          textValue(descs, BODY_DESC_CODE) ||
-          textValue(descs, FALLBACK_BODY_DESC_CODE),
+        description,
         category,
         search_text: normalizeForSearch(`${name} ${category}`),
         price_cents: Math.round(purchase * (1 + marginPct) * (1 + vatRate) * 100),
         stock_qty: sumStock(stockByWarehouse, id),
         image_url: images[0] || null,
-        gtin: referenceCode(references, GTIN_REF_TYPE),
-        mpn: referenceCode(references, MPN_REF_TYPE),
-        brand:
-          features.find((f) => f.name === BRAND_FEATURE_NAME)?.value || null,
+        gtin,
+        mpn,
+        brand,
         weight_grams,
         dimensions_mm,
+        source_fingerprint: sourceFingerprint({
+          name,
+          description,
+          features,
+          documents,
+          gtin,
+          mpn,
+          brand,
+        }),
         feed_active: 1,
       },
       // Child rows, replaced wholesale on every sync (see sync.js). Kept off
@@ -198,13 +242,7 @@ export function joinLiderpapelCatalog(
       // statement's named parameters.
       features,
       images,
-      documents: activeLinks(links, DOCUMENT_MML_TYPE).map((url) => ({
-        url,
-        label: documentLabel(
-          links?.find((l) => l.Url === url),
-          url,
-        ),
-      })),
+      documents,
     });
   }
 

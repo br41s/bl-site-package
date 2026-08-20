@@ -29,6 +29,12 @@ import { joinLiderpapelCatalog } from "./parse.js";
 // URLs once they do. The slug is set once, on insert, and pinned from then
 // on; `name` keeps tracking the feed underneath it.
 //
+// `product_content` is not touched here at all, by design. That table holds the
+// copy we own once a sheet is better than the feed's, and the daily sync being
+// unable to reach it is the entire mechanism — see the table comment in
+// database.js. What the sync does supply is `source_fingerprint`, the hash that
+// lets an owned sheet notice the facts underneath it moved.
+//
 // Exported for sync.test.js: the alternative is driving runLiderpapelSync,
 // which pulls in the sFTP client and kicks off a real Eleventy rebuild.
 export function upsertProducts(products) {
@@ -36,8 +42,8 @@ export function upsertProducts(products) {
     db.prepare("UPDATE products SET feed_active = 0 WHERE feed_active = 1").run();
 
     const stmt = db.prepare(`
-      INSERT INTO products (sku, slug, name, description, category, search_text, price_cents, stock_qty, image_url, gtin, mpn, brand, weight_grams, dimensions_mm, feed_active, active, last_synced_at)
-      VALUES (@sku, @slug, @name, @description, @category, @search_text, @price_cents, @stock_qty, @image_url, @gtin, @mpn, @brand, @weight_grams, @dimensions_mm, @feed_active, @feed_active, datetime('now'))
+      INSERT INTO products (sku, slug, name, description, category, search_text, price_cents, stock_qty, image_url, gtin, mpn, brand, weight_grams, dimensions_mm, source_fingerprint, feed_active, active, last_synced_at)
+      VALUES (@sku, @slug, @name, @description, @category, @search_text, @price_cents, @stock_qty, @image_url, @gtin, @mpn, @brand, @weight_grams, @dimensions_mm, @source_fingerprint, @feed_active, @feed_active, datetime('now'))
       ON CONFLICT(sku) DO UPDATE SET
         name = excluded.name,
         description = excluded.description,
@@ -51,6 +57,7 @@ export function upsertProducts(products) {
         brand = excluded.brand,
         weight_grams = excluded.weight_grams,
         dimensions_mm = excluded.dimensions_mm,
+        source_fingerprint = excluded.source_fingerprint,
         feed_active = excluded.feed_active,
         last_synced_at = excluded.last_synced_at,
         updated_at = datetime('now')

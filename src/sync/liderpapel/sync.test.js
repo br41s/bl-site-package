@@ -31,6 +31,7 @@ function entry(sku, overrides = {}) {
       brand: null,
       weight_grams: null,
       dimensions_mm: null,
+      source_fingerprint: "fingerprint-por-defecto",
       feed_active: 1,
       ...row,
     },
@@ -152,6 +153,40 @@ describe("upsertProducts", () => {
       1,
       "its child rows are left in place, not orphaned or deleted",
     );
+  });
+
+  test("cannot touch the copy we own, however the feed changes", () => {
+    // The load-bearing guarantee of the ownership model. If a sync can reach
+    // product_content, everything downstream — the freeze, the review queue,
+    // surviving a change of distributor — is worthless.
+    upsertProducts([entry("78276")]);
+    db.prepare(
+      `INSERT INTO product_content (sku, display_name, description_md, status, source_fingerprint)
+       VALUES (?, ?, ?, 'owned', ?)`,
+    ).run("78276", "Nuestro título", "Nuestro cuerpo.", "fingerprint-por-defecto");
+
+    // A sync where Liderpapel rewrote everything we based that copy on.
+    upsertProducts([
+      entry("78276", {
+        name: "Título nuevo del feed",
+        description: "Cuerpo nuevo del feed.",
+        source_fingerprint: "fingerprint-distinto",
+        features: [{ name: "Marca", value: "Otra" }],
+      }),
+    ]);
+
+    const own = db.prepare("SELECT * FROM product_content WHERE sku = ?").get("78276");
+    assert.equal(own.display_name, "Nuestro título");
+    assert.equal(own.description_md, "Nuestro cuerpo.");
+    assert.equal(own.status, "owned");
+    assert.equal(
+      own.source_fingerprint,
+      "fingerprint-por-defecto",
+      "the snapshot must stay put — it is what makes the drift visible",
+    );
+
+    const product = db.prepare("SELECT * FROM products WHERE sku = ?").get("78276");
+    assert.equal(product.source_fingerprint, "fingerprint-distinto", "the feed's side moves");
   });
 
   test("still never overrides the admin's own active toggle", () => {
