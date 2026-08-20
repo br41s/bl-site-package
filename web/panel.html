@@ -1374,6 +1374,7 @@
             <div class="productos-tabs">
               <button class="productos-tab active" data-productos-tab="catalogo">Catálogo</button>
               <button class="productos-tab" data-productos-tab="pedidos">Pedidos</button>
+              <button class="productos-tab" data-productos-tab="fichas">Fichas</button>
               <button class="productos-tab" data-productos-tab="sync">Sincronización</button>
             </div>
 
@@ -1385,6 +1386,28 @@
             <!-- TAB: PEDIDOS -->
             <div class="productos-tab-panel" id="productos-pedidos">
               <div id="productos-reservations-list"></div>
+            </div>
+
+            <!-- TAB: FICHAS -->
+            <div class="productos-tab-panel" id="productos-fichas">
+              <div class="misite-block">
+                <h3>Fichas de producto</h3>
+                <p class="misite-hint">
+                  Las fichas que hemos reescrito son tuyas: la sincronización diaria
+                  con Liderpapel ya no las sobrescribe. El precio y el stock siguen
+                  actualizándose con normalidad.
+                </p>
+                <div id="fichas-totals" class="fichas-totals"></div>
+              </div>
+
+              <div class="misite-block">
+                <h3>Necesitan revisión</h3>
+                <p class="misite-hint">
+                  Liderpapel ha cambiado los datos en los que se basaba una ficha
+                  publicada. Tu texto sigue en la web: revísalo y decide.
+                </p>
+                <div id="fichas-review-list"></div>
+              </div>
             </div>
 
             <!-- TAB: SINCRONIZACIÓN -->
@@ -1925,6 +1948,66 @@
       }
       .productos-tab-panel.active {
         display: block;
+      }
+      /* FICHAS tab */
+      .fichas-totals {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+      .fichas-stat {
+        flex: 1 1 8rem;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 0.875rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+      }
+      .fichas-stat strong {
+        font-size: 1.5rem;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+      }
+      .fichas-stat span {
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+      }
+      .fichas-stat.is-warning {
+        border-color: var(--accent);
+      }
+      .fichas-stat.is-warning strong {
+        color: var(--accent);
+      }
+      .fichas-review-item {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 0.875rem 1rem;
+        margin-bottom: 0.75rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .fichas-review-title {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        min-width: 0;
+      }
+      .fichas-review-title strong {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        line-height: 1.35;
+      }
+      .fichas-review-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
       }
       .product-row,
       .reservation-card {

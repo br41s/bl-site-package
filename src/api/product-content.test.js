@@ -233,6 +233,72 @@ describe("product content API — what the caller is not allowed to assert", () 
   });
 });
 
+describe("product content API — clearing a review", () => {
+  async function publishThenDrift() {
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: VALID });
+    db.prepare("UPDATE products SET source_fingerprint = 'movido' WHERE sku = '100'").run();
+  }
+
+  test("acknowledging takes the sheet out of the queue", async () => {
+    await publishThenDrift();
+
+    const res = await api("/100/acknowledge", { method: "POST" });
+    assert.equal(res.status, 200);
+
+    const { review, totals } = await (await api("/queue")).json();
+    assert.deepEqual(review, []);
+    assert.equal(totals.drifted, 0);
+  });
+
+  test("acknowledging does not touch a word of the copy", async () => {
+    await publishThenDrift();
+    await api("/100/acknowledge", { method: "POST" });
+
+    const row = db.prepare("SELECT * FROM product_content WHERE sku = '100'").get();
+    assert.equal(row.display_name, VALID.display_name);
+    assert.equal(row.description_md, VALID.description_md);
+    assert.equal(row.status, "owned");
+  });
+
+  test("a sheet flagged again after a second change", async () => {
+    // Acknowledging settles the change it was shown, not every future one.
+    await publishThenDrift();
+    await api("/100/acknowledge", { method: "POST" });
+    db.prepare("UPDATE products SET source_fingerprint = 'movido-otra-vez' WHERE sku = '100'").run();
+
+    const { totals } = await (await api("/queue")).json();
+    assert.equal(totals.drifted, 1);
+  });
+
+  test("unpublishing hands the page back to the feed but keeps our work", async () => {
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: VALID });
+
+    const res = await api("/100/unpublish", { method: "POST" });
+    assert.equal(res.status, 200);
+
+    const row = db.prepare("SELECT * FROM product_content WHERE sku = '100'").get();
+    assert.equal(row.status, "enriched");
+    assert.equal(row.display_name, VALID.display_name, "the copy is kept, not discarded");
+  });
+
+  test("neither action invents a published sheet where there is none", async () => {
+    seedProduct("100");
+
+    assert.equal((await api("/100/acknowledge", { method: "POST" })).status, 404);
+    assert.equal((await api("/100/unpublish", { method: "POST" })).status, 404);
+  });
+
+  test("both actions need authentication", async () => {
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: VALID });
+
+    assert.equal((await api("/100/acknowledge", { method: "POST", auth: false })).status, 401);
+    assert.equal((await api("/100/unpublish", { method: "POST", auth: false })).status, 401);
+  });
+});
+
 describe("product content API — the work queue", () => {
   test("offers unwritten products, dearest first", async () => {
     seedProduct("cheap", { price_cents: 100 });

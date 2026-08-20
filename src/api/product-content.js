@@ -227,4 +227,50 @@ router.put("/:sku", requireAuth, (req, res) => {
   });
 });
 
+// POST /api/product-content/:sku/acknowledge — "I looked, our copy still holds".
+//
+// Re-snapshots the fingerprint without touching a word of the copy, which is
+// what takes a sheet back out of the review queue. Without this the queue is
+// write-only: the first time Liderpapel edits anything the sheet is flagged
+// forever, the count climbs, and the signal stops meaning anything.
+//
+// It is the one action that can hide a real change, so it is a deliberate
+// click and never something the sync or the agent does on its own.
+router.post("/:sku/acknowledge", requireAuth, (req, res) => {
+  const product = db.prepare("SELECT * FROM products WHERE sku = ?").get(req.params.sku);
+  if (!product) return res.status(404).json({ error: "Producto no encontrado" });
+
+  const updated = db
+    .prepare(
+      `UPDATE product_content SET source_fingerprint = ?, updated_at = datetime('now')
+        WHERE sku = ? AND status = 'owned'`,
+    )
+    .run(product.source_fingerprint, req.params.sku);
+
+  if (updated.changes === 0) {
+    return res.status(404).json({ error: "Esta ficha no tiene una versión propia publicada" });
+  }
+  res.json({ success: true, source_fingerprint: product.source_fingerprint });
+});
+
+// POST /api/product-content/:sku/unpublish — go back to the feed's copy.
+//
+// Demotes to draft rather than deleting: the copy someone wrote stays, and the
+// page falls back to what Liderpapel supplies. The escape hatch for a sheet
+// that turned out wrong, without throwing away the work.
+router.post("/:sku/unpublish", requireAuth, (req, res) => {
+  const updated = db
+    .prepare(
+      `UPDATE product_content SET status = 'enriched', updated_at = datetime('now')
+        WHERE sku = ? AND status = 'owned'`,
+    )
+    .run(req.params.sku);
+
+  if (updated.changes === 0) {
+    return res.status(404).json({ error: "Esta ficha no tiene una versión propia publicada" });
+  }
+  scheduleRebuild();
+  res.json({ success: true, status: "enriched" });
+});
+
 export default router;
