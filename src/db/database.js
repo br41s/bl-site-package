@@ -286,6 +286,14 @@ ensureColumn("products", "search_text", "TEXT NOT NULL DEFAULT ''");
 // product_content when we took ownership, which is how a frozen sheet notices
 // the distributor corrected something underneath it.
 ensureColumn("products", "source_fingerprint", "TEXT");
+// Why a sheet was passed over, when status is 'skipped'. Some products carry
+// nothing to write from — the feed knows a brand and nothing else — and an
+// agent that correctly declines to invent specifications has to be able to
+// record that. Without it the same unwritable product leads the queue every
+// day forever and the batch silently shrinks. The skip lapses on its own when
+// source_fingerprint moves, i.e. exactly when the distributor supplies
+// something new to write from.
+ensureColumn("product_content", "skip_reason", "TEXT");
 ensureColumn("products", "gtin", "TEXT");
 ensureColumn("products", "mpn", "TEXT");
 ensureColumn("products", "brand", "TEXT");

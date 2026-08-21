@@ -81,8 +81,20 @@ router.get("/queue", requireAuth, (req, res) => {
          LEFT JOIN product_content c ON c.sku = p.sku
         WHERE p.active = 1 AND p.feed_active = 1
           AND p.stock_qty > 0
-          AND (c.status IS NULL OR c.status <> 'owned')
-        ORDER BY p.price_cents DESC
+          AND (c.status IS NULL
+               OR c.status NOT IN ('owned', 'skipped')
+               -- A skip lapses the moment the distributor changes anything we
+               -- would have written from. Until then the product stays out of
+               -- the queue: some products carry nothing to write a sheet from,
+               -- and offering them again every morning would let unwritable
+               -- items pile up at the head of the batch until nothing new ever
+               -- got reached.
+               OR (c.status = 'skipped'
+                   AND c.source_fingerprint IS NOT p.source_fingerprint))
+        -- Never-touched products first, then by value. Anything already seen —
+        -- a draft, or a skip the feed has since made writable — waits behind
+        -- ground nobody has covered yet.
+        ORDER BY (c.sku IS NOT NULL), p.price_cents DESC
         LIMIT ?`,
     )
     .all(limit);
@@ -148,7 +160,10 @@ router.put("/:sku", requireAuth, (req, res) => {
   const facts = feedFactsFor(sku);
   if (!facts) return res.status(404).json({ error: "Producto no encontrado" });
 
-  const status = req.body.status === "owned" ? "owned" : "enriched";
+  const ALLOWED_STATUS = ["owned", "enriched", "skipped"];
+  const status = ALLOWED_STATUS.includes(req.body.status) ? req.body.status : "enriched";
+  const skip_reason =
+    status === "skipped" ? (req.body.skip_reason || "").trim().slice(0, 500) || null : null;
   const display_name = (req.body.display_name || "").trim() || null;
   const description_md = (req.body.description_md || "").trim() || null;
   const tier = (req.body.tier || "").trim() || null;
@@ -183,6 +198,7 @@ router.put("/:sku", requireAuth, (req, res) => {
     status,
     tier,
     evidence,
+    skip_reason,
     gtin: facts.product.gtin,
     mpn: facts.product.mpn,
     // Snapshotted here, server-side, at the moment of writing. If the caller
@@ -202,14 +218,15 @@ router.put("/:sku", requireAuth, (req, res) => {
   }
 
   db.prepare(
-    `INSERT INTO product_content (sku, display_name, description_md, status, tier, evidence, gtin, mpn, source_fingerprint)
-     VALUES (@sku, @display_name, @description_md, @status, @tier, @evidence, @gtin, @mpn, @source_fingerprint)
+    `INSERT INTO product_content (sku, display_name, description_md, status, tier, evidence, skip_reason, gtin, mpn, source_fingerprint)
+     VALUES (@sku, @display_name, @description_md, @status, @tier, @evidence, @skip_reason, @gtin, @mpn, @source_fingerprint)
      ON CONFLICT(sku) DO UPDATE SET
        display_name = excluded.display_name,
        description_md = excluded.description_md,
        status = excluded.status,
        tier = excluded.tier,
        evidence = excluded.evidence,
+       skip_reason = excluded.skip_reason,
        gtin = excluded.gtin,
        mpn = excluded.mpn,
        source_fingerprint = excluded.source_fingerprint,

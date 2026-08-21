@@ -299,6 +299,87 @@ describe("product content API — clearing a review", () => {
   });
 });
 
+describe("product content API — passing over an unwritable product", () => {
+  // Some products carry nothing to write a sheet from: the feed knows a brand
+  // and nothing else. An agent that correctly declines to invent
+  // specifications needs somewhere to record that, or the same product leads
+  // the batch every morning and the queue silently stops making progress.
+  const SKIP = { status: "skipped", skip_reason: "el feed solo trae la marca" };
+
+  test("a skip needs no title or body", async () => {
+    seedProduct("100");
+    const res = await api("/100", { method: "PUT", body: SKIP });
+
+    assert.equal(res.status, 200);
+    const row = db.prepare("SELECT * FROM product_content WHERE sku = '100'").get();
+    assert.equal(row.status, "skipped");
+    assert.equal(row.skip_reason, "el feed solo trae la marca");
+  });
+
+  test("a skipped product leaves the queue", async () => {
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: SKIP });
+
+    const { pending } = await (await api("/queue")).json();
+    assert.deepEqual(pending, []);
+  });
+
+  test("it comes back the moment the feed gives us something new", async () => {
+    // The same fingerprint that detects drift under a published sheet decides
+    // when a skip has expired — no timer, no second mechanism.
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: SKIP });
+    db.prepare("UPDATE products SET source_fingerprint = 'el feed cambió' WHERE sku = '100'").run();
+
+    const { pending } = await (await api("/queue")).json();
+    assert.deepEqual(pending.map((p) => p.sku), ["100"]);
+  });
+
+  test("a skip is not a publication", async () => {
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: SKIP });
+
+    const { totals } = await (await api("/queue")).json();
+    assert.equal(totals.owned, 0);
+  });
+
+  test("skip_reason is dropped when the sheet is later written", async () => {
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: SKIP });
+    await api("/100", { method: "PUT", body: VALID });
+
+    const row = db.prepare("SELECT * FROM product_content WHERE sku = '100'").get();
+    assert.equal(row.status, "owned");
+    assert.equal(row.skip_reason, null, "a written sheet carries no skip reason");
+  });
+
+  test("an unknown status is treated as a draft, never as published", async () => {
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: { ...VALID, status: "publicadísima" } });
+
+    const row = db.prepare("SELECT * FROM product_content WHERE sku = '100'").get();
+    assert.equal(row.status, "enriched");
+  });
+});
+
+describe("product content API — queue ordering", () => {
+  test("products nobody has touched come before ones already seen", async () => {
+    // A draft or an expired skip is work in progress; unwritten products are
+    // coverage. Ordering by price alone would let a handful of difficult
+    // expensive items monopolise every batch.
+    seedProduct("cheap-untouched", { price_cents: 100 });
+    seedProduct("dear-skipped", { price_cents: 90000 });
+    await api("/dear-skipped", {
+      method: "PUT",
+      body: { status: "skipped", skip_reason: "sin datos" },
+    });
+    db.prepare("UPDATE products SET source_fingerprint = 'nuevo' WHERE sku = 'dear-skipped'").run();
+
+    const { pending } = await (await api("/queue")).json();
+    assert.deepEqual(pending.map((p) => p.sku), ["cheap-untouched", "dear-skipped"]);
+  });
+});
+
 describe("product content API — the work queue", () => {
   test("offers unwritten products, dearest first", async () => {
     seedProduct("cheap", { price_cents: 100 });
