@@ -294,6 +294,27 @@ ensureColumn("products", "source_fingerprint", "TEXT");
 // source_fingerprint moves, i.e. exactly when the distributor supplies
 // something new to write from.
 ensureColumn("product_content", "skip_reason", "TEXT");
+// Accent- and case-normalized copy of the title we wrote, so a rewritten sheet
+// can be found by the words it actually shows. It cannot live in
+// products.search_text: that column is rebuilt from the feed on every sync and
+// would lose this by morning. Backfilled below for rows written before it
+// existed.
+ensureColumn("product_content", "search_text", "TEXT NOT NULL DEFAULT ''");
+
+const contentNeedingSearchText = db
+  .prepare("SELECT sku, display_name FROM product_content WHERE search_text = '' AND display_name IS NOT NULL")
+  .all();
+if (contentNeedingSearchText.length > 0) {
+  const backfillContentSearch = db.prepare(
+    "UPDATE product_content SET search_text = ? WHERE sku = ?",
+  );
+  const backfill = db.transaction((rows) => {
+    for (const row of rows) {
+      backfillContentSearch.run(normalizeForSearch(row.display_name), row.sku);
+    }
+  });
+  backfill(contentNeedingSearchText);
+}
 ensureColumn("products", "gtin", "TEXT");
 ensureColumn("products", "mpn", "TEXT");
 ensureColumn("products", "brand", "TEXT");

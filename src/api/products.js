@@ -28,13 +28,34 @@ router.get("/", (req, res) => {
   }
 
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
-  const activeClause = isAuth ? "" : "WHERE active = 1";
-  const searchClause = q ? `${activeClause ? "AND" : "WHERE"} search_text LIKE @q` : "";
-  const products = db
+  const activeClause = isAuth ? "" : "WHERE p.active = 1";
+  // Search both the distributor's wording and our own. A rewritten sheet is
+  // displayed under the title we gave it, so searching for what is on screen
+  // has to work — before this, the one title a visitor could see was the one
+  // title they could not find. Identifiers ride along in p.search_text, put
+  // there by the sync, because "2104578EU" is what someone replacing a part
+  // actually types.
+  const searchClause = q
+    ? `${activeClause ? "AND" : "WHERE"} (p.search_text LIKE @q OR c.search_text LIKE @q)`
+    : "";
+
+  const rows = db
     .prepare(
-      `SELECT * FROM products ${activeClause} ${searchClause} ORDER BY category, name COLLATE NOCASE`,
+      `SELECT p.*, c.display_name AS owned_name
+         FROM products p
+         LEFT JOIN product_content c ON c.sku = p.sku AND c.status = 'owned'
+        ${activeClause} ${searchClause}
+        ORDER BY p.category, p.name COLLATE NOCASE`,
     )
     .all(q ? { q: `%${normalizeForSearch(q)}%` } : {});
+
+  // Our title wins wherever we have one, so a search result card and the
+  // product page it links to never disagree about the product's name.
+  const products = rows.map(({ owned_name, ...row }) => ({
+    ...row,
+    name: owned_name || row.name,
+    feed_name: row.name,
+  }));
   res.json({ products });
 });
 

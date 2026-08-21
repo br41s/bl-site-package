@@ -13,6 +13,7 @@ process.env.JWT_SECRET = "test-secret-for-products";
 const express = (await import("express")).default;
 const db = (await import("../db/database.js")).default;
 const router = (await import("./products.js")).default;
+const { normalizeForSearch } = await import("../utils/text.js");
 
 let server;
 let baseUrl;
@@ -30,16 +31,19 @@ before(async () => {
 after(() => server?.close());
 
 function seedProduct(sku, overrides = {}) {
+  const name = overrides.name || `Producto ${sku}`;
+  if (overrides.search_text === undefined) overrides.search_text = normalizeForSearch(name);
   db.prepare(
     `INSERT INTO products (sku, slug, name, description, category, search_text,
        price_cents, stock_qty, feed_active, active)
-     VALUES (@sku, @slug, @name, '', '', '', 1000, 5, @feed_active, @active)`,
+     VALUES (@sku, @slug, @name, '', '', @search_text, 1000, 5, @feed_active, @active)`,
   ).run({
     sku,
     slug: `${sku}-producto`,
     name: `Producto ${sku}`,
     feed_active: 1,
     active: 1,
+    search_text: null,
     ...overrides,
   });
 }
@@ -47,7 +51,82 @@ function seedProduct(sku, overrides = {}) {
 const count = async () =>
   (await (await fetch(`${baseUrl}/api/products/count`)).json()).count;
 
-beforeEach(() => db.exec("DELETE FROM products;"));
+beforeEach(() => db.exec("DELETE FROM products; DELETE FROM product_content;"));
+
+describe("GET /api/products — finding a rewritten sheet", () => {
+  // Reported from the storefront: the agent renames a product, the page and
+  // the panel both show the new title, and searching for that title returns
+  // nothing. The one name a visitor can see was the one name they could not
+  // search for.
+  function own(sku, display_name) {
+    db.prepare(
+      `INSERT INTO product_content (sku, display_name, status, search_text)
+       VALUES (?, ?, 'owned', ?)`,
+    ).run(sku, display_name, normalizeForSearch(display_name));
+  }
+
+  const search = async (q) =>
+    (await (await fetch(`${baseUrl}/api/products?q=${encodeURIComponent(q)}`)).json()).products;
+
+  test("finds a product by the title we gave it", async () => {
+    seedProduct("154520", { name: "Impresora de tarjeta badgy 200 incluye cinta" });
+    own("154520", "Impresora de tarjetas Badgy200 con cinta y software");
+
+    const hits = await search("Badgy200");
+    assert.deepEqual(hits.map((h) => h.sku), ["154520"]);
+  });
+
+  test("still finds it by the distributor's wording", async () => {
+    // Existing links, old habits and the client's own memory all use it.
+    seedProduct("154520", { name: "Impresora de tarjeta badgy 200 incluye cinta" });
+    own("154520", "Impresora de tarjetas Badgy200 con cinta y software");
+
+    assert.equal((await search("tarjeta badgy 200")).length, 1);
+  });
+
+  test("returns our title, so a result card matches the page it links to", async () => {
+    seedProduct("154520", { name: "Impresora de tarjeta badgy 200 incluye cinta" });
+    own("154520", "Impresora de tarjetas Badgy200 con cinta y software");
+
+    const [hit] = await search("Badgy200");
+    assert.equal(hit.name, "Impresora de tarjetas Badgy200 con cinta y software");
+    assert.equal(hit.feed_name, "Impresora de tarjeta badgy 200 incluye cinta");
+  });
+
+  test("a draft title is not searchable, since it is not shown", async () => {
+    seedProduct("100", { name: "Producto del feed" });
+    db.prepare(
+      `INSERT INTO product_content (sku, display_name, status, search_text)
+       VALUES ('100', 'Título en borrador', 'enriched', 'titulo en borrador')`,
+    ).run();
+
+    assert.equal((await search("borrador")).length, 0);
+    assert.equal((await search("Producto del feed")).length, 1);
+  });
+
+  test("finds a product by its manufacturer reference", async () => {
+    // True for the 14,187 products carrying one, rewritten or not — this is
+    // what someone replacing a part types.
+    seedProduct("21539", {
+      name: "Ink-jet hp quietjet",
+      search_text: normalizeForSearch("Ink-jet hp quietjet 51604A 0088698004388"),
+    });
+
+    assert.equal((await search("51604A")).length, 1);
+    assert.equal((await search("0088698004388")).length, 1);
+  });
+
+  test("an unsearched listing still works and still prefers our title", async () => {
+    seedProduct("a", { name: "Feed A" });
+    own("a", "Nuestro título A");
+    seedProduct("b", { name: "Feed B" });
+
+    const all = (await (await fetch(`${baseUrl}/api/products`)).json()).products;
+    const byName = Object.fromEntries(all.map((p) => [p.sku, p.name]));
+    assert.equal(byName.a, "Nuestro título A");
+    assert.equal(byName.b, "Feed B");
+  });
+});
 
 describe("GET /api/products/count", () => {
   test("counts what the site is selling", async () => {

@@ -217,7 +217,12 @@ export function joinLiderpapelCatalog(
         name,
         description,
         category,
-        search_text: normalizeForSearch(`${name} ${category}`),
+        // Identifiers belong in here because that is what people type. A
+        // buyer replacing a cartridge searches "51604A" or the barcode off
+        // the box, not a category — and until now neither matched anything.
+        search_text: normalizeForSearch(
+          [name, category, mpn, gtin].filter(Boolean).join(" "),
+        ),
         price_cents: Math.round(purchase * (1 + marginPct) * (1 + vatRate) * 100),
         stock_qty: sumStock(stockByWarehouse, id),
         image_url: images[0] || null,
