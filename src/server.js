@@ -23,6 +23,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// req.ip (and therefore the rate limiter in src/middleware/rateLimit.js) is
+// only the real visitor IP if Express knows how many reverse-proxy hops to
+// peel off X-Forwarded-For. Off by default: trusting the wrong hop count lets
+// a client spoof that header and dodge rate limits, and the hop count differs
+// per deploy target (Zeabur's ingress vs. a Plesk/Passenger host). Set
+// TRUST_PROXY_HOPS once confirmed for a given deployment — Zeabur's ingress
+// is a single hop, so TRUST_PROXY_HOPS=1 there.
+if (process.env.TRUST_PROXY_HOPS) {
+  app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS));
+}
+
 // No CORS middleware on purpose: site, panel and every /api consumer are
 // served from this same origin, so cross-origin API access stays blocked.
 //

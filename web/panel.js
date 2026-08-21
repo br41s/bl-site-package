@@ -18,15 +18,42 @@ document.addEventListener("DOMContentLoaded", function () {
   var panelApp = document.getElementById("panel-app");
   var loginForm = document.getElementById("login-form");
   var loginError = document.getElementById("login-error");
+  var turnstileWidget = document.getElementById("login-turnstile");
+
+  // Turnstile is opt-in (src/turnstile.js): only load Cloudflare's script and
+  // render the widget when the instance has a site key configured. Fetched
+  // from an unauthenticated endpoint because this runs before login.
+  fetch("/api/auth/config")
+    .then(function (r) {
+      return r.json();
+    })
+    .then(function (data) {
+      if (!data.turnstile_site_key) return;
+      turnstileWidget.setAttribute("data-sitekey", data.turnstile_site_key);
+      turnstileWidget.hidden = false;
+      var script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    })
+    .catch(function () {});
 
   loginForm.addEventListener("submit", async function (e) {
     e.preventDefault();
     var pwd = document.getElementById("panel-password").value;
+    // window.turnstile is only present once the script above has loaded and
+    // rendered the widget; on an instance without a site key configured this
+    // stays undefined and the field is simply omitted.
+    var turnstileToken =
+      !turnstileWidget.hidden && window.turnstile
+        ? window.turnstile.getResponse(turnstileWidget)
+        : undefined;
     try {
       var res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pwd }),
+        body: JSON.stringify({ password: pwd, turnstile_token: turnstileToken }),
       });
       var data = await res.json();
       if (data.token) {
@@ -43,6 +70,11 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         loginError.textContent = data.error || "Contraseña incorrecta";
         loginError.hidden = false;
+        // A rejected or expired token can't be resubmitted as-is — reset the
+        // widget so the next attempt gets a fresh challenge.
+        if (!turnstileWidget.hidden && window.turnstile) {
+          window.turnstile.reset(turnstileWidget);
+        }
       }
     } catch {
       loginError.textContent = "Error de conexión";

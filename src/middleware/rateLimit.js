@@ -5,13 +5,12 @@
 // if a client ever scales to multiple instances, swap this for a shared-store
 // limiter (e.g. express-rate-limit backed by Redis).
 //
-// NOTE on `req.ip` behind a proxy: we intentionally do NOT enable Express
-// `trust proxy`. Enabling it would let clients spoof X-Forwarded-For and bypass
-// the limit, and the correct hop count differs per deploy target (Zeabur /
-// Plesk-Passenger / Docker). Without it, `req.ip` is the proxy peer, so the
-// limiter degrades to per-instance rather than per-IP. That is still an
-// effective brute-force cap given the single shared panel password, and the
-// public write endpoints pair it with strict length validation.
+// NOTE on `req.ip` behind a proxy: Express `trust proxy` is off unless the
+// deploy sets TRUST_PROXY_HOPS (see src/server.js). Without it, `req.ip` is
+// the proxy peer, so every visitor behind that proxy shares one bucket —
+// on a deploy target where that env var isn't set, one bot hammering an
+// endpoint fills the same bucket a legitimate visitor is using and locks
+// them out too, not just itself.
 
 const buckets = new Map(); // key -> { count, resetAt }
 
