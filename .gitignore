@@ -13,3 +13,8 @@ tasks/
 # Liderpapel) for adapter development/verification. Customer-specific and can
 # be large (100MB+ per file) — never belongs in this shared template repo.
 fixtures/liderpapel/
+
+# Per-host product counts recorded by scripts/smoke-test.sh. Instance state,
+# not repo content — a client catalogue and a blank staging have nothing to
+# say to each other.
+.smoke-baselines/

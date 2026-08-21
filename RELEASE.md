@@ -53,6 +53,18 @@ asumas que "cliente" == "Plesk": cada uno se verifica por separado.
    ```
    Debe salir en verde (exit 0). Si falla, **para**: no se toca a ningún
    cliente hasta arreglarlo.
+
+   Ojo con lo que este paso comprueba de verdad: la instancia de pruebas está
+   **sin configurar** (sin contraseña de panel, sin catálogo, sin posts), así
+   que los checks demuestran que un despliegue arranca y sirve, no que las
+   rutas autenticadas ni el catálogo funcionen. Un fallo que solo aparezca con
+   datos reales pasa este paso sin despeinarse.
+
+   Contra el entorno de un cliente conviene fijar un suelo absoluto, porque el
+   fichero de baseline es local a la máquina desde la que lo lances:
+   ```bash
+   MIN_PRODUCTS=14000 scripts/smoke-test.sh https://shoroban.com
+   ```
 7. **Solo con pruebas en verde**, despliega en el entorno de cada cliente uno
    a uno, y corre el smoke test contra cada uno:
    ```bash
