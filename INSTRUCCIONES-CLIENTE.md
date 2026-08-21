@@ -85,6 +85,30 @@ Ejemplos de lo que puedes pedirle:
 > "Cambia el título de la página de inicio a Expertos en mantenimiento industrial desde 1995"
 > "Redacta una descripción para la página de servicios"
 
+### Productos
+
+> Esta sección solo aparece si tu web tiene catálogo conectado con tu proveedor.
+
+Tu catálogo se sincroniza solo con tu proveedor: los precios, el stock y las altas y bajas de artículos llegan sin que tengas que tocar nada. Tiene cuatro pestañas:
+
+- **Catálogo** — todos tus productos. Puedes ocultar cualquiera de la web con el interruptor *Visible en la tienda*, y ese ajuste no se pierde en la siguiente sincronización.
+- **Pedidos** — las reservas que te dejan los clientes desde la web.
+- **Fichas** — ver más abajo.
+- **Sincronización** — cuándo se actualizó el catálogo por última vez y los datos de conexión con tu proveedor.
+
+#### La pestaña Fichas
+
+Muchos productos llegan del proveedor sin descripción, o con una muy pobre. Cuando reescribimos una ficha, **pasa a ser tuya**: la sincronización diaria ya no la sobrescribe. El precio y el stock siguen actualizándose con normalidad.
+
+Arriba verás cuántas fichas son ya tuyas y cuántas necesitan que las mires.
+
+**Necesitan revisión** significa que tu proveedor ha cambiado los datos en los que se basaba una ficha que ya está publicada — por ejemplo, ha corregido una capacidad o una medida. Tu texto **sigue en la web**; solo te avisamos para que decidas:
+
+- **Sigue siendo correcta** — el texto sigue valiendo. La ficha sale de la lista y no se te vuelve a avisar por ese cambio.
+- **Volver al texto de Liderpapel** — la web vuelve a mostrar la descripción del proveedor. Tu versión no se borra, se guarda por si quieres recuperarla.
+
+Si no hay nada en la lista, no tienes que hacer nada.
+
 ### Mensajes
 
 Aquí aparecen todos los mensajes que tus visitantes envían a través del formulario de contacto de tu web. Si configuraste las notificaciones, también los recibirás por email.
