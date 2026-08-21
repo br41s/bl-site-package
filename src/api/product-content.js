@@ -1,5 +1,6 @@
 import { Router } from "express";
 import db from "../db/database.js";
+import { normalizeForSearch } from "../utils/text.js";
 import { requireAuth } from "../middleware/auth.js";
 import { scheduleRebuild } from "../build/rebuild.js";
 
@@ -271,6 +272,9 @@ router.put("/:sku", requireAuth, (req, res) => {
     tier,
     evidence,
     skip_reason,
+    // Kept in step with display_name on every write, so the storefront can
+    // find a sheet by the title it actually shows.
+    search_text: normalizeForSearch(display_name || ""),
     gtin: facts.product.gtin,
     mpn: facts.product.mpn,
     // Snapshotted here, server-side, at the moment of writing. If the caller
@@ -290,8 +294,8 @@ router.put("/:sku", requireAuth, (req, res) => {
   }
 
   db.prepare(
-    `INSERT INTO product_content (sku, display_name, description_md, status, tier, evidence, skip_reason, gtin, mpn, source_fingerprint)
-     VALUES (@sku, @display_name, @description_md, @status, @tier, @evidence, @skip_reason, @gtin, @mpn, @source_fingerprint)
+    `INSERT INTO product_content (sku, display_name, description_md, status, tier, evidence, skip_reason, search_text, gtin, mpn, source_fingerprint)
+     VALUES (@sku, @display_name, @description_md, @status, @tier, @evidence, @skip_reason, @search_text, @gtin, @mpn, @source_fingerprint)
      ON CONFLICT(sku) DO UPDATE SET
        display_name = excluded.display_name,
        description_md = excluded.description_md,
@@ -299,6 +303,7 @@ router.put("/:sku", requireAuth, (req, res) => {
        tier = excluded.tier,
        evidence = excluded.evidence,
        skip_reason = excluded.skip_reason,
+       search_text = excluded.search_text,
        gtin = excluded.gtin,
        mpn = excluded.mpn,
        source_fingerprint = excluded.source_fingerprint,
