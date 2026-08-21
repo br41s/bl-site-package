@@ -29,14 +29,30 @@ router.get("/", (req, res) => {
 
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
   const activeClause = isAuth ? "" : "WHERE p.active = 1";
-  // Search both the distributor's wording and our own. A rewritten sheet is
-  // displayed under the title we gave it, so searching for what is on screen
-  // has to work — before this, the one title a visitor could see was the one
-  // title they could not find. Identifiers ride along in p.search_text, put
-  // there by the sync, because "2104578EU" is what someone replacing a part
-  // actually types.
-  const searchClause = q
-    ? `${activeClause ? "AND" : "WHERE"} (p.search_text LIKE @q OR c.search_text LIKE @q)`
+  // Every word must appear somewhere, in any order.
+  //
+  // This used to LIKE the whole query as one substring, so a search only
+  // worked if you happened to type the distributor's exact wording in its
+  // exact order: "destructora de documentos rexel" found 22 products,
+  // "Destructora Rexel" found none, and "bic boligrafo" found none while
+  // "boligrafo bic" found 94. Nobody types a warehouse label from memory.
+  //
+  // Each word is matched against the distributor's text and against ours, so
+  // a query can mix the two — the brand from the feed and a word from the
+  // title we wrote. Identifiers ride along in p.search_text, put there by the
+  // sync, because "2104578EU" is what someone replacing a part actually
+  // types.
+  const MAX_TERMS = 8;
+  const terms = normalizeForSearch(q).split(/\s+/).filter(Boolean).slice(0, MAX_TERMS);
+  const params = {};
+  terms.forEach((term, i) => {
+    params[`t${i}`] = `%${term}%`;
+  });
+  const searchClause = terms.length
+    ? `${activeClause ? "AND" : "WHERE"} ` +
+      terms
+        .map((_, i) => `(p.search_text LIKE @t${i} OR c.search_text LIKE @t${i})`)
+        .join(" AND ")
     : "";
 
   const rows = db
@@ -47,7 +63,7 @@ router.get("/", (req, res) => {
         ${activeClause} ${searchClause}
         ORDER BY p.category, p.name COLLATE NOCASE`,
     )
-    .all(q ? { q: `%${normalizeForSearch(q)}%` } : {});
+    .all(params);
 
   // Our title wins wherever we have one, so a search result card and the
   // product page it links to never disagree about the product's name.

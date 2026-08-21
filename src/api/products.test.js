@@ -128,6 +128,73 @@ describe("GET /api/products — finding a rewritten sheet", () => {
   });
 });
 
+describe("GET /api/products — every word, any order", () => {
+  // The search used to LIKE the whole query as one substring, so it only
+  // worked if you typed the distributor's exact wording in its exact order.
+  // Nobody types a warehouse label from memory.
+  const search = async (q) =>
+    (await (await fetch(`${baseUrl}/api/products?q=${encodeURIComponent(q)}`)).json()).products;
+
+  function seedRexel() {
+    seedProduct("163199", {
+      name: "Destructora de documentos rexel momentum x420 particulas",
+    });
+  }
+
+  test("finds words that are not next to each other", async () => {
+    seedRexel();
+    assert.equal((await search("Destructora Rexel")).length, 1);
+  });
+
+  test("does not care about word order", async () => {
+    seedProduct("1", { name: "Boligrafo bic cristal azul" });
+
+    assert.equal((await search("boligrafo bic")).length, 1);
+    assert.equal((await search("bic boligrafo")).length, 1);
+  });
+
+  test("still requires every word to appear", async () => {
+    // Loosening order must not turn the search into an OR, or a two-word
+    // query would return everything matching either word.
+    seedRexel();
+    seedProduct("other", { name: "Boligrafo bic cristal" });
+
+    assert.equal((await search("rexel boligrafo")).length, 0);
+  });
+
+  test("a word can come from our title and another from the feed's", async () => {
+    seedProduct("163199", { name: "Destructora de documentos rexel momentum x420" });
+    db.prepare(
+      `INSERT INTO product_content (sku, display_name, status, search_text)
+       VALUES ('163199', 'Destructora Rexel Momentum X420 de partículas P-4 — 2104578EU', 'owned',
+               'destructora rexel momentum x420 de particulas p-4 2104578eu')`,
+    ).run();
+
+    // "documentos" only exists in the feed's wording, "P-4" only in ours.
+    assert.equal((await search("documentos p-4")).length, 1);
+  });
+
+  test("ignores extra whitespace", async () => {
+    seedRexel();
+    assert.equal((await search("  Destructora   Rexel  ")).length, 1);
+  });
+
+  test("an empty or whitespace-only query lists everything", async () => {
+    seedRexel();
+    seedProduct("other", { name: "Boligrafo bic" });
+
+    assert.equal((await search("   ")).length, 2);
+  });
+
+  test("bounds how many words it will match on", async () => {
+    // A pasted paragraph should not become a 200-clause query.
+    seedRexel();
+    const many = Array.from({ length: 40 }, (_, i) => `w${i}`).join(" ");
+    const res = await fetch(`${baseUrl}/api/products?q=${encodeURIComponent(many)}`);
+    assert.equal(res.status, 200);
+  });
+});
+
 describe("GET /api/products/count", () => {
   test("counts what the site is selling", async () => {
     seedProduct("a");
