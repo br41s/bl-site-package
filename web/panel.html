@@ -1401,6 +1401,22 @@
               </div>
 
               <div class="misite-block">
+                <h3>Últimos cambios</h3>
+                <p class="misite-hint">
+                  Qué ha hecho el agente y cuándo, empezando por lo más
+                  reciente. Pulsa una ficha para verla en tu web.
+                </p>
+                <div class="fichas-filters">
+                  <button class="fichas-filter is-active" data-fichas-filter="">Todas</button>
+                  <button class="fichas-filter" data-fichas-filter="owned">Publicadas</button>
+                  <button class="fichas-filter" data-fichas-filter="skipped">Sin datos suficientes</button>
+                  <button class="fichas-filter" data-fichas-filter="enriched">Borradores</button>
+                </div>
+                <div id="fichas-log-list"></div>
+                <button class="btn-secondary-sm" id="fichas-log-more" hidden>Ver más</button>
+              </div>
+
+              <div class="misite-block">
                 <h3>Necesitan revisión</h3>
                 <p class="misite-hint">
                   Liderpapel ha cambiado los datos en los que se basaba una ficha
@@ -1979,6 +1995,67 @@
         border-color: var(--accent);
       }
       .fichas-stat.is-warning strong {
+        color: var(--accent);
+      }
+      .fichas-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.375rem;
+        margin: 0.75rem 0 1rem;
+      }
+      .fichas-filter {
+        padding: 0.3125rem 0.75rem;
+        font-size: 0.8125rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--bg-surface);
+        color: var(--text-secondary);
+        cursor: pointer;
+      }
+      .fichas-filter.is-active {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .fichas-log-item {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 0.75rem;
+        align-items: baseline;
+        padding: 0.625rem 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .fichas-log-item a {
+        font-weight: 600;
+        font-size: 0.9375rem;
+        color: var(--text-primary);
+        text-decoration: none;
+      }
+      .fichas-log-item a:hover {
+        text-decoration: underline;
+      }
+      .fichas-log-meta {
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .fichas-log-reason {
+        flex-basis: 100%;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        font-style: italic;
+      }
+      .fichas-tag {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        padding: 0.125rem 0.4375rem;
+        border-radius: 3px;
+        background: var(--bg-subtle);
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
+      .fichas-tag.is-owned {
+        background: var(--accent-light);
         color: var(--accent);
       }
       .fichas-review-item {
