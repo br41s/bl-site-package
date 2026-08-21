@@ -38,6 +38,25 @@ router.get("/", (req, res) => {
   res.json({ products });
 });
 
+// GET /api/products/count — how many products the site is currently selling.
+//
+// Exists for the post-deploy smoke test (scripts/smoke-test.sh), which is
+// bash + curl only and needs to spot a catalogue that collapsed. Counting via
+// GET /api/products would mean pulling ~28 MB on a real client's catalogue on
+// every check; this is a few bytes.
+//
+// Public, and nothing is leaked by it: every one of these products has its own
+// crawlable page and they are all listed in the sitemap.
+//
+// MUST stay above the /:sku route — Express matches in definition order, so
+// declared after it, "count" would be read as a SKU.
+router.get("/count", (req, res) => {
+  const { count } = db
+    .prepare("SELECT COUNT(*) AS count FROM products WHERE active = 1 AND feed_active = 1")
+    .get();
+  res.json({ count });
+});
+
 // GET /api/products/:sku — single product by SKU (public, must be active)
 router.get("/:sku", (req, res) => {
   const product = db
