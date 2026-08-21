@@ -160,13 +160,36 @@ router.put("/:sku", requireAuth, (req, res) => {
   const facts = feedFactsFor(sku);
   if (!facts) return res.status(404).json({ error: "Producto no encontrado" });
 
+  // A write only changes what it actually carries.
+  //
+  // Before this, every editable field was read straight off the body, so an
+  // absent key and an explicit null were indistinguishable — both became null
+  // and the upsert wrote it. A caller sending just a corrected body would
+  // silently erase the title of a published sheet, and a caller sending just a
+  // body would demote that sheet back to draft and pull it off the site. The
+  // client visible symptom is a product page losing its name, with a 200 and
+  // nothing in any log.
+  //
+  // Absent means leave alone; present-but-empty still means clear, which is how
+  // a field gets deliberately reset.
+  const existing = db.prepare("SELECT * FROM product_content WHERE sku = ?").get(sku);
+  const given = (key) => Object.prototype.hasOwnProperty.call(req.body, key);
+  const text = (key, fallback) =>
+    given(key) ? String(req.body[key] ?? "").trim() || null : (fallback ?? null);
+
   const ALLOWED_STATUS = ["owned", "enriched", "skipped"];
-  const status = ALLOWED_STATUS.includes(req.body.status) ? req.body.status : "enriched";
+  const status = ALLOWED_STATUS.includes(req.body.status)
+    ? req.body.status
+    : existing?.status && ALLOWED_STATUS.includes(existing.status)
+      ? existing.status
+      : "enriched";
   const skip_reason =
-    status === "skipped" ? (req.body.skip_reason || "").trim().slice(0, 500) || null : null;
-  const display_name = (req.body.display_name || "").trim() || null;
-  const description_md = (req.body.description_md || "").trim() || null;
-  const tier = (req.body.tier || "").trim() || null;
+    status === "skipped"
+      ? (text("skip_reason", existing?.skip_reason) || "").slice(0, 500) || null
+      : null;
+  const display_name = text("display_name", existing?.display_name);
+  const description_md = text("description_md", existing?.description_md);
+  const tier = text("tier", existing?.tier);
 
   if (display_name && display_name.length > MAX_DISPLAY_NAME) {
     return res.status(400).json({ error: `El título supera ${MAX_DISPLAY_NAME} caracteres` });
@@ -175,7 +198,7 @@ router.put("/:sku", requireAuth, (req, res) => {
     return res.status(400).json({ error: `El cuerpo supera ${MAX_DESCRIPTION} caracteres` });
   }
 
-  let evidence = null;
+  let evidence = existing?.evidence ?? null;
   if (req.body.evidence !== undefined) {
     if (!Array.isArray(req.body.evidence)) {
       return res.status(400).json({ error: "evidence debe ser una lista de URLs" });
