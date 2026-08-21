@@ -69,6 +69,75 @@ check_absent() {
   echo "OK    $desc — $path → HTTP $code (not downloadable)"
 }
 
+# check_catalog_floor
+# Guards against a deploy that empties or collapses the catalogue.
+#
+# Every other check here answers "did it boot". None of them notices a site
+# that boots perfectly and serves nothing, which is a failure a customer sees
+# immediately and a smoke test would otherwise wave through. It is not
+# hypothetical: during development an Eleventy build executed a stray test
+# file whose fixture teardown ran against the live database and took a
+# 14,487-product catalogue down to a single row. Every endpoint stayed 200.
+#
+# Compares against the last count seen for this host, kept in a local file
+# (gitignored — it is per-instance state, not repo content), and fails if the
+# catalogue lost more than CATALOG_TOLERANCE_PCT of it. The first run for a
+# host records a baseline and passes; a run that finds MORE products raises
+# the bar, so the guard ratchets upward and never drifts down quietly.
+#
+# Set MIN_PRODUCTS to assert an absolute floor instead — better in CI, where
+# the baseline file will not survive between runs.
+check_catalog_floor() {
+  tolerance="${CATALOG_TOLERANCE_PCT:-90}"
+  body=$(curl -s --max-time 15 "$BASE/api/products/count" 2>/dev/null || echo "")
+  count=$(printf '%s' "$body" | sed -nE 's/.*"count"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p')
+
+  if [ -z "$count" ]; then
+    echo "FAIL  catalogue size — /api/products/count returned no usable count"
+    fails=$((fails + 1))
+    return
+  fi
+
+  if [ -n "${MIN_PRODUCTS:-}" ]; then
+    if [ "$count" -lt "$MIN_PRODUCTS" ]; then
+      echo "FAIL  catalogue size — $count products, below the required floor of $MIN_PRODUCTS"
+      fails=$((fails + 1))
+      return
+    fi
+    echo "OK    catalogue size — $count products (floor $MIN_PRODUCTS)"
+    return
+  fi
+
+  baseline_dir="${SMOKE_BASELINE_DIR:-.smoke-baselines}"
+  # One file per host, so staging (empty by design) and a client's live
+  # catalogue never compare against each other.
+  host=$(printf '%s' "$BASE" | sed -E 's#^[a-z]+://##; s#[^A-Za-z0-9.-]#_#g')
+  baseline_file="$baseline_dir/$host"
+
+  if [ ! -f "$baseline_file" ]; then
+    mkdir -p "$baseline_dir" 2>/dev/null
+    printf '%s\n' "$count" > "$baseline_file" 2>/dev/null
+    echo "OK    catalogue size — $count products (baseline recorded, nothing to compare yet)"
+    return
+  fi
+
+  baseline=$(cat "$baseline_file" 2>/dev/null)
+  case "$baseline" in ''|*[!0-9]*) baseline=0 ;; esac
+
+  # Integer arithmetic only — no bc, to keep this bash + curl.
+  if [ "$((count * 100))" -lt "$((baseline * tolerance))" ]; then
+    echo "FAIL  catalogue size — $count products, was $baseline (lost more than $((100 - tolerance))%)"
+    echo "      A deploy that empties the catalogue still answers 200 on every other check."
+    fails=$((fails + 1))
+    return
+  fi
+
+  if [ "$count" -gt "$baseline" ]; then
+    printf '%s\n' "$count" > "$baseline_file" 2>/dev/null
+  fi
+  echo "OK    catalogue size — $count products (was $baseline)"
+}
+
 echo "Smoke test: $BASE"
 echo "---------------------------------------------"
 
@@ -83,6 +152,9 @@ check "setup wizard" "/setup" "200"
 # Panel route — 200 if configured, 302 redirect to /setup if not. Either proves
 # the route is wired (a 404/500 would be the failure we care about).
 check "panel route" "/panel" "200|302"
+# Catalogue size — the one check that notices a site which boots fine and
+# serves nothing. See check_catalog_floor above.
+check_catalog_floor
 
 # Security gates — these MUST NOT be downloadable. If any returns 200 the web
 # docroot is exposing app internals (data/, source, config files). Hard fail:

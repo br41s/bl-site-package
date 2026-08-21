@@ -1,4 +1,8 @@
-node_modules/
+# No trailing slash, deliberately. "node_modules/" matches a directory only,
+# so a *symlink* named node_modules — a common local trick for sharing one
+# install across git worktrees — slips straight past it and gets committed as
+# a mode-120000 entry pointing at a path that exists on exactly one machine.
+node_modules
 data/
 .env
 *.db
@@ -13,3 +17,8 @@ tasks/
 # Liderpapel) for adapter development/verification. Customer-specific and can
 # be large (100MB+ per file) — never belongs in this shared template repo.
 fixtures/liderpapel/
+
+# Per-host product counts recorded by scripts/smoke-test.sh. Instance state,
+# not repo content — a client catalogue and a blank staging have nothing to
+# say to each other.
+.smoke-baselines/
