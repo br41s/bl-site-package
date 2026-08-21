@@ -477,6 +477,92 @@ describe("product content API — queue ordering", () => {
   });
 });
 
+describe("product content API — the activity log", () => {
+  // The queue answers "what is left". Without this, the panel can say ten
+  // sheets are owned and not say which ten, and yesterday's work becomes
+  // unreachable the moment the counter moves.
+
+  async function write(sku, body) {
+    seedProduct(sku);
+    await api(`/${sku}`, { method: "PUT", body });
+  }
+
+  test("lists what was done, newest first", async () => {
+    await write("older", VALID);
+    db.prepare("UPDATE product_content SET updated_at = '2020-01-01 00:00:00' WHERE sku='older'").run();
+    await write("newer", VALID);
+
+    const { entries } = await (await api("/log")).json();
+    assert.deepEqual(entries.map((e) => e.sku), ["newer", "older"]);
+  });
+
+  test("carries what the panel needs to show and link a row", async () => {
+    await write("100", VALID);
+
+    const [entry] = (await (await api("/log")).json()).entries;
+    assert.equal(entry.display_name, VALID.display_name);
+    assert.equal(entry.status, "owned");
+    assert.equal(entry.feed_name, "Producto 100", "the distributor's title, to compare against");
+    assert.ok(entry.slug, "a slug, so the row can link to the live page");
+    assert.equal(entry.drifted, 0);
+  });
+
+  test("shows why a sheet was passed over", async () => {
+    // The reason is the whole point of listing skips: it tells a client which
+    // gaps are the distributor's rather than ours.
+    await write("100", { status: "skipped", skip_reason: "el feed solo trae la marca" });
+
+    const [entry] = (await (await api("/log")).json()).entries;
+    assert.equal(entry.status, "skipped");
+    assert.equal(entry.skip_reason, "el feed solo trae la marca");
+  });
+
+  test("filters to one kind", async () => {
+    await write("published", VALID);
+    await write("passed-over", { status: "skipped", skip_reason: "sin datos" });
+
+    const { entries } = await (await api("/log?status=skipped")).json();
+    assert.deepEqual(entries.map((e) => e.sku), ["passed-over"]);
+  });
+
+  test("ignores a status that is not a real one", async () => {
+    await write("100", VALID);
+
+    const { entries } = await (await api("/log?status=; DROP TABLE products")).json();
+    assert.equal(entries.length, 1, "falls back to unfiltered rather than erroring");
+  });
+
+  test("counts every kind, so the panel need not ask twice", async () => {
+    await write("a", VALID);
+    await write("b", { status: "skipped", skip_reason: "sin datos" });
+    await write("c", { description_md: "borrador" });
+
+    const { counts, total } = await (await api("/log")).json();
+    assert.equal(counts.owned, 1);
+    assert.equal(counts.skipped, 1);
+    assert.equal(counts.enriched, 1);
+    assert.equal(total, 3);
+  });
+
+  test("pages, and caps how much it hands over", async () => {
+    for (const sku of ["a", "b", "c"]) await write(sku, VALID);
+
+    const first = await (await api("/log?limit=2")).json();
+    assert.equal(first.entries.length, 2);
+
+    const second = await (await api("/log?limit=2&offset=2")).json();
+    assert.equal(second.entries.length, 1);
+    assert.equal(second.total, 3);
+
+    const capped = await (await api("/log?limit=9999")).json();
+    assert.ok(capped.limit <= 100);
+  });
+
+  test("needs authentication", async () => {
+    assert.equal((await api("/log", { auth: false })).status, 401);
+  });
+});
+
 describe("product content API — the work queue", () => {
   test("offers unwritten products, dearest first", async () => {
     seedProduct("cheap", { price_cents: 100 });

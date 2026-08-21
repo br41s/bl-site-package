@@ -125,6 +125,55 @@ router.get("/queue", requireAuth, (req, res) => {
   res.json({ pending, review, totals });
 });
 
+// GET /api/product-content/log — what has been done to product sheets, newest first.
+//
+// The queue answers "what is left"; this answers "what happened". Without it the
+// panel can say ten sheets are owned but not which ten, and yesterday's work is
+// unreachable the moment the counter moves.
+//
+// Ordered by updated_at, so the most recent run's sheets group naturally at the
+// top. `status` filters to one kind — 'skipped' is the interesting one, since
+// that is where the reasons live and where a client can see which gaps are the
+// distributor's rather than ours.
+//
+// MUST stay above the /:sku route (Express matches in definition order).
+router.get("/log", requireAuth, (req, res) => {
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 25, 1), 100);
+  const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+  const status = ["owned", "enriched", "skipped"].includes(req.query.status)
+    ? req.query.status
+    : null;
+
+  const where = status ? "WHERE c.status = @status" : "";
+  const entries = db
+    .prepare(
+      `SELECT c.sku, c.display_name, c.status, c.skip_reason, c.updated_at, c.created_at,
+              p.name AS feed_name, p.slug, p.price_cents,
+              (c.source_fingerprint IS NOT p.source_fingerprint) AS drifted
+         FROM product_content c
+         JOIN products p ON p.sku = c.sku
+         ${where}
+        ORDER BY c.updated_at DESC, c.sku
+        LIMIT @limit OFFSET @offset`,
+    )
+    .all({ limit, offset, ...(status ? { status } : {}) });
+
+  const counts = Object.fromEntries(
+    db
+      .prepare("SELECT status, COUNT(*) AS n FROM product_content GROUP BY status")
+      .all()
+      .map((row) => [row.status, row.n]),
+  );
+
+  res.json({
+    entries,
+    counts,
+    total: status ? counts[status] || 0 : Object.values(counts).reduce((a, b) => a + b, 0),
+    limit,
+    offset,
+  });
+});
+
 // GET /api/product-content/:sku — everything needed to write this one sheet:
 // the feed's facts, and whatever copy already exists.
 router.get("/:sku", requireAuth, (req, res) => {

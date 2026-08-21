@@ -1860,6 +1860,90 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch(function () {});
   }
 
+  // Activity log: what the agent has done, newest first. Paged rather than
+  // loaded whole — on a 14k catalogue this table grows for months.
+  var fichasLogFilter = "";
+  var fichasLogOffset = 0;
+  var FICHAS_LOG_PAGE = 20;
+
+  var FICHAS_STATUS_LABEL = {
+    owned: "Publicada",
+    skipped: "Sin datos suficientes",
+    enriched: "Borrador",
+  };
+
+  function fichasLogRow(e) {
+    var label = FICHAS_STATUS_LABEL[e.status] || e.status;
+    var when = e.updated_at ? new Date(e.updated_at.replace(" ", "T") + "Z") : null;
+    return (
+      '<div class="fichas-log-item">' +
+      '<span class="fichas-tag' +
+      (e.status === "owned" ? " is-owned" : "") +
+      '">' +
+      escapeHtml(label) +
+      "</span>" +
+      // The distributor's title when we have not written one, so a row is
+      // never blank and a skip is still identifiable.
+      '<a href="/productos/' +
+      escapeHtml(e.slug) +
+      '" target="_blank" rel="noopener">' +
+      escapeHtml(e.display_name || e.feed_name) +
+      "</a>" +
+      '<span class="fichas-log-meta">' +
+      escapeHtml(e.sku) +
+      (when && !isNaN(when) ? " · " + when.toLocaleString("es-ES") : "") +
+      "</span>" +
+      (e.skip_reason
+        ? '<span class="fichas-log-reason">' + escapeHtml(e.skip_reason) + "</span>"
+        : "") +
+      "</div>"
+    );
+  }
+
+  function loadFichasLog(append) {
+    if (!append) fichasLogOffset = 0;
+    var url =
+      "/api/product-content/log?limit=" + FICHAS_LOG_PAGE + "&offset=" + fichasLogOffset +
+      (fichasLogFilter ? "&status=" + encodeURIComponent(fichasLogFilter) : "");
+
+    fetch(url, { headers: authHeaders() })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (data) {
+        var list = document.getElementById("fichas-log-list");
+        var rows = (data.entries || []).map(fichasLogRow).join("");
+
+        if (!append) {
+          list.innerHTML =
+            rows || '<p class="misite-hint">Todavía no hay ninguna ficha registrada.</p>';
+        } else {
+          list.insertAdjacentHTML("beforeend", rows);
+        }
+
+        fichasLogOffset += (data.entries || []).length;
+        document.getElementById("fichas-log-more").hidden =
+          fichasLogOffset >= (Number(data.total) || 0);
+      })
+      .catch(function () {});
+  }
+
+  function initFichasLog() {
+    document.querySelectorAll("[data-fichas-filter]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("[data-fichas-filter]").forEach(function (b) {
+          b.classList.remove("is-active");
+        });
+        btn.classList.add("is-active");
+        fichasLogFilter = btn.getAttribute("data-fichas-filter") || "";
+        loadFichasLog(false);
+      });
+    });
+    document.getElementById("fichas-log-more").addEventListener("click", function () {
+      loadFichasLog(true);
+    });
+  }
+
   // One delegated listener rather than one per row, so it survives every
   // re-render of the list without stacking duplicates.
   function initFichasActions() {
@@ -1884,6 +1968,7 @@ document.addEventListener("DOMContentLoaded", function () {
       })
         .then(function () {
           loadFichas();
+          loadFichasLog(false);
         })
         .catch(function () {
           e.target.disabled = false;
@@ -1896,10 +1981,12 @@ document.addEventListener("DOMContentLoaded", function () {
     loadReservationsList();
     loadSyncStatus();
     loadFichas();
+    loadFichasLog(false);
 
     if (productosInitialized) return;
     productosInitialized = true;
     initFichasActions();
+    initFichasLog();
 
     document.querySelectorAll(".productos-tab").forEach(function (tab) {
       tab.addEventListener("click", function () {
