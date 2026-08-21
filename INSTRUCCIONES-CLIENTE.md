@@ -61,15 +61,15 @@ Para recibir un aviso cada vez que alguien te envíe un mensaje desde tu web:
 > Ve a myaccount.google.com → Seguridad → Verificación en 2 pasos → Contraseñas de aplicación.
 > Genera una nueva y úsala en el campo Contraseña.
 
-### Protección anti-spam del formulario de contacto (Turnstile)
+### Protección anti-spam del formulario de contacto y del acceso al panel (Turnstile)
 
-Si recibes mensajes de spam o bots a través del formulario de contacto, puedes activar un captcha gratuito de Cloudflare Turnstile:
+Si recibes mensajes de spam o bots a través del formulario de contacto, o detectas intentos repetidos de acceder al panel con contraseñas incorrectas, puedes activar un captcha gratuito de Cloudflare Turnstile:
 
 1. Crea una cuenta gratuita en [dash.cloudflare.com](https://dash.cloudflare.com/?to=/:account/turnstile) y da de alta tu dominio para conseguir una **Site key** y una **Secret key**
 2. Entra en el panel → **Mi sitio web** → pestaña **Notificaciones** → bloque **Protección anti-spam (Turnstile)**
 3. Pega ambas claves y haz click en **Guardar configuración de Turnstile**
 
-En cuanto guardes, el formulario de contacto de tu web mostrará el captcha automáticamente. Si dejas los campos vacíos, el formulario sigue funcionando igual que hasta ahora, sin captcha.
+En cuanto guardes, el formulario de contacto de tu web y la pantalla de acceso al panel mostrarán el captcha automáticamente — las mismas claves protegen ambos sitios. Si dejas los campos vacíos, todo sigue funcionando igual que hasta ahora, sin captcha.
 
 ### Agente de marketing
 
