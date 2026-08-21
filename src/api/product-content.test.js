@@ -233,6 +233,103 @@ describe("product content API — what the caller is not allowed to assert", () 
   });
 });
 
+describe("product content API — a write only changes what it carries", () => {
+  // Found by hermes-auditor on hermes-sandbox#181. The reported shape was the
+  // tool sending display_name: null; the underlying fault was worse — the
+  // server could not tell an absent key from an explicit null, so simply
+  // omitting the field cleared it too. A caller correcting a body would have
+  // wiped the title off a published product page, with a 200 and no log line.
+
+  test("correcting the body leaves the title alone", async () => {
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: VALID });
+
+    await api("/100", { method: "PUT", body: { description_md: "Cuerpo corregido." } });
+
+    const row = db.prepare("SELECT * FROM product_content WHERE sku = '100'").get();
+    assert.equal(row.display_name, VALID.display_name);
+    assert.equal(row.description_md, "Cuerpo corregido.");
+  });
+
+  test("correcting the title leaves the body alone", async () => {
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: VALID });
+
+    await api("/100", { method: "PUT", body: { display_name: "Título corregido" } });
+
+    const row = db.prepare("SELECT * FROM product_content WHERE sku = '100'").get();
+    assert.equal(row.display_name, "Título corregido");
+    assert.equal(row.description_md, VALID.description_md);
+  });
+
+  test("a partial write does not quietly unpublish the sheet", async () => {
+    // status defaulted to 'enriched' when absent, so a body-only correction
+    // took a live product page down as a side effect.
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: VALID });
+
+    await api("/100", { method: "PUT", body: { description_md: "Cuerpo corregido." } });
+
+    assert.equal(
+      db.prepare("SELECT status FROM product_content WHERE sku = '100'").get().status,
+      "owned",
+    );
+  });
+
+  test("an explicit empty value still clears the field", async () => {
+    // Absent means leave alone; present-but-empty is how a field is reset on
+    // purpose. Losing that would make a wrong title unfixable.
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: { ...VALID, status: "enriched" } });
+
+    await api("/100", { method: "PUT", body: { display_name: "" } });
+
+    assert.equal(
+      db.prepare("SELECT display_name FROM product_content WHERE sku = '100'").get().display_name,
+      null,
+    );
+  });
+
+  test("but a published sheet cannot be left without a title", async () => {
+    // The publishing gate and partial writes meet here, and the gate wins:
+    // clearing the title of a live sheet is refused rather than applied, so a
+    // product page can never end up published with no name.
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: VALID });
+
+    const res = await api("/100", { method: "PUT", body: { display_name: "" } });
+
+    assert.equal(res.status, 422);
+    assert.equal(
+      db.prepare("SELECT display_name FROM product_content WHERE sku = '100'").get().display_name,
+      VALID.display_name,
+      "the refusal leaves the live sheet untouched",
+    );
+  });
+
+  test("evidence survives a write that does not mention it", async () => {
+    seedProduct("100");
+    await api("/100", {
+      method: "PUT",
+      body: { ...VALID, evidence: ["https://fellowes.com/99ci"] },
+    });
+
+    await api("/100", { method: "PUT", body: { description_md: "Otro cuerpo." } });
+
+    const row = db.prepare("SELECT evidence FROM product_content WHERE sku = '100'").get();
+    assert.deepEqual(JSON.parse(row.evidence), ["https://fellowes.com/99ci"]);
+  });
+
+  test("a first write still starts from nothing, not from a ghost", async () => {
+    seedProduct("100");
+    await api("/100", { method: "PUT", body: { description_md: "Solo cuerpo." } });
+
+    const row = db.prepare("SELECT * FROM product_content WHERE sku = '100'").get();
+    assert.equal(row.display_name, null);
+    assert.equal(row.status, "enriched");
+  });
+});
+
 describe("product content API — clearing a review", () => {
   async function publishThenDrift() {
     seedProduct("100");
