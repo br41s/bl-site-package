@@ -11,7 +11,7 @@
 // Usage (from the branch about to be merged):
 //   node scripts/check-version-bump.mjs
 //
-// Exit 0 = bump present or not needed; 1 = bump missing; 2 = cannot tell.
+// Exit 0 = bump present or not needed; 1 = bump missing or backwards; 2 = cannot tell.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -26,12 +26,39 @@ export function isDocsOnly(files) {
   return files.every((f) => f.endsWith(".md") || f.startsWith(".github/"));
 }
 
+// Parses "1.2.3" into [1, 2, 3]. Returns null for anything it cannot read,
+// so an unrecognised version is reported rather than silently ranked.
+export function parseVersion(version) {
+  const m = /^(\d+)\.(\d+)\.(\d+)/.exec(String(version || "").trim());
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+}
+
+// -1 / 0 / 1, or null if either side is unparseable.
+export function compareVersions(a, b) {
+  const pa = parseVersion(a);
+  const pb = parseVersion(b);
+  if (!pa || !pb) return null;
+  for (let i = 0; i < 3; i += 1) {
+    if (pa[i] !== pb[i]) return pa[i] < pb[i] ? -1 : 1;
+  }
+  return 0;
+}
+
 // Pure verdict so the policy is testable without git:
-// { ok, reason } — reasons: "no_changes", "docs_only", "bumped", "not_bumped".
+// { ok, reason } — reasons: "no_changes", "docs_only", "bumped",
+// "not_bumped", "regressed", "unreadable".
 export function verdict({ changedFiles, baseVersion, headVersion }) {
   if (changedFiles.length === 0) return { ok: true, reason: "no_changes" };
   if (isDocsOnly(changedFiles)) return { ok: true, reason: "docs_only" };
-  if (baseVersion === headVersion) return { ok: false, reason: "not_bumped" };
+
+  const order = compareVersions(headVersion, baseVersion);
+  if (order === null) return { ok: false, reason: "unreadable" };
+  if (order === 0) return { ok: false, reason: "not_bumped" };
+  // A branch cut before main moved on bumps from a stale base and can land
+  // *below* main. Checking only that the number changed let 1.5.0 -> 1.4.2
+  // through, which would have taken the fleet's reported version backwards
+  // and made every instance look out of date.
+  if (order < 0) return { ok: false, reason: "regressed" };
   return { ok: true, reason: "bumped" };
 }
 
@@ -69,6 +96,14 @@ export function run() {
       `package.json sigue en v${headVersion} con cambios de código respecto a ` +
       `origin/main. Ejecuta 'npm version patch|minor|major' en esta rama ` +
       `antes de mergear — RELEASE.md paso 2.`,
+    regressed:
+      `package.json va en v${headVersion}, por DEBAJO de la v${baseVersion} de ` +
+      `origin/main. Esta rama salió de un main más antiguo: trae los cambios ` +
+      `('git merge origin/main'), resuelve la versión quedándote con la de ` +
+      `main, y vuelve a bumpear.`,
+    unreadable:
+      `No se pudo comparar v${headVersion} con v${baseVersion}: alguna no tiene ` +
+      `forma x.y.z. Revísalas a mano.`,
   };
   console.log((result.ok ? "OK  " : "FAIL  ") + messages[result.reason]);
   return result.ok ? 0 : 1;
