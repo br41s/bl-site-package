@@ -11,9 +11,12 @@ process.env.DB_PATH = join(mkdtempSync(join(tmpdir(), "bl-site-products-")), "ap
 process.env.JWT_SECRET = "test-secret-for-products";
 
 const express = (await import("express")).default;
+const jwt = (await import("jsonwebtoken")).default;
 const db = (await import("../db/database.js")).default;
 const router = (await import("./products.js")).default;
 const { normalizeForSearch } = await import("../utils/text.js");
+
+const TOKEN = jwt.sign({ role: "admin" }, process.env.JWT_SECRET);
 
 let server;
 let baseUrl;
@@ -250,5 +253,58 @@ describe("GET /api/products/count", () => {
 
     assert.equal(res.status, 200);
     assert.equal((await res.json()).sku, "78276");
+  });
+});
+
+describe("GET /api/products?gtin=/mpn= — exact identifier lookup", () => {
+  function api(path, options = {}) {
+    return fetch(`${baseUrl}/api/products${path}`, {
+      ...options,
+      headers: {
+        ...(options.auth === false ? {} : { Authorization: `Bearer ${TOKEN}` }),
+        ...options.headers,
+      },
+    });
+  }
+
+  function setIdentifiers(sku, { gtin = null, mpn = null } = {}) {
+    db.prepare("UPDATE products SET gtin = ?, mpn = ? WHERE sku = ?").run(gtin, mpn, sku);
+  }
+
+  test("needs authentication", async () => {
+    seedProduct("100");
+    setIdentifiers("100", { gtin: "50043859629256" });
+
+    const res = await api("/?gtin=50043859629256", { auth: false });
+    assert.equal(res.status, 401);
+  });
+
+  test("finds the live product with a matching gtin", async () => {
+    seedProduct("100");
+    setIdentifiers("100", { gtin: "50043859629256" });
+
+    const body = await (await api("/?gtin=50043859629256")).json();
+    assert.deepEqual(body.products.map((p) => p.sku), ["100"]);
+  });
+
+  test("finds the live product with a matching mpn", async () => {
+    seedProduct("100");
+    setIdentifiers("100", { mpn: "4691001" });
+
+    const body = await (await api("/?mpn=4691001")).json();
+    assert.deepEqual(body.products.map((p) => p.sku), ["100"]);
+  });
+
+  test("an unmatched identifier returns an empty list, not an error", async () => {
+    const body = await (await api("/?gtin=0000000000000")).json();
+    assert.deepEqual(body.products, []);
+  });
+
+  test("does not match an inactive product", async () => {
+    seedProduct("100", { active: 0 });
+    setIdentifiers("100", { gtin: "50043859629256" });
+
+    const body = await (await api("/?gtin=50043859629256")).json();
+    assert.deepEqual(body.products, []);
   });
 });
