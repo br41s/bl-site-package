@@ -1,5 +1,5 @@
 import { Router } from "express";
-import db from "../db/database.js";
+import db, { getConfig } from "../db/database.js";
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 import {
@@ -86,6 +86,29 @@ router.post("/", contactLimiter, async (req, res) => {
       // a silently broken mailer only showed up in the container logs.
       console.error("Error enviando email de notificación:", err.message);
       recordContactEmailResult(false, err);
+    }
+  }
+
+  // Confirmation copy back to the visitor, so they have proof the message went
+  // through. Independent of notify_email (that's the owner's address) — only
+  // needs SMTP itself configured. Swallowed on failure like the owner
+  // notification above: a visitor must not see the client's SMTP problems, and
+  // the message is already stored either way.
+  if (isSmtpConfigured(settings)) {
+    try {
+      const companyName = getConfig("company_name") || "Web";
+      await sendMail(
+        {
+          from: `"${companyName}" <${settings.user}>`,
+          to: email,
+          subject: `Hemos recibido tu mensaje — ${companyName}`,
+          text: `Hola ${name},\n\nHemos recibido tu mensaje y te responderemos lo antes posible.\n\nCopia de tu mensaje:\n${message}\n\n— ${companyName}`,
+          html: `<p>Hola ${escapeHtml(name)},</p><p>Hemos recibido tu mensaje y te responderemos lo antes posible.</p><p><strong>Copia de tu mensaje:</strong></p><p>${escapeHtml(message).replace(/\n/g, "<br>")}</p><p>— ${escapeHtml(companyName)}</p>`,
+        },
+        settings,
+      );
+    } catch (err) {
+      console.error("Error enviando confirmación al visitante:", err.message);
     }
   }
 
