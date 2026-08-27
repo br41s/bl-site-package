@@ -12,6 +12,7 @@ import setupRouter from "./api/setup.js";
 import siteRouter from "./api/site.js";
 import productsRouter from "./api/products.js";
 import productContentRouter from "./api/product-content.js";
+import redirectsRouter, { findLiveRedirect } from "./api/redirects.js";
 import reservationsRouter from "./api/reservations.js";
 import syncRouter from "./api/sync.js";
 import knowledgeRouter from "./api/knowledge.js";
@@ -92,6 +93,7 @@ app.use("/api/setup", setupRouter);
 app.use("/api/site", siteRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/product-content", productContentRouter);
+app.use("/api/redirects", redirectsRouter);
 app.use("/api/reservations", reservationsRouter);
 app.use("/api/sync", syncRouter);
 app.use("/api/knowledge", knowledgeRouter);
@@ -107,6 +109,16 @@ app.get("/panel", (req, res) => {
   );
   if (!configured) return res.redirect("/setup");
   res.sendFile(join(__dirname, "../web/panel.html"));
+});
+
+// Same-site 301s (src/api/redirects.js) — checked on every request, before
+// the static mount, so a path an agent has confirmed dead and redirected
+// never reaches the 404 handler. Only 'live' rows apply; a 'pending'
+// proposal stays invisible to visitors until it is explicitly published.
+app.use((req, res, next) => {
+  const hit = findLiveRedirect(req.path);
+  if (hit) return res.redirect(301, hit.new_path);
+  next();
 });
 
 // Public site pages — Eleventy-built static HTML (site/ -> _site/), rebuilt

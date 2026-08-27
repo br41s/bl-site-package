@@ -27,6 +27,21 @@ router.get("/", (req, res) => {
     }
   }
 
+  const gtin = typeof req.query.gtin === "string" ? req.query.gtin.trim() : "";
+  const mpn = typeof req.query.mpn === "string" ? req.query.mpn.trim() : "";
+  if (gtin || mpn) {
+    // Exact-identifier lookup — "which live product has this barcode/
+    // reference" (needed to map a dead product URL to its current one, see
+    // src/api/redirects.js) is a different question from the free-text
+    // search below and needs an exact match, not a LIKE. Authenticated only:
+    // this is a tool-facing lookup, not something a storefront visitor needs.
+    if (!isAuth) return res.status(401).json({ error: "No autorizado" });
+    const row = gtin
+      ? db.prepare("SELECT * FROM products WHERE gtin = ? AND active = 1 AND feed_active = 1").get(gtin)
+      : db.prepare("SELECT * FROM products WHERE mpn = ? AND active = 1 AND feed_active = 1").get(mpn);
+    return res.json({ products: row ? [row] : [] });
+  }
+
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
   const activeClause = isAuth ? "" : "WHERE p.active = 1";
   // Every word must appear somewhere, in any order.

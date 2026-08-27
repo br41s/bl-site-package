@@ -245,6 +245,25 @@ db.exec(`
     quantity INTEGER NOT NULL,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  -- A path this site used to serve that should now send a visitor somewhere
+  -- else. 'pending' is a proposal an agent has submitted and the server has
+  -- already validated (old_path 404s, new_path resolves — see
+  -- src/api/redirects.js); only 'live' rows are actually served, by the
+  -- middleware in src/server.js. Nothing here is ever asserted by a caller
+  -- without the server re-checking it, same as product_content's identifiers.
+  CREATE TABLE IF NOT EXISTS redirects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    old_path TEXT UNIQUE NOT NULL,
+    new_path TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    match_tier TEXT,
+    evidence TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_redirects_status ON redirects(status);
 `);
 
 // Additive migration for columns added after a client's DB was first
