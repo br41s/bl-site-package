@@ -77,8 +77,27 @@ export function getLastContactEmail() {
   return lastContactEmail ? { ...lastContactEmail } : null;
 }
 
+// Same tracking, for the confirmation copy sent back to the visitor
+// (src/api/contact.js). A separate slot from lastContactEmail above: the two
+// sends go to different recipients over the same SMTP settings and can fail
+// independently — conflating them would hide which one actually broke.
+let lastVisitorEmail = null;
+
+export function recordVisitorEmailResult(ok, err) {
+  lastVisitorEmail = {
+    at: new Date().toISOString(),
+    ok,
+    error: ok ? null : err?.code || err?.name || "unknown",
+  };
+}
+
+export function getLastVisitorEmail() {
+  return lastVisitorEmail ? { ...lastVisitorEmail } : null;
+}
+
 // Test seam only — the module-level state above would otherwise leak between
 // test cases.
 export function _resetLastContactEmail() {
   lastContactEmail = null;
+  lastVisitorEmail = null;
 }

@@ -98,6 +98,7 @@ describe("GET /api/site/status", () => {
       "built_at",
       "last_build_ok",
       "last_contact_email",
+      "last_visitor_email",
       "notify_email_configured",
       "posts",
       "smtp_configured",
