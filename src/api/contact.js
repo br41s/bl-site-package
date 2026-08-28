@@ -8,6 +8,7 @@ import {
   isNotifyEmailConfigured,
   sendMail,
   recordContactEmailResult,
+  recordVisitorEmailResult,
 } from "../mail/mailer.js";
 import { isTurnstileConfigured, verifyTurnstileToken } from "../turnstile.js";
 
@@ -122,8 +123,10 @@ router.post("/", contactLimiter, async (req, res) => {
         },
         settings,
       );
+      recordVisitorEmailResult(true);
     } catch (err) {
       console.error("Error enviando confirmación al visitante:", err.message);
+      recordVisitorEmailResult(false, err);
     }
   }
 

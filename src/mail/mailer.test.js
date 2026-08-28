@@ -15,6 +15,8 @@ const {
   isNotifyEmailConfigured,
   recordContactEmailResult,
   getLastContactEmail,
+  recordVisitorEmailResult,
+  getLastVisitorEmail,
   _resetLastContactEmail,
 } = await import("./mailer.js");
 
@@ -112,5 +114,20 @@ describe("last contact e-mail outcome", () => {
   test("falls back to a placeholder when the error carries no code", () => {
     recordContactEmailResult(false, {});
     assert.equal(getLastContactEmail().error, "unknown");
+  });
+});
+
+describe("last visitor e-mail outcome", () => {
+  test("null until an attempt happens", () => {
+    assert.equal(getLastVisitorEmail(), null);
+  });
+
+  test("tracks independently of the owner notification", () => {
+    recordContactEmailResult(true);
+    recordVisitorEmailResult(false, { code: "ECONNRESET" });
+
+    assert.equal(getLastContactEmail().ok, true);
+    assert.equal(getLastVisitorEmail().ok, false);
+    assert.equal(getLastVisitorEmail().error, "ECONNRESET");
   });
 });

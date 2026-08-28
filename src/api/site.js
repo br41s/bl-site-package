@@ -17,6 +17,7 @@ import {
   isNotifyEmailConfigured,
   sendMail,
   getLastContactEmail,
+  getLastVisitorEmail,
 } from "../mail/mailer.js";
 import { isTurnstileConfigured } from "../turnstile.js";
 
@@ -218,6 +219,10 @@ router.get("/status", requireAuth, (req, res) => {
     // process has not attempted one. Error class only (e.g. "EAUTH") — SMTP
     // rejection strings routinely echo the username back.
     last_contact_email: getLastContactEmail(),
+    // Same, for the confirmation copy sent back to the visitor. Separate from
+    // last_contact_email above since the two sends go to different
+    // recipients and can fail independently.
+    last_visitor_email: getLastVisitorEmail(),
   });
 });
 
