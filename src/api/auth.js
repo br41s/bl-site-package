@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { getConfig } from '../db/database.js';
@@ -17,6 +18,20 @@ const loginLimiter = rateLimit({
   message: 'Demasiados intentos de acceso. Espera unos minutos.',
 });
 
+// First-party rental automation (BigLobster's own agents, see hermes-sandbox
+// tools/bl_site_publish_tool.py) authenticates with the panel password like
+// anyone else, but can never solve a Turnstile challenge. This shared secret
+// lets it skip that check specifically — it does NOT bypass the password
+// check below, so a leaked key alone still can't log in on its own.
+function isAutomationRequest(req) {
+  const expected = process.env.RENTAL_AUTOMATION_KEY || '';
+  if (!expected) return false;
+  const provided = req.get('X-Automation-Key') || '';
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 // Unauthenticated by necessity: the login screen needs the Turnstile site key
 // before there's a token to authenticate with. Only the public site key is
 // exposed here, same PUBLIC_CONFIG_KEYS split as src/api/site.js.
@@ -26,18 +41,18 @@ router.get('/config', (req, res) => {
 
 router.post('/login', loginLimiter, async (req, res) => {
   const { password } = req.body;
-  if (!password) return res.status(400).json({ error: 'Contrase\u00f1a requerida' });
+  if (!password) return res.status(400).json({ error: 'Contraseña requerida' });
 
   // Turnstile is opt-in (src/turnstile.js): an instance with no keys
   // configured skips this block, so login keeps working exactly as before.
-  if (isTurnstileConfigured()) {
+  if (isTurnstileConfigured() && !isAutomationRequest(req)) {
     const turnstileToken =
       typeof req.body.turnstile_token === 'string' ? req.body.turnstile_token : '';
     const verified = await verifyTurnstileToken(turnstileToken);
     if (!verified) {
       return res
         .status(400)
-        .json({ error: 'No se pudo verificar que no eres un robot. Int\u00e9ntalo de nuevo.' });
+        .json({ error: 'No se pudo verificar que no eres un robot. Inténtalo de nuevo.' });
     }
   }
 
@@ -47,7 +62,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   }
 
   if (password !== panelPassword) {
-    return res.status(401).json({ error: 'Contrase\u00f1a incorrecta' });
+    return res.status(401).json({ error: 'Contraseña incorrecta' });
   }
 
   const secret = process.env.JWT_SECRET || getConfig('jwt_secret');
