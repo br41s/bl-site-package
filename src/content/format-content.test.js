@@ -89,6 +89,56 @@ describe("formatContent — legitimate infographics survive", () => {
     assert.ok(out.includes('transform="translate(5,5)"'), `transform dropped: ${out}`);
   });
 
+  test("aria-labelledby resolves — title/desc keep their id", () => {
+    // The svg allowlist has always accepted aria-labelledby, but `id` was not
+    // allowed on any element, so the IDREF could only ever dangle: the agent
+    // emitted a labelled infographic and shipped one with no resolvable name.
+    const out = formatContent(
+      '<svg viewBox="0 0 10 10" role="img" aria-labelledby="t1 d1">' +
+        '<title id="t1">Flujo</title><desc id="d1">Un flujo de tres pasos</desc>' +
+        "</svg>",
+    );
+    assert.ok(out.includes('aria-labelledby="t1 d1"'), `aria-labelledby dropped: ${out}`);
+    assert.ok(/<title id="t1"/.test(out), `title id dropped — IDREF dangles: ${out}`);
+    assert.ok(/<desc id="d1"/.test(out), `desc id dropped — IDREF dangles: ${out}`);
+  });
+
+  test("id stays confined to title/desc", () => {
+    // id is inert on title/desc because nothing in SVG_TAGS can reference one.
+    // It must not spread to drawable elements, which is where a reference-based
+    // bypass would need it.
+    const out = formatContent(
+      '<svg viewBox="0 0 10 10"><rect id="r1" width="5" height="5"/>' +
+        '<g id="g1"><circle id="c1" cx="1" cy="1" r="1"/></g></svg>',
+    );
+    assert.ok(!out.includes('id="r1"'), `id leaked onto rect: ${out}`);
+    assert.ok(!out.includes('id="g1"'), `id leaked onto g: ${out}`);
+    assert.ok(!out.includes('id="c1"'), `id leaked onto circle: ${out}`);
+    assert.ok(out.includes("<rect"), `rect itself dropped: ${out}`);
+  });
+
+  test("tspan can be vertically aligned like text", () => {
+    // dominant-baseline was allowed on <text> but not <tspan>, so a baseline
+    // shift inside a run of text was silently dropped mid-render.
+    const out = formatContent(
+      '<svg viewBox="0 0 10 10"><text x="1" y="1" dominant-baseline="middle">A' +
+        '<tspan dx="2" dominant-baseline="central">B</tspan></text></svg>',
+    );
+    assert.ok(
+      (out.match(/dominant-baseline/g) || []).length === 2,
+      `dominant-baseline dropped from tspan: ${out}`,
+    );
+  });
+
+  test("dashed strokes keep their phase", () => {
+    const out = formatContent(
+      '<svg viewBox="0 0 10 10"><line x1="0" y1="0" x2="9" y2="0" ' +
+        'stroke="currentColor" stroke-dasharray="4 2" stroke-dashoffset="2"/></svg>',
+    );
+    assert.ok(out.includes('stroke-dasharray="4 2"'), `dasharray dropped: ${out}`);
+    assert.ok(out.includes('stroke-dashoffset="2"'), `dashoffset dropped: ${out}`);
+  });
+
   test("the figure/figcaption wrapper survives with its class", () => {
     const out = formatContent(
       '<figure class="article-infographic"><svg viewBox="0 0 10 10"></svg><figcaption>Pie</figcaption></figure>',

@@ -31,7 +31,7 @@ const SVG_TAGS = [
 const SVG_COMMON_ATTRS = [
   "fill", "fill-opacity", "fill-rule",
   "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin",
-  "stroke-dasharray", "stroke-opacity",
+  "stroke-dasharray", "stroke-dashoffset", "stroke-opacity",
   "opacity", "transform", "class",
 ];
 
@@ -52,6 +52,13 @@ export function formatContent(text) {
       // back to `viewBox` for inline SVG, so responsive scaling still works.
       svg: [...SVG_COMMON_ATTRS, "viewbox", "xmlns", "width", "height",
         "preserveaspectratio", "role", "aria-label", "aria-labelledby"],
+      // `aria-labelledby` on <svg> points at a <title>/<desc> by id, so those
+      // two need to keep an id or the reference dangles and the accessible
+      // name silently falls back (or is lost). `id` is inert here: no tag in
+      // SVG_TAGS can reference one (<use>, <defs> and url() are all excluded),
+      // so it cannot become a bypass.
+      title: ["id"],
+      desc: ["id"],
       g: SVG_COMMON_ATTRS,
       path: [...SVG_COMMON_ATTRS, "d"],
       rect: [...SVG_COMMON_ATTRS, "x", "y", "width", "height", "rx", "ry"],
@@ -63,7 +70,7 @@ export function formatContent(text) {
       text: [...SVG_COMMON_ATTRS, "x", "y", "dx", "dy", "text-anchor",
         "dominant-baseline", "font-size", "font-weight"],
       tspan: [...SVG_COMMON_ATTRS, "x", "y", "dx", "dy", "text-anchor",
-        "font-size", "font-weight"],
+        "dominant-baseline", "font-size", "font-weight"],
     },
   });
 }
