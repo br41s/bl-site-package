@@ -139,6 +139,28 @@ describe("formatContent — legitimate infographics survive", () => {
     assert.ok(out.includes('stroke-dashoffset="2"'), `dashoffset dropped: ${out}`);
   });
 
+  test("var() in a geometry attribute passes through untouched — deliberately", () => {
+    // Characterisation test, not an endorsement. rx="var(--radius)" renders
+    // SQUARE corners: geometry attributes parse as SVG data types, so var() is
+    // never resolved and the attribute falls back to its default. See the long
+    // note above formatContent for why this sanitizer does not police it —
+    // wrong layer, --radius is per-client, and throwing would stop all
+    // publishing for that client rather than block one bad infographic.
+    //
+    // If this test fails because someone taught the sanitizer to strip or
+    // rewrite these, read that note first: a stripped attribute renders exactly
+    // as badly, and substituting a constant overrides the client's radius_style.
+    // The fix belongs in the drawing agent's prompt.
+    const out = formatContent(
+      '<svg viewBox="0 0 10 10"><rect x="1" y="1" width="8" height="8" ' +
+        'rx="var(--radius)" fill="var(--accent)"/></svg>',
+    );
+    assert.ok(out.includes('rx="var(--radius)"'), `rx was altered: ${out}`);
+    // The colour attribute in the same element is the contrast: there var()
+    // genuinely resolves in the browser, which is what makes the bug invisible.
+    assert.ok(out.includes('fill="var(--accent)"'), `fill was altered: ${out}`);
+  });
+
   test("the figure/figcaption wrapper survives with its class", () => {
     const out = formatContent(
       '<figure class="article-infographic"><svg viewBox="0 0 10 10"></svg><figcaption>Pie</figcaption></figure>',

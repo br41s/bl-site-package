@@ -35,6 +35,47 @@ const SVG_COMMON_ATTRS = [
   "opacity", "transform", "class",
 ];
 
+// var() IN GEOMETRY ATTRIBUTES — a trap this allowlist cannot close.
+//
+// The attributes below split into two kinds, and the difference is invisible:
+//
+//   fill, stroke, stop-color, font-family, opacity, stroke-width, font-size
+//     are CSS properties. As presentation attributes, var() DOES resolve, so
+//     fill="var(--accent)" themes correctly in light and dark.
+//
+//   x, y, width, height, rx, ry, cx, cy, r, x1/y1/x2/y2, dx, dy, points, d
+//     are NOT CSS properties. They parse as SVG data types, var() is ignored,
+//     and the attribute falls back to its default — rx=0, width=0 — with no
+//     browser error and nothing wrong-looking in the markup.
+//
+// So <rect rx="var(--radius)"> renders square corners and reads as correct.
+// This shipped on the flagship site: 40 rects across 7 articles (br41s/biglobster
+// PR #488), and the agent that drew them regenerated it on the very next run.
+//
+// WHY WE DO NOT POLICE IT HERE, and please do not "fix" that:
+//
+//   1. Wrong layer. This sanitizer is a security boundary. Stripping or
+//      rewriting a *cosmetic* mistake here mixes two jobs, and a stripped
+//      attribute renders exactly as badly as the unresolved one.
+//   2. We cannot know the right value. --radius is per-client, set from
+//      site.radius_style in site/_includes/base.njk. Substituting a constant
+//      would override the style the client chose.
+//   3. Failing the build is worse than the bug. runBuild() in src/build/
+//      rebuild.js catches Eleventy errors and keeps serving the previous
+//      _site/, so throwing here would silently stop ALL publishing for that
+//      client — publish drift — with no human in the loop to notice.
+//
+// The fix belongs in the drawing agent's prompt: plain numbers in geometry
+// attributes. biglobster additionally has a build-time guard
+// (lib/svg-token-guard.mjs) because there a failed build is loud and a human
+// merges every change; neither is true here.
+//
+// If you ever want genuinely per-client rounded corners, the route is CSS, not
+// the attribute — `.article-infographic rect { rx: var(--radius); }` does
+// resolve (verified in Chromium). Check Safari before relying on it: rx/ry as
+// CSS geometry properties are not universally supported, and a silent fallback
+// there is the same class of bug.
+
 export function formatContent(text) {
   if (!text) return "";
   return sanitizeHtml(marked.parse(text), {
