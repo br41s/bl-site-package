@@ -399,16 +399,19 @@ body {
 .site-post-card:last-child {
   border-bottom: none;
 }
-.site-post-card h2 {
+.site-post-card h2,
+.site-post-card h3 {
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
 }
-.site-post-card h2 a {
+.site-post-card h2 a,
+.site-post-card h3 a {
   text-decoration: none;
   color: var(--text-primary);
 }
-.site-post-card h2 a:hover {
+.site-post-card h2 a:hover,
+.site-post-card h3 a:hover {
   color: var(--accent);
 }
 .site-post-card p {

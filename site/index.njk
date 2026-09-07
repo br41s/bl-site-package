@@ -25,4 +25,29 @@ navActive: index
   <div class="site-page-body reveal">{{ site.page_index_body_html | safe }}</div>
 </div></section>
 {%- endif %}
+{#
+  Latest posts. Cards mirror the markup in site/blog.njk on purpose so the
+  homepage and the blog index stay visually identical — restyle one, restyle
+  both. `articles` is already sorted created_at DESC and is empty for a client
+  with no published posts, so the whole section disappears on its own and
+  needs no config flag.
+#}
+{%- if articles.length %}
+<section class="site-page"><div class="site-page-inner">
+  <h2 class="reveal">Últimas publicaciones</h2>
+  {%- for post in articles.slice(0, 3) %}
+  <article class="site-post-card">
+    {%- if post.image_url %}
+    <a href="/blog/{{ post.slug }}" class="site-post-card-media"><img src="{{ post.image_url }}" alt="{{ post.image_alt or post.title }}" loading="lazy" decoding="async"></a>
+    {%- endif %}
+    <h3><a href="/blog/{{ post.slug }}">{{ post.title }}</a></h3>
+    {%- if post.excerpt %}
+    <p>{{ post.excerpt }}</p>
+    {%- endif %}
+    <span class="site-post-date">{{ post.dateEs }}</span>
+  </article>
+  {%- endfor %}
+  <p class="reveal"><a href="/blog" class="site-btn-ghost">Ver todas las publicaciones</a></p>
+</div></section>
+{%- endif %}
 {%- endif %}
