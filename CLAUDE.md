@@ -25,6 +25,13 @@ The layout owns all chrome (nav, footer, head, meta). Content files carry body H
 Anything generated from a collection — blog index, sitemap, feed — is rebuilt on every
 build, so hand edits are silently overwritten.
 
+The homepage's "Últimas publicaciones" section (`site/index.njk`) renders the 3 newest
+posts from the `articles` data provider. Its cards **mirror the markup in `site/blog.njk`
+on purpose** — restyle blog cards and you must change both, or the two surfaces drift.
+It needs no config key: `articles` is empty for a client with no published posts, so the
+section hides itself. Card titles there are `h3` (the section owns the `h2`), which is why
+`.site-post-card h2` rules in `web/style.css` also match `h3`.
+
 **Nothing under `site/` is inert — Eleventy executes it.** `eleventy.config.mjs` sets
 `dir.data = "_data"`, so every `.js` there is imported as a data provider on every build.
 A test file placed in `site/_data/` therefore runs on every build: `node:test` executes a
