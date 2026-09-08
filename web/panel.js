@@ -1646,8 +1646,51 @@ document.addEventListener("DOMContentLoaded", function () {
     return (cents / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
   }
 
-  function loadProductsList() {
-    fetch("/api/products", { headers: authHeaders() })
+  // The SKUs pinned to the "Destacados" block, in display order. Kept in memory
+  // and written once by "Guardar destacados": every setConfig() on the server
+  // schedules a full Eleventy rebuild, and on a real catalogue that is ~14,500
+  // pages — one per star click would be absurd.
+  var featuredSkus = [];
+  var featuredDirty = false;
+  var catalogPageSize = 100;
+
+  function isFeatured(sku) {
+    return featuredSkus.indexOf(sku) !== -1;
+  }
+
+  function toggleFeatured(sku) {
+    var at = featuredSkus.indexOf(sku);
+    if (at === -1) featuredSkus.push(sku);
+    else featuredSkus.splice(at, 1);
+    featuredDirty = true;
+  }
+
+  function buildStarButton(sku) {
+    var star = document.createElement("button");
+    star.type = "button";
+    star.className = "product-row-star";
+    function paint() {
+      var on = isFeatured(sku);
+      star.textContent = on ? "★" : "☆";
+      star.classList.toggle("active", on);
+      star.setAttribute("aria-pressed", on ? "true" : "false");
+      star.title = on ? "Quitar de destacados" : "Destacar en la portada";
+    }
+    star.addEventListener("click", function () {
+      toggleFeatured(sku);
+      paint();
+    });
+    paint();
+    return star;
+  }
+
+  // `query` is passed straight to GET /api/products?q=. Without it the endpoint
+  // returns the whole catalogue, so the list is capped — on a real client that
+  // is ~14,500 rows and roughly 28 MB of JSON.
+  function loadProductsList(query) {
+    var url = "/api/products?limit=" + catalogPageSize;
+    if (query) url += "&q=" + encodeURIComponent(query);
+    fetch(url, { headers: authHeaders() })
       .then(function (r) {
         return r.json();
       })
@@ -1659,7 +1702,9 @@ document.addEventListener("DOMContentLoaded", function () {
           var empty = document.createElement("p");
           empty.style.color = "var(--text-muted)";
           empty.style.padding = "2rem 0";
-          empty.textContent = "Todavía no hay productos sincronizados.";
+          empty.textContent = query
+            ? "Ningún producto coincide con la búsqueda."
+            : "Todavía no hay productos sincronizados.";
           list.appendChild(empty);
           return;
         }
@@ -1699,10 +1744,24 @@ document.addEventListener("DOMContentLoaded", function () {
           label.appendChild(checkbox);
           label.appendChild(labelText);
 
+          var actions = document.createElement("div");
+          actions.className = "product-row-actions";
+          actions.appendChild(buildStarButton(p.sku));
+          actions.appendChild(label);
+
           row.appendChild(info);
-          row.appendChild(label);
+          row.appendChild(actions);
           list.appendChild(row);
         });
+
+        if (products.length >= catalogPageSize) {
+          var capped = document.createElement("p");
+          capped.className = "misite-hint";
+          capped.textContent =
+            "Mostrando los primeros " + catalogPageSize +
+            " productos. Usa el buscador para encontrar uno concreto.";
+          list.appendChild(capped);
+        }
       })
       .catch(function () {});
   }
@@ -2008,8 +2067,356 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // ── PORTADA DE LA TIENDA ─────────────────────────────────────────
+  // Mirrors SHOP_BLOCKS in src/content/shop-blocks.js — that file is the source
+  // of truth for which keys exist and what they accept; this one only decides
+  // how they are presented. Keep the names in step.
+  var SHOP_BLOCK_FIELDS = [
+    {
+      name: "vendidos",
+      label: "Lo más vendido",
+      curated: false,
+      hint: "Se calcula solo, a partir de tus pedidos confirmados. No aparece hasta que confirmes pedidos en la pestaña Pedidos: los carritos sin confirmar no cuentan.",
+    },
+    {
+      name: "destacados",
+      label: "Destacados",
+      curated: true,
+      facet: null,
+      hint: "En automático elige productos con stock, con foto y con ficha propia. En manual muestra los que marques con ★ en la pestaña Catálogo.",
+    },
+    {
+      name: "novedades",
+      label: "Novedades",
+      curated: false,
+      hint: "Las últimas altas del catálogo, con stock y foto. Se refresca solo con la sincronización diaria.",
+    },
+    {
+      name: "categorias",
+      label: "Categorías",
+      curated: true,
+      facet: "categories",
+      hint: "En automático muestra las categorías con más productos. La foto se coge del primer producto de cada una.",
+    },
+    {
+      name: "marcas",
+      label: "Marcas",
+      curated: true,
+      facet: "brands",
+      hint: "En automático muestra las marcas con más productos. Cada marca tiene su propia página en la tienda.",
+    },
+  ];
+
+  var shopFacets = { categories: [], brands: [] };
+
+  function parseItemList(raw) {
+    return String(raw || "")
+      .split(/[\n,]+/)
+      .map(function (v) {
+        return v.trim();
+      })
+      .filter(Boolean);
+  }
+
+  function fieldRow(labelText, control) {
+    var wrap = document.createElement("div");
+    var label = document.createElement("label");
+    label.textContent = labelText;
+    wrap.appendChild(label);
+    wrap.appendChild(control);
+    return wrap;
+  }
+
+  function renderFacetPicker(block, selected) {
+    var picker = document.createElement("div");
+    picker.className = "shop-facet-picker";
+    picker.setAttribute("data-facet-block", block.name);
+
+    var options = shopFacets[block.facet] || [];
+    if (!options.length) {
+      var empty = document.createElement("p");
+      empty.className = "misite-hint";
+      empty.textContent = "Aún no hay nada que elegir: sincroniza el catálogo primero.";
+      picker.appendChild(empty);
+      return picker;
+    }
+
+    options.forEach(function (facet) {
+      var label = document.createElement("label");
+      label.className = "shop-facet-option";
+      var box = document.createElement("input");
+      box.type = "checkbox";
+      box.value = facet.slug;
+      box.checked = selected.indexOf(facet.slug) !== -1;
+      var text = document.createElement("span");
+      text.textContent = facet.label + " (" + facet.total + ")";
+      label.appendChild(box);
+      label.appendChild(text);
+      picker.appendChild(label);
+    });
+    return picker;
+  }
+
+  // Mirrors orderBlocks() in src/content/shop-blocks.js: honour the saved order,
+  // then append anything it does not mention. A block added in a later release
+  // must still appear for a client whose order was saved before it existed.
+  function orderedBlockFields(rawOrder) {
+    var ordered = [];
+    parseItemList(rawOrder).forEach(function (name) {
+      SHOP_BLOCK_FIELDS.forEach(function (block) {
+        if (block.name === name && ordered.indexOf(block) === -1) ordered.push(block);
+      });
+    });
+    SHOP_BLOCK_FIELDS.forEach(function (block) {
+      if (ordered.indexOf(block) === -1) ordered.push(block);
+    });
+    return ordered;
+  }
+
+  function moveBlockCard(card, delta) {
+    var container = card.parentNode;
+    var cards = [].slice.call(container.children);
+    var to = cards.indexOf(card) + delta;
+    if (to < 0 || to >= cards.length) return;
+    if (delta < 0) container.insertBefore(card, cards[to]);
+    else container.insertBefore(cards[to], card);
+    paintBlockOrderButtons();
+  }
+
+  function paintBlockOrderButtons() {
+    var cards = [].slice.call(document.getElementById("shop-blocks-form").children);
+    cards.forEach(function (card, i) {
+      card.querySelector('[data-move="-1"]').disabled = i === 0;
+      card.querySelector('[data-move="1"]').disabled = i === cards.length - 1;
+    });
+  }
+
+  function renderShopBlocks(cfg) {
+    var container = document.getElementById("shop-blocks-form");
+    container.textContent = "";
+
+    orderedBlockFields(cfg.shop_blocks_order).forEach(function (block) {
+      var card = document.createElement("div");
+      card.className = "misite-block";
+      // The DOM order of these cards *is* the saved order — see
+      // collectShopBlocksPayload().
+      card.setAttribute("data-block", block.name);
+
+      var head = document.createElement("div");
+      head.className = "shop-block-order";
+      var heading = document.createElement("h3");
+      heading.textContent = block.label;
+      head.appendChild(heading);
+      [
+        ["-1", "↑", "Subir"],
+        ["1", "↓", "Bajar"],
+      ].forEach(function (spec) {
+        var move = document.createElement("button");
+        move.type = "button";
+        move.className = "shop-block-move";
+        move.setAttribute("data-move", spec[0]);
+        move.textContent = spec[1];
+        move.title = spec[2];
+        move.setAttribute("aria-label", spec[2] + " " + block.label);
+        move.addEventListener("click", function () {
+          moveBlockCard(card, Number(spec[0]));
+        });
+        head.appendChild(move);
+      });
+      card.appendChild(head);
+
+      var hint = document.createElement("p");
+      hint.className = "misite-hint";
+      hint.textContent = block.hint;
+      card.appendChild(hint);
+
+      var enabledLabel = document.createElement("label");
+      enabledLabel.className = "shop-block-toggle";
+      var enabled = document.createElement("input");
+      enabled.type = "checkbox";
+      enabled.checked = cfg["shop_" + block.name + "_enabled"] === "1";
+      enabled.setAttribute("data-key", "shop_" + block.name + "_enabled");
+      var enabledText = document.createElement("span");
+      enabledText.textContent = "Mostrar este bloque";
+      enabledLabel.appendChild(enabled);
+      enabledLabel.appendChild(enabledText);
+      card.appendChild(enabledLabel);
+
+      // Reuses the page-editor form styling (see .misite-page-form in
+      // panel.html) so these fields look like every other field in the panel.
+      // The enabled toggle and the manual picker stay outside it: that CSS makes
+      // labels block-level and inputs full-width, which is wrong for a checkbox.
+      var fields = document.createElement("div");
+      fields.className = "misite-page-form";
+
+      var title = document.createElement("input");
+      title.type = "text";
+      title.value = cfg["shop_" + block.name + "_title"] || "";
+      title.setAttribute("data-key", "shop_" + block.name + "_title");
+      fields.appendChild(fieldRow("Título", title));
+
+      var limit = document.createElement("input");
+      limit.type = "number";
+      limit.min = "1";
+      limit.max = "24";
+      limit.value = cfg["shop_" + block.name + "_limit"] || "8";
+      limit.setAttribute("data-key", "shop_" + block.name + "_limit");
+      fields.appendChild(fieldRow("Cuántos mostrar (máx. 24)", limit));
+      card.appendChild(fields);
+
+      if (block.curated) {
+        var selected = parseItemList(cfg["shop_" + block.name + "_items"]);
+        var mode = document.createElement("select");
+        mode.setAttribute("data-key", "shop_" + block.name + "_mode");
+        [
+          ["auto", "Automático — lo elige la tienda"],
+          ["manual", "Manual — lo elijo yo"],
+        ].forEach(function (opt) {
+          var option = document.createElement("option");
+          option.value = opt[0];
+          option.textContent = opt[1];
+          mode.appendChild(option);
+        });
+        mode.value = cfg["shop_" + block.name + "_mode"] === "manual" ? "manual" : "auto";
+        fields.appendChild(fieldRow("Modo", mode));
+
+        var manual = document.createElement("div");
+        if (block.facet) {
+          manual.appendChild(renderFacetPicker(block, selected));
+        } else {
+          // Destacados is picked with the stars in the Catálogo tab rather than
+          // here: a checkbox list of 14,500 products would be unusable, and the
+          // catalogue list already has the search to find one.
+          var note = document.createElement("p");
+          note.className = "misite-hint";
+          note.textContent =
+            selected.length === 1
+              ? "1 producto marcado con ★ en la pestaña Catálogo."
+              : selected.length + " productos marcados con ★ en la pestaña Catálogo.";
+          manual.appendChild(note);
+        }
+        manual.hidden = mode.value !== "manual";
+        mode.addEventListener("change", function () {
+          manual.hidden = mode.value !== "manual";
+        });
+        card.appendChild(manual);
+      }
+
+      container.appendChild(card);
+    });
+    paintBlockOrderButtons();
+  }
+
+  function collectShopBlocksPayload() {
+    var payload = {};
+    payload.shop_blocks_order = [].slice
+      .call(document.getElementById("shop-blocks-form").children)
+      .map(function (card) {
+        return card.dataset.block;
+      })
+      .join("\n");
+    document.querySelectorAll("#productos-portada [data-key]").forEach(function (el) {
+      payload[el.dataset.key] = el.type === "checkbox" ? (el.checked ? "1" : "0") : el.value;
+    });
+    SHOP_BLOCK_FIELDS.forEach(function (block) {
+      if (!block.curated || !block.facet) return;
+      var picker = document.querySelector('[data-facet-block="' + block.name + '"]');
+      if (!picker) return;
+      var chosen = [];
+      picker.querySelectorAll("input:checked").forEach(function (box) {
+        chosen.push(box.value);
+      });
+      payload["shop_" + block.name + "_items"] = chosen.join("\n");
+    });
+    return payload;
+  }
+
+  function loadShopFront() {
+    Promise.all([
+      fetch("/api/site/config").then(function (r) {
+        return r.json();
+      }),
+      fetch("/api/products/facets").then(function (r) {
+        return r.json();
+      }),
+    ])
+      .then(function (results) {
+        var cfg = results[0];
+        shopFacets = results[1] || shopFacets;
+        // Don't overwrite stars the user has clicked but not saved yet —
+        // initProductos() runs again every time they come back to the section.
+        if (!featuredDirty) featuredSkus = parseItemList(cfg.shop_destacados_items);
+        renderShopBlocks(cfg);
+        loadProductsList(document.getElementById("productos-catalog-search").value.trim());
+      })
+      .catch(function () {});
+  }
+
+  function initShopFrontActions() {
+    var search = document.getElementById("productos-catalog-search");
+    var searchTimer = null;
+    search.addEventListener("input", function () {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () {
+        loadProductsList(search.value.trim());
+      }, 300);
+    });
+
+    document.getElementById("save-featured-btn").addEventListener("click", function () {
+      var msg = document.getElementById("save-featured-msg");
+      msg.style.display = "inline";
+      msg.textContent = "Guardando…";
+      msg.style.color = "var(--text-muted)";
+      fetch("/api/site/texts", {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ shop_destacados_items: featuredSkus.join("\n") }),
+      })
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (data) {
+          if (!data.success) throw new Error(data.error || "error");
+          featuredDirty = false;
+          msg.textContent = "✓ " + featuredSkus.length + " destacados guardados";
+          msg.style.color = "var(--accent)";
+        })
+        .catch(function () {
+          msg.textContent = "No se pudo guardar";
+          msg.style.color = "var(--error)";
+        });
+    });
+
+    document.getElementById("save-shop-blocks-btn").addEventListener("click", function () {
+      var msg = document.getElementById("save-shop-blocks-msg");
+      msg.style.display = "inline";
+      msg.textContent = "Guardando…";
+      msg.style.color = "var(--text-muted)";
+      fetch("/api/site/texts", {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(collectShopBlocksPayload()),
+      })
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (data) {
+          if (!data.success) throw new Error(data.error || "error");
+          msg.textContent = "✓ Portada guardada";
+          msg.style.color = "var(--accent)";
+        })
+        .catch(function () {
+          msg.textContent = "No se pudo guardar";
+          msg.style.color = "var(--error)";
+        });
+    });
+  }
+
   function initProductos() {
-    loadProductsList();
+    // loadShopFront() loads the config and facets first, then paints the
+    // catalogue list — the stars need to know what is already pinned before the
+    // rows are drawn.
+    loadShopFront();
     loadReservationsList();
     loadSyncStatus();
     loadFichas();
@@ -2019,6 +2426,7 @@ document.addEventListener("DOMContentLoaded", function () {
     productosInitialized = true;
     initFichasActions();
     initFichasLog();
+    initShopFrontActions();
 
     document.querySelectorAll(".productos-tab").forEach(function (tab) {
       tab.addEventListener("click", function () {

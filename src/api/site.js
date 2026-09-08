@@ -10,6 +10,7 @@ import { rateLimit } from "../middleware/rateLimit.js";
 import { optimizeToWebp } from "../media/optimize-image.js";
 import { UPLOADS_DIR as uploadsDir } from "../media/uploads-dir.js";
 import { getBuildState } from "../build/rebuild.js";
+import { SHOP_BLOCK_KEYS, SHOP_BLOCK_VALIDATORS } from "../content/shop-blocks.js";
 import { formatContent } from "../content/format-content.js";
 import {
   getMailSettings,
@@ -124,6 +125,7 @@ router.post("/texts", requireAuth, (req, res) => {
     "hero_density",
     "turnstile_site_key",
     "turnstile_secret_key",
+    ...SHOP_BLOCK_KEYS,
   ];
   // Appearance fields are picked from a fixed <select> in the panel, but they
   // still land in this endpoint as free text — and accent_color in particular
@@ -136,6 +138,7 @@ router.post("/texts", requireAuth, (req, res) => {
     radius_style: (v) => ["", "sharp", "default", "rounded"].includes(v),
     theme_default: (v) => ["", "light", "dark"].includes(v),
     hero_density: (v) => ["", "compact", "spacious"].includes(v),
+    ...SHOP_BLOCK_VALIDATORS,
   };
   for (const key of allowed) {
     if (req.body[key] === undefined) continue;

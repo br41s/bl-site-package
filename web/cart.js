@@ -157,17 +157,30 @@ function initProductSearch() {
   var input = document.getElementById("product-search-input");
   var resultsGrid = document.getElementById("product-search-results");
   var emptyMsg = document.getElementById("product-search-empty");
-  var browse = document.getElementById("product-browse");
+  // Both belong to browsing, not to a result set: the merchandising blocks and
+  // the paginated grid are what the search results stand in for, so they hide
+  // and come back together. Leaving the blocks up would strand them between the
+  // search box and its results.
+  var browseSections = [
+    document.getElementById("shop-blocks"),
+    document.getElementById("product-browse"),
+  ].filter(Boolean);
   if (!input || !resultsGrid) return;
 
   var debounceTimer = null;
   var currentRequestId = 0;
 
+  function setBrowseHidden(hidden) {
+    browseSections.forEach(function (el) {
+      el.hidden = hidden;
+    });
+  }
+
   function showBrowse() {
     resultsGrid.hidden = true;
     resultsGrid.textContent = "";
     if (emptyMsg) emptyMsg.hidden = true;
-    if (browse) browse.hidden = false;
+    setBrowseHidden(false);
   }
 
   function runSearch(query) {
@@ -180,7 +193,7 @@ function initProductSearch() {
         if (requestId !== currentRequestId) return; // a newer keystroke already fired
         var products = data.products || [];
         resultsGrid.textContent = "";
-        if (browse) browse.hidden = true;
+        setBrowseHidden(true);
 
         if (products.length === 0) {
           resultsGrid.hidden = true;

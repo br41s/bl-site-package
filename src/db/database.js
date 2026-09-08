@@ -69,6 +69,41 @@ export const PUBLIC_CONFIG_KEYS = [
   // embedded in the page. The paired secret key (turnstile_secret_key) is
   // deliberately NOT in this list; see src/turnstile.js.
   "turnstile_site_key",
+  // Shop landing blocks (the merchandising strip at the top of /productos/).
+  // One flat key per setting, matching the page_* convention — the config
+  // table has no list semantics and nothing else in it holds JSON.
+  //
+  // Every block: _enabled ("1"/"0"), _title, _limit. Blocks whose picks can be
+  // curated also get _mode ("auto"/"manual") and _items (newline-separated
+  // SKUs or slugs). "vendidos" and "novedades" are auto-only: pinning a
+  // best-seller by hand would be a lie, and a hand-picked "new arrival" is
+  // just a featured product. See site/_data/shopBlocks.js.
+  //
+  // shop_blocks_order is the one setting about the strip rather than about a
+  // block: block names, top to bottom. Anything it omits still renders, after
+  // the ones it names, in the order src/content/shop-blocks.js declares.
+  "shop_blocks_order",
+  "shop_vendidos_enabled",
+  "shop_vendidos_title",
+  "shop_vendidos_limit",
+  "shop_destacados_enabled",
+  "shop_destacados_title",
+  "shop_destacados_limit",
+  "shop_destacados_mode",
+  "shop_destacados_items",
+  "shop_novedades_enabled",
+  "shop_novedades_title",
+  "shop_novedades_limit",
+  "shop_categorias_enabled",
+  "shop_categorias_title",
+  "shop_categorias_limit",
+  "shop_categorias_mode",
+  "shop_categorias_items",
+  "shop_marcas_enabled",
+  "shop_marcas_title",
+  "shop_marcas_limit",
+  "shop_marcas_mode",
+  "shop_marcas_items",
 ];
 
 // Absolute, normalized path to the SQLite file. Default lives in ./data/app.db;
@@ -375,6 +410,37 @@ seedConfigDefault("liderpapel_supplier_code", "");
 // src/sync/liderpapel/parse.js); a whole-number percentage, e.g. "40" = 40%.
 seedConfigDefault("liderpapel_margin_pct", "40");
 seedConfigDefault("whatsapp_bot_enabled", "0");
+
+// Shop landing blocks — seeded so a fresh deployment has a presentable
+// catalogue front page before anyone opens the panel. Titles are Spanish
+// because customer-facing copy is (see CLAUDE.md); the panel can change them.
+//
+// "marcas" ships off: it is the one block that needs a real brand-rich feed to
+// look like anything, and it adds a /productos/marca/{slug}/ page per brand.
+// "vendidos" ships on even though it renders nothing until there are confirmed
+// orders — it hides itself, then appears on its own once the shop has sales.
+seedConfigDefault("shop_blocks_order", "vendidos\ndestacados\nnovedades\ncategorias\nmarcas");
+seedConfigDefault("shop_vendidos_enabled", "1");
+seedConfigDefault("shop_vendidos_title", "Lo más vendido");
+seedConfigDefault("shop_vendidos_limit", "8");
+seedConfigDefault("shop_destacados_enabled", "1");
+seedConfigDefault("shop_destacados_title", "Destacados");
+seedConfigDefault("shop_destacados_limit", "8");
+seedConfigDefault("shop_destacados_mode", "auto");
+seedConfigDefault("shop_destacados_items", "");
+seedConfigDefault("shop_novedades_enabled", "1");
+seedConfigDefault("shop_novedades_title", "Novedades");
+seedConfigDefault("shop_novedades_limit", "8");
+seedConfigDefault("shop_categorias_enabled", "1");
+seedConfigDefault("shop_categorias_title", "Explora por categoría");
+seedConfigDefault("shop_categorias_limit", "8");
+seedConfigDefault("shop_categorias_mode", "auto");
+seedConfigDefault("shop_categorias_items", "");
+seedConfigDefault("shop_marcas_enabled", "0");
+seedConfigDefault("shop_marcas_title", "Marcas");
+seedConfigDefault("shop_marcas_limit", "12");
+seedConfigDefault("shop_marcas_mode", "auto");
+seedConfigDefault("shop_marcas_items", "");
 
 export function getConfig(key) {
   const row = db.prepare("SELECT value FROM config WHERE key = ?").get(key);
