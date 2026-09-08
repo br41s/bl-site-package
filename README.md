@@ -54,6 +54,7 @@ Modelo de campos por página:
 - Configuración de páginas, textos y logo.
 - Bandeja de mensajes enviados desde el formulario de contacto.
 - Catálogo: visibilidad por producto, reservas, fichas propias y estado de la sincronización.
+- Portada de la tienda: bloques de merchandising sobre el catálogo, automáticos o curados a mano.
 - Reseteo completo desde Ajustes para volver al onboarding.
 
 ## Catálogo (opcional)
@@ -66,6 +67,14 @@ referencia del fabricante y las fichas técnicas en PDF de cada producto.
 `product_content`, que la sincronización no toca: la descripción es nuestra y sobrevive
 incluso a un cambio de distribuidor, mientras el precio y el stock siguen viniendo del
 feed. La URL de un producto se fija la primera vez y no cambia aunque cambie el título.
+
+**La portada de la tienda se calcula sola.** Encima de la rejilla de `/productos/` hay cinco
+bloques —lo más vendido, destacados, novedades, categorías y marcas— que se derivan del
+catálogo en cada build. Como la sincronización nocturna termina disparando un rebuild, se
+reordenan solos cada día sin ninguna tarea añadida, y un bloque sin contenido no se
+renderiza. Desde el panel el cliente los activa, retitula, reordena y, en tres de ellos,
+puede pasar a elegir a mano. Ver `src/content/shop-blocks.js` (registro de bloques y claves
+de config) y `site/_data/shopBlocks.js` (las consultas).
 
 ## Variables de entorno
 
