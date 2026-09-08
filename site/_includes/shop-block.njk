@@ -1,0 +1,42 @@
+{#-
+  One merchandising block on the catalogue front page. Expects `block` to be set
+  by the caller ({% set block = shopBlocks.destacados %}).
+
+  An empty block renders nothing at all — that is what lets "lo más vendido" ship
+  enabled on a shop with no orders yet and simply appear the day it has some.
+-#}
+{%- if block.enabled and block.items.length %}
+<section class="shop-block reveal" aria-labelledby="shop-block-{{ block.name }}">
+  <h2 class="shop-block-title" id="shop-block-{{ block.name }}">{{ block.title }}</h2>
+
+  {%- if block.kind == "products" %}
+  <div class="product-grid">
+    {%- for product in block.items %}
+    {% include "product-card.njk" %}
+    {%- endfor %}
+  </div>
+
+  {%- elif block.kind == "brands" %}
+  <div class="brand-strip">
+    {%- for group in block.items %}
+    <a href="{{ group.url }}" class="brand-chip">{{ group.label }} <span class="brand-chip-count">{{ group.total }}</span></a>
+    {%- endfor %}
+  </div>
+
+  {%- else %}
+  <div class="category-grid">
+    {%- for group in block.items %}
+    <a href="{{ group.url }}" class="category-card">
+      <span class="category-card-image">
+        <img src="{{ group.image_url }}" alt="" loading="lazy" onerror="this.onerror=null;this.src='/img/placeholder-product.svg';">
+      </span>
+      <span class="category-card-body">
+        <span class="category-card-label">{{ group.label }}</span>
+        <span class="category-card-count">{{ group.total }} producto{% if group.total != 1 %}s{% endif %}</span>
+      </span>
+    </a>
+    {%- endfor %}
+  </div>
+  {%- endif %}
+</section>
+{%- endif %}

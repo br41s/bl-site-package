@@ -69,6 +69,20 @@ En Zeabur → tu servicio → Variables:
 
 - [ ] Si el cliente contrató el **Product Sheet Writer**, avísalo a quien gestione Hermes (ver más abajo): ese agente solo sirve si hay catálogo conectado
 
+### 5c. Portada de la tienda (solo si hay catálogo)
+
+Los bloques vienen activados de fábrica y se calculan solos, así que **no hay nada que hacer para que funcionen**. Este paso es solo para dejarlos con la cara del cliente antes de la entrega.
+
+- [ ] Panel → Productos → **Portada** → ajustar los títulos al tono del cliente y el orden con ↑/↓ (por defecto: lo más vendido, destacados, novedades, categorías, marcas)
+- [ ] Decidir si activan **Marcas** — viene desactivado: solo luce si el feed trae marcas de verdad, y añade una página por marca
+- [ ] Si el cliente quiere empujar productos concretos: Productos → Catálogo → buscar, marcar ★, **Guardar destacados**, y poner Destacados en modo manual desde la pestaña Portada
+- [ ] Verificar en la web pública que `/productos/` muestra los bloques por encima de la rejilla
+
+Dos cosas que **hay que avisarle al cliente en la entrega**, o las reportará como fallos:
+
+- **«Lo más vendido» no aparecerá al principio.** Solo cuenta reservas que él haya confirmado desde la pestaña Pedidos; los carritos sin confirmar no cuentan, a propósito (`POST /api/reservations` es público y anónimo). Aparece solo en cuanto confirme pedidos.
+- **«Novedades» no significa nada hasta la segunda sincronización**, porque la carga inicial da de alta todo el catálogo a la vez.
+
 ### 6. Dominio (si procede)
 
 - [ ] Zeabur → Networking → Add Domain → introducir dominio del cliente
@@ -86,6 +100,7 @@ En Zeabur → tu servicio → Variables:
 - [ ] Mostrar cómo publicar un artículo
 - [ ] Mostrar cómo usar el agente de chat
 - [ ] Mostrar dónde ver los mensajes de contacto
+- [ ] Si hay catálogo: mostrar Productos → Portada y explicar los dos avisos del paso 5c (lo más vendido necesita pedidos confirmados; novedades necesita una segunda sincronización)
 - [ ] Entregar `INSTRUCCIONES-CLIENTE.md` (exportado a PDF)
 - [ ] Acordar canal de soporte (WhatsApp, email, etc.)
 

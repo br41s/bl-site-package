@@ -1,0 +1,24 @@
+---
+layout: base.njk
+navActive: productos
+pagination:
+  data: productBrandGroups
+  size: 1
+  alias: group
+  addAllPagesToCollections: true
+permalink: "/productos/marca/{{ group.slug }}/index.html"
+eleventyComputed:
+  title: "{{ group.brand }}"
+  description: "Productos {{ group.brand }} — reserva online, sin pago por adelantado."
+---
+<main class="site-page"><div class="site-page-inner">
+  <a href="/productos" class="site-back-link">← Volver al catálogo</a>
+  <h1 class="reveal">{{ group.brand }}</h1>
+  <p class="site-page-subtitle reveal">{{ group.products.length }} producto{% if group.products.length != 1 %}s{% endif %} de {{ group.brand }}.</p>
+
+  <div class="product-grid">
+    {%- for product in group.products %}
+    {% include "product-card.njk" %}
+    {%- endfor %}
+  </div>
+</div></main>

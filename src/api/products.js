@@ -4,6 +4,7 @@ import db, { getConfig } from "../db/database.js";
 import { requireAuth } from "../middleware/auth.js";
 import { scheduleRebuild } from "../build/rebuild.js";
 import { normalizeForSearch } from "../utils/text.js";
+import { toSlug } from "../sync/liderpapel/parse.js";
 
 const router = Router();
 
@@ -70,13 +71,28 @@ router.get("/", (req, res) => {
         .join(" AND ")
     : "";
 
+  // Paging. Optional and off by default, so the storefront search keeps
+  // returning every match — but the panel's catalogue tab needs it: on a real
+  // client this table holds ~14,500 rows, and pulling all of them (~28 MB, see
+  // the note on /count) to render a list nobody scrolls to the end of made that
+  // tab unusable as soon as it grew a per-product control.
+  const MAX_LIMIT = 500;
+  const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 0, 0), MAX_LIMIT);
+  const offset = Math.max(Number.parseInt(req.query.offset, 10) || 0, 0);
+  const pageClause = limit ? "LIMIT @limit OFFSET @offset" : "";
+  if (limit) {
+    params.limit = limit;
+    params.offset = offset;
+  }
+
   const rows = db
     .prepare(
       `SELECT p.*, c.display_name AS owned_name
          FROM products p
          LEFT JOIN product_content c ON c.sku = p.sku AND c.status = 'owned'
         ${activeClause} ${searchClause}
-        ORDER BY p.category, p.name COLLATE NOCASE`,
+        ORDER BY p.category, p.name COLLATE NOCASE
+        ${pageClause}`,
     )
     .all(params);
 
@@ -88,6 +104,42 @@ router.get("/", (req, res) => {
     feed_name: row.name,
   }));
   res.json({ products });
+});
+
+// GET /api/products/facets — the categories and brands the live catalogue
+// actually contains, with a product count each. Feeds the checkbox pickers in
+// the panel's shop-front tab, so the client picks from what exists rather than
+// typing a slug and hoping.
+//
+// Aggregated in JS rather than with GROUP BY: neither products.category nor
+// products.brand is indexed, so grouping in SQL would scan the table once per
+// group. site/_data/shopBlocks.js does the same thing for the same reason.
+//
+// Public, like /count — every category and brand page it names is already in
+// the sitemap.
+//
+// MUST stay above the /:sku route (see the note on /count).
+router.get("/facets", (req, res) => {
+  const rows = db
+    .prepare("SELECT category, brand FROM products WHERE active = 1 AND feed_active = 1")
+    .all();
+
+  const tally = (values) => {
+    const counts = new Map();
+    for (const value of values) {
+      const label = (value || "").trim();
+      if (!label) continue;
+      counts.set(label, (counts.get(label) || 0) + 1);
+    }
+    return Array.from(counts, ([label, total]) => ({ label, slug: toSlug(label), total }))
+      .filter((f) => f.slug)
+      .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label, "es"));
+  };
+
+  res.json({
+    categories: tally(rows.map((r) => r.category)),
+    brands: tally(rows.map((r) => r.brand)),
+  });
 });
 
 // GET /api/products/count — how many products the site is currently selling.

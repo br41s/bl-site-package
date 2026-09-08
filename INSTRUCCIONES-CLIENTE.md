@@ -89,12 +89,48 @@ Ejemplos de lo que puedes pedirle:
 
 > Esta sección solo aparece si tu web tiene catálogo conectado con tu proveedor.
 
-Tu catálogo se sincroniza solo con tu proveedor: los precios, el stock y las altas y bajas de artículos llegan sin que tengas que tocar nada. Tiene cuatro pestañas:
+Tu catálogo se sincroniza solo con tu proveedor: los precios, el stock y las altas y bajas de artículos llegan sin que tengas que tocar nada. Tiene cinco pestañas:
 
-- **Catálogo** — todos tus productos. Puedes ocultar cualquiera de la web con el interruptor *Visible en la tienda*, y ese ajuste no se pierde en la siguiente sincronización.
+- **Catálogo** — todos tus productos. Puedes ocultar cualquiera de la web con el interruptor *Visible en la tienda*, y ese ajuste no se pierde en la siguiente sincronización. La estrella ★ de cada producto sirve para destacarlo en la portada de la tienda (ver más abajo). Como el catálogo es muy grande, se muestran los primeros 100 productos: usa el buscador de arriba para encontrar uno concreto.
+- **Portada** — ver más abajo.
 - **Pedidos** — las reservas que te dejan los clientes desde la web.
 - **Fichas** — ver más abajo.
 - **Sincronización** — cuándo se actualizó el catálogo por última vez y los datos de conexión con tu proveedor.
+
+#### La pestaña Portada
+
+Arriba de tu catálogo, encima de la lista de productos, hay una serie de **bloques** que ayudan al visitante a orientarse en lugar de encontrarse un muro de artículos. Son cinco:
+
+| Bloque | Qué muestra |
+|---|---|
+| **Lo más vendido** | Los productos que más pedidos han tenido |
+| **Destacados** | Los que quieres empujar |
+| **Novedades** | Las últimas altas de tu catálogo |
+| **Categorías** | Las categorías con más artículos, con foto |
+| **Marcas** | Las marcas con más artículos |
+
+**No tienes que mantenerlos.** Se actualizan solos cada día, cuando tu catálogo se sincroniza con tu proveedor: las novedades recogen los artículos nuevos, las categorías y marcas se reordenan según lo que tengas en stock. Si un bloque no tiene nada que mostrar, sencillamente no aparece en la web — no verás nunca un hueco vacío.
+
+Desde esta pestaña puedes:
+
+- **Mostrar u ocultar** cada bloque
+- **Cambiar su título** — el que ven tus visitantes
+- **Cambiar el orden** en que aparecen, con las flechas ↑ y ↓
+- **Elegir cuántos artículos muestra** cada uno
+- **Pasar un bloque a modo manual**, si prefieres decidir tú en lugar de dejarlo automático
+
+Cuando terminas, pulsa **Guardar portada**. Los cambios aparecen en tu web en unos segundos.
+
+**Modo automático o manual.** Tres bloques admiten las dos formas:
+
+- **Destacados** — en automático elige productos con stock, con foto y con la ficha bien escrita. En manual muestra los que tú marques con ★ en la pestaña Catálogo: búscalos, pulsa la estrella y luego **Guardar destacados**.
+- **Categorías** y **Marcas** — en automático muestran las que más artículos tienen. En manual eliges tú cuáles con las casillas, y aparecen en el orden en que las marcas.
+
+*Lo más vendido* y *Novedades* van siempre en automático: no tendría sentido decidir a mano cuál es tu producto más vendido.
+
+> **«Lo más vendido» no me aparece.** Es normal al principio. Ese bloque cuenta solo los pedidos que has **confirmado** desde la pestaña Pedidos; los carritos que un visitante deja sin más no cuentan, para que nadie pueda colocarse en tu portada llenando una cesta. En cuanto confirmes tus primeros pedidos, el bloque aparece solo.
+
+> **«Novedades» me muestra productos que no son nuevos.** También es normal los primeros días: cuando se carga el catálogo por primera vez, todos los artículos entran a la vez, así que ninguno es más nuevo que otro. A partir de la segunda sincronización el bloque ya tiene sentido.
 
 #### La pestaña Fichas
 

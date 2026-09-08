@@ -14,10 +14,6 @@ eleventyComputed:
   <h1 class="reveal">Catálogo</h1>
   <p class="site-page-subtitle reveal">Reserva online, sin pago por adelantado.</p>
 
-  <div class="b2b-banner reveal">
-    <p>¿Eres una empresa? <a href="/contacto">Contacta con nosotros</a> para darte de alta y acceder a precios B2B.</p>
-  </div>
-
   {%- if not products.length %}
   <p class="site-empty">Aún no hay productos disponibles.</p>
   {%- else %}
@@ -26,6 +22,24 @@ eleventyComputed:
   </div>
   <div class="product-grid" id="product-search-results" hidden></div>
   <p class="site-empty" id="product-search-empty" hidden>No se encontraron productos.</p>
+
+  <div class="b2b-banner reveal">
+    <p>¿Eres una empresa? <a href="/contacto">Contacta con nosotros</a> para darte de alta y acceder a precios B2B.</p>
+  </div>
+
+  {#-
+    Merchandising blocks, page 1 only — on /productos/2/ the visitor is already
+    browsing and does not need to be sold an entry point. web/cart.js hides this
+    whole container while a search is running; each block inside hides itself
+    when it has nothing to show.
+  -#}
+  {%- if pagination.pageNumber == 0 %}
+  <div id="shop-blocks">
+    {%- for block in shopBlocks %}
+    {% include "shop-block.njk" %}
+    {%- endfor %}
+  </div>
+  {%- endif %}
 
   <div id="product-browse">
     {% include "category-pills.njk" %}
