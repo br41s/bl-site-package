@@ -41,7 +41,8 @@ asumas que "cliente" == "Plesk": cada uno se verifica por separado.
    ```
    Esta cuenta de GitHub no tiene Actions, así que **este script es la única
    puerta**: nadie lo ejecuta por ti. Sale en `FAIL` si la rama cambia código
-   sin bump (los cambios solo de documentación están exentos).
+   sin bump. Están exentos los cambios que no llegan a ejecutarse en ninguna
+   instancia: documentación (`.md`), `.github/`, `fleet/` y `scripts/`.
 3. **Revisión** → corre `/review` sobre la rama (los cambios de nivel sistema
    son *advisory*: los revisa una persona antes de mergear).
 4. **Merge a `main`.**

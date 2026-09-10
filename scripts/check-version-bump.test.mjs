@@ -6,6 +6,11 @@ test("docs-only detection", () => {
   assert.equal(isDocsOnly(["RELEASE.md", "fleet/README.md"]), true);
   assert.equal(isDocsOnly([".github/workflows/x.yml"]), true);
   assert.equal(isDocsOnly(["RELEASE.md", "src/server.js"]), false);
+  // Fleet metadata and dev tooling never run on an instance.
+  assert.equal(isDocsOnly(["fleet/manifest.json", "RELEASE.md"]), true);
+  assert.equal(isDocsOnly(["scripts/fleet-check.mjs", "scripts/smoke-test.sh"]), true);
+  // One runtime file is enough to require a bump.
+  assert.equal(isDocsOnly(["fleet/manifest.json", "web/style.css"]), false);
 });
 
 test("verdict: code change without bump fails", () => {
