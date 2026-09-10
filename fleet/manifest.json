@@ -14,17 +14,6 @@
       "password_env": "FLEET_PASSWORD_BLCLIENTE"
     },
     {
-      "id": "shoroban-staging",
-      "name": "Shoroban — staging",
-      "customer": "Shoroban",
-      "role": "staging",
-      "url": "https://prueba.shoroban.com",
-      "host": "plesk-passenger",
-      "driver": "manual",
-      "hermes_profile": "shoroban",
-      "password_env": "FLEET_PASSWORD_SHOROBAN_STAGING"
-    },
-    {
       "id": "shoroban-prod",
       "name": "Shoroban — producción",
       "customer": "Shoroban",
