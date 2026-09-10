@@ -1,29 +1,49 @@
 {#-
   One merchandising block on the catalogue front page. Expects `block` to be set
-  by the caller ({% set block = shopBlocks.destacados %}).
+  by the caller ({% set block = ... %} or a {% for %} over shopBlocks).
+
+  Four shapes, chosen by block.layout (see src/content/shop-blocks.js): the page
+  used to render five identical grids under five identical headings, which meant
+  a hand-picked product carried exactly as much weight as the brand list.
 
   An empty block renders nothing at all — that is what lets "lo más vendido" ship
   enabled on a shop with no orders yet and simply appear the day it has some.
 -#}
 {%- if block.enabled and block.items.length %}
-<section class="shop-block reveal" aria-labelledby="shop-block-{{ block.name }}">
-  <h2 class="shop-block-title" id="shop-block-{{ block.name }}">{{ block.title }}</h2>
+<section class="shop-block shop-block-{{ block.layout }} reveal" aria-labelledby="shop-block-{{ block.name }}">
+  <div class="shop-block-head">
+    <h2 class="shop-block-title" id="shop-block-{{ block.name }}">{{ block.title }}</h2>
+    {#- There is no separate "all products" page: the full grid lives further
+        down this same page, so the link is an anchor to it. -#}
+    {%- if block.layout == "showcase" %}
+    <a href="#product-browse" class="shop-block-more">Ver todo el catálogo ↓</a>
+    {%- endif %}
+  </div>
 
-  {%- if block.kind == "products" %}
-  <div class="product-grid">
+  {%- if block.layout == "showcase" %}
+  {#- The lead blocks: fewer, bigger cards, so a featured product does not read
+      as one more row of the 60-item grid below.
+
+      Under three items there is no showcase to make — big cards would just leave
+      two empty columns under the heading, which reads as broken rather than
+      short. This is not hypothetical: a shop with its first confirmed order has
+      exactly one best seller. -#}
+  <div class="product-grid{% if block.items.length >= 3 %} product-grid-lg{% endif %}">
     {%- for product in block.items %}
     {% include "product-card.njk" %}
     {%- endfor %}
   </div>
 
-  {%- elif block.kind == "brands" %}
-  <div class="brand-strip">
-    {%- for group in block.items %}
-    <a href="{{ group.url }}" class="brand-chip">{{ group.label }} <span class="brand-chip-count">{{ group.total }}</span></a>
+  {%- elif block.layout == "strip" %}
+  {#- New arrivals are a browse-past list, not a shortlist: one scrollable row
+      keeps a long tail from pushing the rest of the page down. -#}
+  <div class="product-strip">
+    {%- for product in block.items %}
+    {% include "product-card.njk" %}
     {%- endfor %}
   </div>
 
-  {%- else %}
+  {%- elif block.layout == "mosaic" %}
   <div class="category-grid">
     {%- for group in block.items %}
     <a href="{{ group.url }}" class="category-card">
@@ -35,6 +55,13 @@
         <span class="category-card-count">{{ group.total }} producto{% if group.total != 1 %}s{% endif %}</span>
       </span>
     </a>
+    {%- endfor %}
+  </div>
+
+  {%- else %}
+  <div class="brand-strip">
+    {%- for group in block.items %}
+    <a href="{{ group.url }}" class="brand-chip">{{ group.label }} <span class="brand-chip-count">{{ group.total }}</span></a>
     {%- endfor %}
   </div>
   {%- endif %}

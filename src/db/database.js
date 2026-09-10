@@ -419,21 +419,25 @@ seedConfigDefault("whatsapp_bot_enabled", "0");
 // look like anything, and it adds a /productos/marca/{slug}/ page per brand.
 // "vendidos" ships on even though it renders nothing until there are confirmed
 // orders — it hides itself, then appears on its own once the shop has sales.
+//
+// The item counts differ per block because the layouts do (see `layout` in
+// src/content/shop-blocks.js): showcase blocks draw large cards and want one or
+// two rows, the strip scrolls so it can hold more.
 seedConfigDefault("shop_blocks_order", "vendidos\ndestacados\nnovedades\ncategorias\nmarcas");
 seedConfigDefault("shop_vendidos_enabled", "1");
 seedConfigDefault("shop_vendidos_title", "Lo más vendido");
-seedConfigDefault("shop_vendidos_limit", "8");
+seedConfigDefault("shop_vendidos_limit", "3");
 seedConfigDefault("shop_destacados_enabled", "1");
 seedConfigDefault("shop_destacados_title", "Destacados");
-seedConfigDefault("shop_destacados_limit", "8");
+seedConfigDefault("shop_destacados_limit", "6");
 seedConfigDefault("shop_destacados_mode", "auto");
 seedConfigDefault("shop_destacados_items", "");
 seedConfigDefault("shop_novedades_enabled", "1");
 seedConfigDefault("shop_novedades_title", "Novedades");
-seedConfigDefault("shop_novedades_limit", "8");
+seedConfigDefault("shop_novedades_limit", "10");
 seedConfigDefault("shop_categorias_enabled", "1");
 seedConfigDefault("shop_categorias_title", "Explora por categoría");
-seedConfigDefault("shop_categorias_limit", "8");
+seedConfigDefault("shop_categorias_limit", "6");
 seedConfigDefault("shop_categorias_mode", "auto");
 seedConfigDefault("shop_categorias_items", "");
 seedConfigDefault("shop_marcas_enabled", "0");

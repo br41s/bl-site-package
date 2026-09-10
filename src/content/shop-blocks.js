@@ -9,12 +9,18 @@
 // those blocks get a _mode and an _items key. "vendidos" and "novedades" are
 // deliberately auto-only — a hand-picked best-seller is a lie, and a
 // hand-picked "new arrival" is just a featured product, which is its own block.
+// `layout` is how the block draws, and it is fixed per block on purpose. Five
+// blocks that all render as the same grid with the same heading gave the page no
+// hierarchy at all — a featured product looked exactly like row 47 of the
+// catalogue. It is not a client setting: which block deserves the big cards is a
+// design decision, not a preference, and site/_includes/shop-block.njk is the
+// only reader.
 export const SHOP_BLOCKS = [
-  { name: "vendidos", kind: "products", curated: false },
-  { name: "destacados", kind: "products", curated: true },
-  { name: "novedades", kind: "products", curated: false },
-  { name: "categorias", kind: "categories", curated: true },
-  { name: "marcas", kind: "brands", curated: true },
+  { name: "vendidos", kind: "products", curated: false, layout: "showcase" },
+  { name: "destacados", kind: "products", curated: true, layout: "showcase" },
+  { name: "novedades", kind: "products", curated: false, layout: "strip" },
+  { name: "categorias", kind: "categories", curated: true, layout: "mosaic" },
+  { name: "marcas", kind: "brands", curated: true, layout: "chips" },
 ];
 
 // A block never renders more than this many items however the config is set.

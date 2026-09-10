@@ -174,7 +174,7 @@ export default function () {
     const settings = readBlockSettings(getConfig, block);
     // Skip the query entirely for a block nobody is going to see.
     if (!settings.enabled) {
-      blocks.push({ ...settings, kind: block.kind, items: [] });
+      blocks.push({ ...settings, kind: block.kind, layout: block.layout, items: [] });
       continue;
     }
 
@@ -193,7 +193,7 @@ export default function () {
     // An empty block hides itself (see shop-block.njk). That is the whole
     // promise of "it runs on its own": "lo más vendido" stays invisible until
     // the shop has confirmed orders, and no page ever shows an empty shelf.
-    blocks.push({ ...settings, kind: block.kind, items });
+    blocks.push({ ...settings, kind: block.kind, layout: block.layout, items });
   }
 
   return blocks;
