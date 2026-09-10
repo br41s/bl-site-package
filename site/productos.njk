@@ -10,57 +10,72 @@ permalink: "{% if pagination.pageNumber == 0 %}/productos/index.html{% else %}/p
 eleventyComputed:
   title: "{% if pagination.pageNumber > 0 %}Catálogo (página {{ pagination.pageNumber + 1 }}){% else %}Catálogo{% endif %}"
 ---
-<main class="site-page"><div class="site-page-inner">
-  <h1 class="reveal">Catálogo</h1>
-  <p class="site-page-subtitle reveal">Reserva online, sin pago por adelantado.</p>
-
-  {%- if not products.length %}
-  <p class="site-empty">Aún no hay productos disponibles.</p>
-  {%- else %}
-  <div class="product-search">
-    <input type="search" id="product-search-input" class="product-search-input" placeholder="Buscar productos…" aria-label="Buscar productos">
-  </div>
-  <div class="product-grid" id="product-search-results" hidden></div>
-  <p class="site-empty" id="product-search-empty" hidden>No se encontraron productos.</p>
-
-  <div class="b2b-banner reveal">
-    <p>¿Eres una empresa? <a href="/contacto">Contacta con nosotros</a> para darte de alta y acceder a precios B2B.</p>
-  </div>
-
+<main class="shop-main">
   {#-
-    Merchandising blocks, page 1 only — on /productos/2/ the visitor is already
-    browsing and does not need to be sold an entry point. web/cart.js hides this
-    whole container while a search is running; each block inside hides itself
-    when it has nothing to show.
+    The hero is a full-bleed band, so it sits outside .site-page rather than
+    inside .site-page-inner's 960px column. With ~14,500 references the search is
+    the most-used control on the page; it used to be a bare input below the fold
+    of the heading, so it leads the band.
   -#}
-  {%- if pagination.pageNumber == 0 %}
-  <div id="shop-blocks">
-    {%- for block in shopBlocks %}
-    {% include "shop-block.njk" %}
-    {%- endfor %}
-  </div>
-  {%- endif %}
+  <header class="shop-hero">
+    <div class="shop-hero-inner">
+      <h1>Catálogo</h1>
+      <p class="shop-hero-subtitle">Reserva online, sin pago por adelantado. Recoges en tienda.</p>
 
-  <div id="product-browse">
-    {% include "category-pills.njk" %}
+      {%- if products.length %}
+      <div class="product-search">
+        <input type="search" id="product-search-input" class="product-search-input" placeholder="Buscar productos…" aria-label="Buscar productos">
+      </div>
+      {%- endif %}
+    </div>
+  </header>
 
-    <div class="product-grid">
-      {%- for product in pageProducts %}
-      {% include "product-card.njk" %}
-      {%- endfor %}
+  <div class="site-page"><div class="site-page-inner">
+    {%- if not products.length %}
+    <p class="site-empty">Aún no hay productos disponibles.</p>
+    {%- else %}
+    <div class="product-grid" id="product-search-results" hidden></div>
+    <p class="site-empty" id="product-search-empty" hidden>No se encontraron productos.</p>
+
+    <div class="b2b-banner reveal">
+      <p>¿Eres una empresa? <a href="/contacto">Contacta con nosotros</a> para darte de alta y acceder a precios B2B.</p>
     </div>
 
-    {%- if pagination.pages.length > 1 %}
-    <nav class="pager" aria-label="Paginación de productos">
-      {%- if pagination.href.previous %}
-      <a href="{{ pagination.href.previous }}" class="pager-link">← Anterior</a>
-      {%- endif %}
-      <span class="pager-status">Página {{ pagination.pageNumber + 1 }} de {{ pagination.pages.length }}</span>
-      {%- if pagination.href.next %}
-      <a href="{{ pagination.href.next }}" class="pager-link">Siguiente →</a>
-      {%- endif %}
-    </nav>
+    {#-
+      Merchandising blocks, page 1 only — on /productos/2/ the visitor is already
+      browsing and does not need to be sold an entry point. web/cart.js hides this
+      whole container while a search is running; each block inside hides itself
+      when it has nothing to show, and picks its own shape from block.layout.
+    -#}
+    {%- if pagination.pageNumber == 0 %}
+    <div id="shop-blocks">
+      {%- for block in shopBlocks %}
+      {% include "shop-block.njk" %}
+      {%- endfor %}
+    </div>
     {%- endif %}
-  </div>
-  {%- endif %}
-</div></main>
+
+    <div id="product-browse">
+      {% include "category-pills.njk" %}
+
+      <div class="product-grid">
+        {%- for product in pageProducts %}
+        {% include "product-card.njk" %}
+        {%- endfor %}
+      </div>
+
+      {%- if pagination.pages.length > 1 %}
+      <nav class="pager" aria-label="Paginación de productos">
+        {%- if pagination.href.previous %}
+        <a href="{{ pagination.href.previous }}" class="pager-link">← Anterior</a>
+        {%- endif %}
+        <span class="pager-status">Página {{ pagination.pageNumber + 1 }} de {{ pagination.pages.length }}</span>
+        {%- if pagination.href.next %}
+        <a href="{{ pagination.href.next }}" class="pager-link">Siguiente →</a>
+        {%- endif %}
+      </nav>
+      {%- endif %}
+    </div>
+    {%- endif %}
+  </div></div>
+</main>

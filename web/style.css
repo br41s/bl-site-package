@@ -874,32 +874,135 @@ body {
   text-align: center;
 }
 
-/* TIENDA — BLOQUES DE PORTADA */
+/* TIENDA — PORTADA DEL CATÁLOGO */
+/* Full-bleed band: the hero sits outside .site-page so it can span the viewport
+   while its contents stay on the same 960px column as the rest of the page. */
+.shop-hero {
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+  padding: 3rem 1.5rem 2.5rem;
+}
+.shop-hero-inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+}
+.shop-hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+.shop-hero-subtitle {
+  font-size: 1.0625rem;
+  color: var(--text-muted);
+  max-width: 52ch;
+  margin-bottom: 1.5rem;
+}
+/* The search is the band's payload, not a footnote to the heading. */
+.shop-hero .product-search {
+  margin-bottom: 0;
+}
+.shop-hero .product-search-input {
+  max-width: 30rem;
+  padding: 0.75rem 1.125rem;
+  font-size: 1rem;
+}
+/* The hero already carries the top spacing for the page. */
+.shop-hero + .site-page {
+  padding-top: 2rem;
+}
+
 #shop-blocks {
-  margin: 2rem 0 2.5rem;
+  margin: 0 0 1rem;
 }
 .shop-block {
-  margin-bottom: 2.5rem;
+  margin-bottom: 3rem;
+}
+.shop-block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.125rem;
 }
 .shop-block-title {
   font-family: var(--font-display);
-  font-size: 1.375rem;
+  font-size: 1.5rem;
   font-weight: 400;
-  margin: 0 0 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
+  letter-spacing: -0.01em;
+}
+.shop-block-more {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.shop-block-more:hover {
+  text-decoration: underline;
+}
+/* The lead blocks (best sellers, featured) get fewer, larger cards. Without this
+   a hand-picked product rendered identically to row 47 of the grid below. */
+.product-grid-lg {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+.product-grid-lg .product-card-body {
+  padding: 1.125rem;
+  gap: 0.5rem;
+}
+.product-grid-lg .product-card-body h2 {
+  font-size: 1.0625rem;
+}
+.product-grid-lg .product-price {
+  font-size: 1.125rem;
+}
+/* New arrivals: one scrollable row, so a long tail does not push the catalogue
+   further down the page. */
+.product-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(170px, 1fr);
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 0.75rem;
+  /* Bleed to the page gutter so the row reads as continuing off-screen. */
+  margin-inline: -1.5rem;
+  padding-inline: 1.5rem;
+}
+.product-strip > .product-card {
+  scroll-snap-align: start;
+}
+.product-strip::-webkit-scrollbar {
+  height: 6px;
+}
+.product-strip::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
 }
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-auto-rows: 7rem;
   gap: 1rem;
+}
+/* Promote the first category to a 2x2 tile, but only when there are enough
+   siblings for the mosaic to read as deliberate rather than broken. Browsers
+   without :has() get the plain uniform grid, which is the previous design. */
+.category-grid:has(> :nth-child(5)) > .category-card:first-child {
+  grid-column: span 2;
+  grid-row: span 2;
 }
 .category-card {
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
+  background: var(--bg-subtle);
   text-decoration: none;
   color: inherit;
   transition:
@@ -910,26 +1013,37 @@ body {
   border-color: var(--accent);
   transform: translateY(-2px);
 }
+/* The picture is a backdrop, not the content: feed photos are products on white,
+   so at tile size they read as texture behind the label. */
 .category-card-image {
+  position: absolute;
+  inset: 0;
   display: block;
-  aspect-ratio: 4 / 3;
-  background: var(--bg-subtle);
 }
 .category-card-image img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  object-position: center 35%;
+  padding: 0.75rem 0.75rem 2.5rem;
+  opacity: 0.9;
 }
 .category-card-body {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
   padding: 0.75rem 0.875rem;
+  /* Keeps the label legible over whatever the product photo happens to be. */
+  background: linear-gradient(to top, var(--bg-subtle) 65%, transparent);
 }
 .category-card-label {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
+}
+.category-card:has(> .category-card-body):first-child .category-card-label {
+  font-size: 1rem;
 }
 .category-card-count {
   font-size: 0.75rem;
@@ -963,6 +1077,15 @@ body {
 .brand-chip-count {
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+@media (max-width: 600px) {
+  .shop-hero {
+    padding: 2rem 1.5rem;
+  }
+  .category-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    grid-auto-rows: 6rem;
+  }
 }
 
 /* CARRITO */
