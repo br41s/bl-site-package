@@ -216,7 +216,22 @@ describe("formatContent — pre-existing behaviour is unchanged", () => {
     const out = formatContent('<img src=x onerror="alert(1)"> <iframe src="//evil.tld"></iframe>');
     assert.ok(!out.includes("onerror"), `onerror survived: ${out}`);
     assert.ok(!out.includes("<iframe"), `iframe survived: ${out}`);
-    assert.ok(!out.includes("<img"), `img survived: ${out}`);
+    assert.ok(!out.includes("<img"), `img with disallowed src survived: ${out}`);
+  });
+
+  test("img is allowed only for this site's own uploaded images", () => {
+    const allowed = formatContent('<img src="/uploads/ab12cd34.webp" alt="Diagrama">');
+    assert.ok(allowed.includes('src="/uploads/ab12cd34.webp"'), `uploaded image stripped: ${allowed}`);
+    assert.ok(allowed.includes('alt="Diagrama"'), `alt stripped: ${allowed}`);
+
+    const external = formatContent('<img src="https://evil.tld/track.gif" alt="x">');
+    assert.ok(!external.includes("<img"), `external src survived: ${external}`);
+
+    const dataUri = formatContent('<img src="data:image/png;base64,abc" alt="x">');
+    assert.ok(!dataUri.includes("<img"), `data: src survived: ${dataUri}`);
+
+    const traversal = formatContent('<img src="/uploads/../../etc/passwd" alt="x">');
+    assert.ok(!traversal.includes("<img"), `path traversal src survived: ${traversal}`);
   });
 
   test("empty and nullish input stay empty", () => {

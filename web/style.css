@@ -293,9 +293,10 @@ body {
   border-left: 3px solid var(--border);
   color: var(--text-muted);
 }
-/* Code-drawn infographics inserted into article bodies by the Infographic
-   Engineer agent. The SVG carries no colours of its own — it inherits
-   currentColor — so setting `color` here is what themes it in light and dark. */
+/* Infographics inserted into article bodies by the Infographic Engineer
+   agent — either code-drawn SVG (inherits currentColor, so `color` here is
+   what themes it) or a Muse-generated raster <img> (carries its own colours
+   baked in; the raster case gets no dark-mode adaptation, only sizing). */
 .site-page-body .article-infographic,
 .site-post-body .article-infographic {
   margin: 1.75rem 0;
@@ -303,7 +304,9 @@ body {
   color: var(--text-primary);
 }
 .site-page-body .article-infographic svg,
-.site-post-body .article-infographic svg {
+.site-post-body .article-infographic svg,
+.site-page-body .article-infographic img,
+.site-post-body .article-infographic img {
   display: block;
   width: 100%;
   height: auto;
