@@ -76,18 +76,31 @@ const SVG_COMMON_ATTRS = [
 // CSS geometry properties are not universally supported, and a silent fallback
 // there is the same class of bug.
 
+// Same-origin uploaded image, allowed inline in article content for the
+// Infographic Engineer's raster (Muse-generated) infographics. Restricted to
+// a root-relative path under this site's own /uploads/ static route (see
+// src/media/uploads-dir.js + src/api/site.js's upload-image endpoint) — never
+// a scheme, a host, or `..` — so this cannot become a remote-fetch or
+// path-traversal vector. allowedSchemesByTag only restricts URL *scheme*, not
+// path/origin, hence the explicit exclusiveFilter below instead.
+const UPLOADED_IMAGE_SRC = /^\/uploads\/[A-Za-z0-9._-]+\.(webp|jpe?g|png)$/;
+
 export function formatContent(text) {
   if (!text) return "";
   return sanitizeHtml(marked.parse(text), {
     allowedTags: [
       "p", "br", "h2", "h3", "h4", "ul", "ol", "li", "strong", "em",
       "a", "table", "thead", "tbody", "tr", "td", "th", "blockquote",
-      "figure", "figcaption",
+      "figure", "figcaption", "img",
       ...SVG_TAGS,
     ],
+    exclusiveFilter(frame) {
+      return frame.tag === "img" && !UPLOADED_IMAGE_SRC.test(frame.attribs.src || "");
+    },
     allowedAttributes: {
       a: ["href", "rel", "target"],
       figure: ["class"],
+      img: ["src", "alt", "width", "height", "loading"],
       // viewBox is written lowercase here because sanitize-html lowercases
       // attribute names; the HTML parser's SVG adjustment table maps `viewbox`
       // back to `viewBox` for inline SVG, so responsive scaling still works.
