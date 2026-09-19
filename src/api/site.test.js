@@ -1,4 +1,4 @@
-import { test, describe, before, beforeEach, after } from "node:test";
+import { test, describe, before, beforeEach, after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -259,6 +259,48 @@ describe("POST /api/site/texts — appearance fields", () => {
       const res = await call("POST", "/api/site/texts", { token: TOKEN, body });
       assert.equal(res.status, 200, `expected 200 for ${JSON.stringify(body)}`);
     }
+  });
+});
+
+describe("GET /api/site/models — upstream deadline", () => {
+  // Stub only OpenRouter; the test's own call to the local server has to go
+  // through the real fetch.
+  function stubOpenRouter(handler) {
+    const realFetch = globalThis.fetch;
+    const calls = [];
+    const fetchMock = mock.method(globalThis, "fetch", async (url, opts) => {
+      if (typeof url === "string" && url.includes("openrouter.ai")) {
+        calls.push({ url, opts });
+        return handler(opts);
+      }
+      return realFetch(url, opts);
+    });
+    return { calls, restore: () => fetchMock.mock.restore() };
+  }
+
+  test("carries an abort signal, so the model picker can't block forever", async () => {
+    const stub = stubOpenRouter(() => ({ json: async () => ({ data: [] }) }));
+
+    const res = await call("GET", "/api/site/models", { token: TOKEN });
+    assert.equal(res.status, 200);
+    assert.equal(stub.calls.length, 1);
+    assert.ok(stub.calls[0].opts.signal instanceof AbortSignal);
+
+    stub.restore();
+  });
+
+  test("answers instead of hanging when OpenRouter never responds", async () => {
+    const stub = stubOpenRouter(() => {
+      throw new DOMException("The operation timed out", "TimeoutError");
+    });
+
+    const res = await call("GET", "/api/site/models", { token: TOKEN });
+    const body = await res.json();
+
+    assert.equal(res.status, 500);
+    assert.deepEqual(body.models, []);
+
+    stub.restore();
   });
 });
 
