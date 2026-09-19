@@ -3,7 +3,7 @@ import { mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve, sep } from "node:path";
 import { scheduleRebuild } from "../build/rebuild.js";
-import { normalizeForSearch } from "../utils/text.js";
+import { hashContent, normalizeForSearch } from "../utils/text.js";
 
 // Config keys exposed to the public site (GET /api/site/config and the
 // Eleventy build-time data file, site/_data/site.js, both read this list).
@@ -299,6 +299,70 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_redirects_status ON redirects(status);
+
+  -- The state of an article immediately BEFORE a write replaced it.
+  --
+  -- Every other content agent on this site is additive: the gap hunter writes
+  -- a post that did not exist, the infographic engineer inserts a block. For
+  -- those, articles.updated_at and nothing else was tolerable. The content
+  -- updater rewrites prose that is already live and already correct, so a bad
+  -- edit does not add noise — it destroys something. That needs an undo, and
+  -- an undo needs the old bytes kept somewhere.
+  --
+  -- Written inside the SAME transaction as the update that supersedes it (see
+  -- snapshotRevision in src/api/blog.js). Outside a transaction the pair can
+  -- half-complete and the row would then describe a replacement that never
+  -- happened, which is worse than no history at all.
+  --
+  -- author is who made the edit that replaced this snapshot, not who wrote
+  -- the snapshot — so reading down the list answers "who broke this page".
+  CREATE TABLE IF NOT EXISTS article_revisions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    article_id INTEGER NOT NULL,
+    title TEXT,
+    content TEXT NOT NULL,
+    excerpt TEXT,
+    content_hash TEXT NOT NULL,
+    author TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_article_revisions_article
+    ON article_revisions(article_id, id DESC);
+
+  -- A proposed rewrite of a live article, held for a human.
+  --
+  -- Same contract as redirects: a proposal ALWAYS lands 'pending' however
+  -- strong its evidence, and applying it is a separate explicit call. The
+  -- caller never asserts its own eligibility.
+  --
+  -- base_hash is the articles.content_hash the agent actually read before
+  -- writing this. It is the lost-update guard: shoroban already runs the
+  -- infographic engineer at 02:31 and website maintenance at 02:53, both of
+  -- which edit article bodies, so "the article moved under the proposal" is
+  -- the normal case here and not an exotic one. A stale base_hash is refused
+  -- at apply time (409) rather than silently overwriting whoever wrote last.
+  --
+  -- evidence is the agent's ledger — a JSON array of
+  -- {claim, old, new, source_url} — so a human approving this can check the
+  -- sources without re-doing the research.
+  CREATE TABLE IF NOT EXISTS article_edits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    article_id INTEGER NOT NULL,
+    title TEXT,
+    content TEXT,
+    excerpt TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    reason TEXT,
+    evidence TEXT,
+    base_hash TEXT NOT NULL,
+    author TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_article_edits_status
+    ON article_edits(status, article_id);
 `);
 
 // Additive migration for columns added after a client's DB was first
@@ -322,10 +386,36 @@ ensureColumn("articles", "image_alt", "TEXT");
 // authored by the content agent per post. No fixed taxonomy — clients span
 // too many sectors for one vocabulary to fit.
 ensureColumn("articles", "badges", "TEXT");
+// Fingerprint of the article's own body, recomputed server-side on every
+// write and never accepted from a caller — the same split as
+// product_content's identifiers: the site owns the fact, the agent only
+// proposes prose.
+//
+// It exists so a second writer can be told "this moved under you" instead of
+// silently winning. `PUT /api/blog/posts/:id` is a blind COALESCE update, so
+// before this column the last agent to write in a night simply erased what
+// the earlier ones had done, with nothing anywhere to show it had happened.
+ensureColumn("articles", "content_hash", "TEXT");
 // Accent- and case-normalized "name category" used for LIKE search (see
 // GET /api/products in src/api/products.js). Kept in sync by the Liderpapel
 // upsert (the only writer of name/category); backfilled once below for rows
 // that predate this column.
+// Backfill content_hash for articles that predate the column. Without this
+// every existing article starts NULL, and an agent reading one has no base
+// hash to send — so the very first proposal against the existing corpus
+// would have to be waved through unguarded, which is exactly the corpus that
+// matters most.
+const articlesNeedingHash = db
+  .prepare("SELECT id, content FROM articles WHERE content_hash IS NULL")
+  .all();
+if (articlesNeedingHash.length > 0) {
+  const backfillHash = db.prepare("UPDATE articles SET content_hash = ? WHERE id = ?");
+  const backfill = db.transaction((rows) => {
+    for (const row of rows) backfillHash.run(hashContent(row.content), row.id);
+  });
+  backfill(articlesNeedingHash);
+}
+
 ensureColumn("products", "search_text", "TEXT NOT NULL DEFAULT ''");
 // Product identifiers and physical facts, all straight from the feed's
 // Catalog file. gtin is the EAN of the sellable unit and mpn the
