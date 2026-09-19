@@ -5,7 +5,16 @@
 // rebuild (see src/build/rebuild.js) so this stays in sync.
 // Output: _site/ (served by Express via express.static, see src/server.js).
 
+import tableScroll from "./lib/table-scroll.mjs";
+
 export default function (eleventyConfig) {
+  // Envuelve cada <table> en un contenedor con scroll propio. Una tabla no
+  // baja de su min-content, asi que una tabla ancha en el cuerpo de un
+  // articulo empujaba el documento entero fuera de la pantalla en movil. El
+  // cuerpo es HTML de cliente que sale de la DB, asi que este es el unico
+  // sitio donde se puede corregir. Ver la cabecera de lib/table-scroll.mjs.
+  eleventyConfig.addPlugin(tableScroll);
+
   eleventyConfig.addPassthroughCopy({ "web/style.css": "style.css" });
   eleventyConfig.addPassthroughCopy({ "web/site.js": "site.js" });
   eleventyConfig.addPassthroughCopy({ "web/cart.js": "cart.js" });
