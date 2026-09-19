@@ -212,6 +212,42 @@ describe("revisions", () => {
   });
 });
 
+describe("attribution", () => {
+  test("an agent edit is recorded against the agent, not the client", async () => {
+    // The client's panel reads this column to decide whether a change was
+    // theirs. Getting it wrong blames them for an agent's edit.
+    const post = await createPost();
+    await api(`/posts/${post.id}`, {
+      method: "PUT",
+      body: { content: "<p>a</p>", author: "content-updater" },
+    });
+    const { revisions } = await (await api(`/posts/${post.id}/revisions`)).json();
+    assert.equal(revisions[0].author, "content-updater");
+  });
+
+  test("a panel edit is distinguishable from an unlabelled one", async () => {
+    const post = await createPost();
+    await api(`/posts/${post.id}`, {
+      method: "PUT",
+      body: { content: "<p>a</p>", author: "panel" },
+    });
+    await api(`/posts/${post.id}`, { method: "PUT", body: { content: "<p>b</p>" } });
+    const { revisions } = await (await api(`/posts/${post.id}/revisions`)).json();
+    assert.equal(revisions[0].author, null); // the unlabelled one
+    assert.equal(revisions[1].author, "panel");
+  });
+
+  test("an absurdly long author is truncated rather than stored whole", async () => {
+    const post = await createPost();
+    await api(`/posts/${post.id}`, {
+      method: "PUT",
+      body: { content: "<p>a</p>", author: "x".repeat(500) },
+    });
+    const { revisions } = await (await api(`/posts/${post.id}/revisions`)).json();
+    assert.ok(revisions[0].author.length <= 80);
+  });
+});
+
 describe("proposed edits", () => {
   test("a proposal never touches the live article", async () => {
     const post = await createPost();
