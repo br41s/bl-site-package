@@ -212,6 +212,83 @@ describe("revisions", () => {
   });
 });
 
+describe("lifecycle", () => {
+  test("deleting an article takes its history with it", async () => {
+    // A revision row holds the FULL body. Leaving them behind means the text a
+    // client took down stays readable through GET /revisions/:id forever.
+    const post = await createPost();
+    await api(`/posts/${post.id}`, { method: "PUT", body: { content: "<p>v2</p>" } });
+    const { revisions } = await (await api(`/posts/${post.id}/revisions`)).json();
+    assert.equal(revisions.length, 1);
+    const revId = revisions[0].id;
+
+    assert.equal((await api(`/posts/${post.id}`, { method: "DELETE" })).status, 200);
+
+    assert.equal(
+      db.prepare("SELECT COUNT(*) n FROM article_revisions WHERE article_id = ?").get(post.id).n,
+      0,
+    );
+    assert.equal((await api(`/revisions/${revId}`)).status, 404);
+  });
+
+  test("deleting an article drops its pending proposals too", async () => {
+    const post = await createPost();
+    await api(`/posts/${post.id}/propose`, {
+      method: "POST",
+      body: { content: "<p>x</p>", base_hash: post.content_hash },
+    });
+    await api(`/posts/${post.id}`, { method: "DELETE" });
+    const { edits } = await (await api("/edits")).json();
+    assert.equal(edits.length, 0);
+  });
+
+  test("deleting an article that does not exist is still a 404", async () => {
+    assert.equal((await api("/posts/99999", { method: "DELETE" })).status, 404);
+  });
+
+  test("one article's history is untouched by deleting another", async () => {
+    const a = await createPost();
+    const b = await createPost({ title: "Otro" });
+    await api(`/posts/${a.id}`, { method: "PUT", body: { content: "<p>a2</p>" } });
+    await api(`/posts/${b.id}`, { method: "PUT", body: { content: "<p>b2</p>" } });
+    await api(`/posts/${a.id}`, { method: "DELETE" });
+
+    const { revisions } = await (await api(`/posts/${b.id}/revisions`)).json();
+    assert.equal(revisions.length, 1);
+  });
+
+  test("revisions are capped per article, keeping the newest", async () => {
+    // Otherwise a post edited daily by three agents grows without bound in the
+    // client's SQLite file and in every backup of it.
+    const post = await createPost();
+    for (let i = 0; i < 55; i++) {
+      await api(`/posts/${post.id}`, { method: "PUT", body: { content: `<p>v${i}</p>` } });
+    }
+    const stored = db
+      .prepare("SELECT COUNT(*) n FROM article_revisions WHERE article_id = ?")
+      .get(post.id).n;
+    assert.equal(stored, 50);
+
+    // The newest survivor is the body that was live just before the last write.
+    const { revisions } = await (await api(`/posts/${post.id}/revisions`)).json();
+    const newest = await (await api(`/revisions/${revisions[0].id}`)).json();
+    assert.equal(newest.content, "<p>v53</p>");
+  });
+
+  test("the cap does not spill across articles", async () => {
+    const a = await createPost();
+    const b = await createPost({ title: "Otro" });
+    for (let i = 0; i < 55; i++) {
+      await api(`/posts/${a.id}`, { method: "PUT", body: { content: `<p>a${i}</p>` } });
+    }
+    await api(`/posts/${b.id}`, { method: "PUT", body: { content: "<p>b1</p>" } });
+    assert.equal(
+      db.prepare("SELECT COUNT(*) n FROM article_revisions WHERE article_id = ?").get(b.id).n,
+      1,
+    );
+  });
+});
+
 describe("attribution", () => {
   test("an agent edit is recorded against the agent, not the client", async () => {
     // The client's panel reads this column to decide whether a change was

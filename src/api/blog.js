@@ -23,6 +23,13 @@ function generateSlug(title) {
 // research dump.
 const MAX_EVIDENCE_JSON = 5000;
 const EDIT_FIELDS = ["title", "content", "excerpt"];
+// Revisions kept per article. A row holds a full article body — call it 2-8 KB
+// — and on a site running the content updater, the infographic engineer and the
+// maintenance agent, the same post can collect several a month forever. The
+// listing endpoint only ever returns 50, so anything past that was already
+// unreachable; this stops it also being unbounded weight in a client's SQLite
+// file and in every backup of it.
+const REVISIONS_KEPT = 50;
 
 // Store the article's CURRENT state before something replaces it.
 //
@@ -50,6 +57,16 @@ function snapshotRevision(articleId, author) {
     current.content_hash || hashContent(current.content),
     author || null,
   );
+  // Trim in the same transaction as the insert, so the cap is a property of
+  // the table rather than a job someone has to remember to run.
+  db.prepare(
+    `DELETE FROM article_revisions
+      WHERE article_id = ?
+        AND id NOT IN (
+          SELECT id FROM article_revisions
+           WHERE article_id = ? ORDER BY id DESC LIMIT ?
+        )`,
+  ).run(articleId, articleId, REVISIONS_KEPT);
   return current;
 }
 
@@ -460,12 +477,26 @@ router.post("/edits/:id/reject", verifyJWT, (req, res) => {
 });
 
 // DELETE /api/blog/posts/:id
+//
+// Takes the article's history with it, in one transaction.
+//
+// Not housekeeping: a revision row holds the FULL body of the article it
+// snapshotted, so leaving them behind means "delete" does not delete. The text
+// a client removed — because it was wrong, or because someone asked them to
+// take it down — would stay readable through GET /api/blog/revisions/:id for
+// the life of the site. Orphan rows also have nothing to be restored onto,
+// since revert resolves through the article, so they are pure weight.
 router.delete("/posts/:id", verifyJWT, (req, res) => {
-  const result = db
-    .prepare("DELETE FROM articles WHERE id = ?")
-    .run(req.params.id);
-  if (result.changes === 0)
-    return res.status(404).json({ error: "Artículo no encontrado" });
+  const article = db.prepare("SELECT id FROM articles WHERE id = ?").get(req.params.id);
+  if (!article) return res.status(404).json({ error: "Artículo no encontrado" });
+
+  const remove = db.transaction(() => {
+    db.prepare("DELETE FROM article_revisions WHERE article_id = ?").run(article.id);
+    db.prepare("DELETE FROM article_edits WHERE article_id = ?").run(article.id);
+    db.prepare("DELETE FROM articles WHERE id = ?").run(article.id);
+  });
+  remove();
+
   scheduleRebuild();
   res.json({ success: true });
 });
