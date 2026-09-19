@@ -198,6 +198,9 @@ El modelo por defecto (`openai/gpt-oss-20b:free`) es gratuito. Si seleccionas un
 **¿Qué pasa si el agente dice "El agente está saturado"?**
 El modelo gratuito tiene límites de uso por minuto. Espera unos segundos y vuelve a intentarlo — el sistema prueba automáticamente con modelos alternativos gratuitos.
 
+**¿Qué pasa si el agente dice que "ha tardado demasiado en responder"?**
+A veces el modelo gratuito se queda colgado y no llega a contestar. En lugar de dejarte esperando, el agente corta y te avisa. Vuelve a enviarle el mensaje en unos minutos; si se repite varias veces seguidas, prueba a seleccionar otro modelo en la sección Modelo IA.
+
 **¿Puedo tener más de una persona gestionando el panel?**
 Actualmente el panel tiene un único acceso. El soporte multiusuario estará disponible en futuras versiones.
 
