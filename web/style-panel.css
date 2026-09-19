@@ -964,7 +964,7 @@ body {
   .misite-tab {
     flex: 1 1 auto;
     text-align: center;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
   }
 }
 
@@ -991,13 +991,13 @@ body {
 }
 .article-history-hint {
   margin: 0 0 1rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.55;
   color: var(--text-muted, #888);
 }
 .article-history-meta {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--text-muted, #888);
 }
 .article-history-preview {
@@ -1009,7 +1009,7 @@ body {
   border-radius: var(--radius-sm, 4px);
   background: #fff;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
@@ -1045,7 +1045,7 @@ body {
   border-radius: 999px;
   background: var(--accent, #d9603b);
   color: #fff;
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   font-weight: 600;
   margin-left: auto;
 }
@@ -1075,7 +1075,7 @@ body {
   background: #fff;
   border-radius: 999px;
   padding: 0.35rem 0.9rem;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   cursor: pointer;
 }
 
@@ -1115,7 +1115,7 @@ body {
 
 .conv-item-phone {
   color: var(--text-muted, #888);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
 .conv-item-badge {
@@ -1128,13 +1128,13 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
+  font-size: 0.875rem;
 }
 
 .conv-item-need,
 .conv-item-reason {
   margin: 0.4rem 0 0;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: var(--text-secondary, #555);
 }
 
@@ -1152,7 +1152,7 @@ body {
 .conv-status {
   border-radius: 999px;
   padding: 0.2rem 0.7rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
@@ -1223,7 +1223,7 @@ body {
 
 .conv-bubble-meta {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   opacity: 0.7;
   margin-top: 0.25rem;
 }
@@ -1247,6 +1247,6 @@ body {
 
 .conv-window-lapsed {
   color: var(--text-muted, #888);
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   font-style: italic;
 }
