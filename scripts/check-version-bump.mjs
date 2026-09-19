@@ -4,9 +4,11 @@
 // Every PR that changes code must bump package.json's version before merge,
 // or GET /api/site/status reports the same version forever and fleet drift
 // detection (scripts/fleet-check.mjs, hermes bl_site_health) goes inert.
-// This account has no CI runner, so the gate is this script, run locally as
-// part of the release ritual — same rules the old GitHub workflow had:
-// changes that never run on an instance are exempt: docs (*.md), .github/*,
+// This runs in CI as the "Version bump" job on every PR
+// (.github/workflows/ci.yml) and can also be run by hand from the branch about
+// to be merged. It used to be local-only, which is how one release shipped
+// without a bump: CI was green, and nothing forced the script.
+// Changes that never run on an instance are exempt: docs (*.md), .github/*,
 // fleet/ (the manifest is read by fleet-check.mjs on a developer's machine)
 // and scripts/ (dev tooling — the smoke test, fleet-check, this gate).
 // Bumping for those made fleet-check report every instance as out of date

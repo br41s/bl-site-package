@@ -41,3 +41,36 @@ jobs:
       # empty DB.
       - name: Test
         run: npm test
+
+  # The gate that RELEASE.md step 2 describes. It ran only on a developer's
+  # machine until now, which is exactly how v1.8.3 shipped the table-scroll
+  # change with no bump: CI was green, nothing else asked, and the omission was
+  # only caught days later while preparing a manual deploy. A gate nobody is
+  # forced to run is a checklist item, not a gate.
+  version:
+    name: Version bump
+    # On push to main HEAD *is* origin/main, so the gate would report
+    # "no changes" and pass trivially. It only means something on a PR.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The gate diffs origin/main...HEAD and reads package.json from both
+          # sides. The default shallow clone has no merge-base to diff against.
+          fetch-depth: 0
+          # Check out the branch tip, NOT the default refs/pull/N/merge commit.
+          # That merge commit already carries main's package.json, which would
+          # mask the "regressed" verdict this gate exists to catch: a branch cut
+          # from an older main landing a version BELOW the one main is on.
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # No `npm ci` on purpose: the gate imports only node: builtins, so this
+      # job stays a few seconds regardless of the dependency tree.
+      - name: Check version bump
+        run: node scripts/check-version-bump.mjs
