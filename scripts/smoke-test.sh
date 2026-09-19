@@ -7,7 +7,7 @@
 #
 # Usage:
 #   scripts/smoke-test.sh <base-url>
-#   scripts/smoke-test.sh https://prueba.shoroban.com
+#   scripts/smoke-test.sh https://blcliente.zeabur.app
 #   scripts/smoke-test.sh http://localhost:3000
 #
 set -u
@@ -15,7 +15,7 @@ set -u
 BASE="${1:-}"
 if [ -z "$BASE" ]; then
   echo "Usage: $0 <base-url>" >&2
-  echo "  e.g. $0 https://prueba.shoroban.com" >&2
+  echo "  e.g. $0 https://blcliente.zeabur.app" >&2
   exit 2
 fi
 

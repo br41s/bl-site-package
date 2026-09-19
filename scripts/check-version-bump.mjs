@@ -6,7 +6,11 @@
 // detection (scripts/fleet-check.mjs, hermes bl_site_health) goes inert.
 // This account has no CI runner, so the gate is this script, run locally as
 // part of the release ritual — same rules the old GitHub workflow had:
-// doc-only changes (*.md, .github/*) are exempt.
+// changes that never run on an instance are exempt: docs (*.md), .github/*,
+// fleet/ (the manifest is read by fleet-check.mjs on a developer's machine)
+// and scripts/ (dev tooling — the smoke test, fleet-check, this gate).
+// Bumping for those made fleet-check report every instance as out of date
+// until it redeployed a change that could not affect it.
 //
 // Usage (from the branch about to be merged):
 //   node scripts/check-version-bump.mjs
@@ -22,8 +26,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const BASE = "origin/main";
 
+// If anything under scripts/ or fleet/ ever starts running on an instance —
+// a bot, a cron job, a build step — take it out of this list, or changes to it
+// will ship without a version bump and fleet-check will never notice them.
 export function isDocsOnly(files) {
-  return files.every((f) => f.endsWith(".md") || f.startsWith(".github/"));
+  return files.every(
+    (f) =>
+      f.endsWith(".md") ||
+      f.startsWith(".github/") ||
+      f.startsWith("fleet/") ||
+      f.startsWith("scripts/"),
+  );
 }
 
 // Parses "1.2.3" into [1, 2, 3]. Returns null for anything it cannot read,
@@ -90,7 +103,7 @@ export function run() {
   const result = verdict({ changedFiles, baseVersion, headVersion });
   const messages = {
     no_changes: "Sin cambios respecto a origin/main.",
-    docs_only: "Solo cambian documentos (.md/.github) — no hace falta bump.",
+    docs_only: "Solo cambian documentos o herramientas de desarrollo (.md, .github/, fleet/, scripts/) — no hace falta bump.",
     bumped: `Bump presente: v${baseVersion} → v${headVersion}.`,
     not_bumped:
       `package.json sigue en v${headVersion} con cambios de código respecto a ` +

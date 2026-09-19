@@ -15,9 +15,9 @@ auto-despliega desde `main`.
 **Los entornos de cliente son distintos entre sí.** El primer cliente,
 Shoroban, corre sobre **Plesk/Passenger (Debian)** en `shoroban.com`
 (producción, dominio principal desde 2026-08-19). `prueba.shoroban.com` fue el
-staging usado para validar antes del corte y ahora solo hace un redirect 301
-a `shoroban.com` — su app Node ya no corre, así que no sirve como entorno de
-pruebas independiente (ver aviso más abajo sobre `fleet/manifest.json`). Otros
+staging usado para validar antes del corte; **está retirado desde 2026-09-10**
+y ya no figura en `fleet/manifest.json`. Shoroban se valida contra la instancia
+de pruebas compartida (paso 6) y luego contra su propia producción. Otros
 clientes futuros pueden usar un hosting, distribución o panel diferentes. No
 asumas que "cliente" == "Plesk": cada uno se verifica por separado.
 
@@ -41,7 +41,8 @@ asumas que "cliente" == "Plesk": cada uno se verifica por separado.
    ```
    Esta cuenta de GitHub no tiene Actions, así que **este script es la única
    puerta**: nadie lo ejecuta por ti. Sale en `FAIL` si la rama cambia código
-   sin bump (los cambios solo de documentación están exentos).
+   sin bump. Están exentos los cambios que no llegan a ejecutarse en ninguna
+   instancia: documentación (`.md`), `.github/`, `fleet/` y `scripts/`.
 3. **Revisión** → corre `/review` sobre la rama (los cambios de nivel sistema
    son *advisory*: los revisa una persona antes de mergear).
 4. **Merge a `main`.**
@@ -70,10 +71,12 @@ asumas que "cliente" == "Plesk": cada uno se verifica por separado.
    ```bash
    scripts/smoke-test.sh https://shoroban.com          # producción del cliente
    ```
-   Shoroban ya no tiene un staging propio (`prueba.shoroban.com` quedó
-   retirado, ver arriba) — decidir si se necesita uno nuevo antes del próximo
-   release, o si el smoke test contra la instancia de pruebas compartida
-   (paso 6) es suficiente para este cliente.
+   Shoroban no tiene staging propio: se retiró `prueba.shoroban.com` y la
+   validación previa es el paso 6 contra la instancia de pruebas compartida.
+   Ojo con lo que eso deja fuera — pruebas está sin configurar y sin catálogo,
+   así que un fallo que solo aparezca con 14.000 productos o con el panel
+   autenticado llega directo a producción del cliente. Mira el diff con ojo
+   crítico antes del paso 7.
 
 Regla de oro: **nunca** se despliega directamente a un cliente sin que el
 cambio haya estado verde en pruebas (Zeabur) primero.
@@ -81,8 +84,7 @@ cambio haya estado verde en pruebas (Zeabur) primero.
 **Comprueba la versión tras el deploy** con el chequeo de flota:
 
 ```bash
-FLEET_PASSWORD_SHOROBAN_STAGING=... FLEET_PASSWORD_SHOROBAN_PROD=... \
-  node scripts/fleet-check.mjs
+FLEET_PASSWORD_SHOROBAN_PROD=... node scripts/fleet-check.mjs
 ```
 
 Cada despliegue de `fleet/manifest.json` debe reportar el `vX.Y.Z` del paso 2.
@@ -91,13 +93,12 @@ reinició (ver la sección de rebuild/restart más abajo) o el `git pull`/deploy
 no se completó. (`GET /api/site/status` requiere autenticación; el script hace
 el login por ti con la contraseña del panel de cada instancia.)
 
-**Aviso (2026-08-19):** la entrada `shoroban-staging` de `fleet/manifest.json`
-apunta a `https://prueba.shoroban.com`, que ahora solo redirige (301) a
-`shoroban.com` — su Node ya no corre. `fleet-check.mjs` seguirá reportando
-algo para esa entrada (la redirección aterriza en la misma app que
-`shoroban-prod`), pero ya no representa un entorno de staging real. Pendiente
-decidir: borrar la entrada, o levantar un staging nuevo para Shoroban antes
-del próximo release.
+**Resuelto (2026-09-10):** la entrada `shoroban-staging` se ha borrado de
+`fleet/manifest.json`. Apuntaba a `https://prueba.shoroban.com`, que dejó de
+servir la app (a 2026-09-10 devolvía un 404 de Apache en todas las rutas,
+incluida `/`), y mientras estuvo redirigiendo hacía que `fleet-check.mjs`
+reportara dos veces la misma instancia de producción. Shoroban queda con una
+sola entrada, `shoroban-prod`.
 
 ---
 
