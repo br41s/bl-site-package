@@ -1179,7 +1179,12 @@ body {
 }
 .site-footer-links {
   display: flex;
-  gap: 1.5rem;
+  /* Eight links do not fit one row on a phone. Without wrapping they forced
+     the whole document to ~589px at a 375px viewport, so every page scrolled
+     sideways and the copyright ran off the right edge. The row gap is smaller
+     than the column gap so wrapped rows stay tight. */
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
 }
 .site-footer-links a {
   color: var(--text-muted);
