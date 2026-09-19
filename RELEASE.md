@@ -39,10 +39,24 @@ asumas que "cliente" == "Plesk": cada uno se verifica por separado.
    ```bash
    node scripts/check-version-bump.mjs
    ```
-   Esta cuenta de GitHub no tiene Actions, así que **este script es la única
-   puerta**: nadie lo ejecuta por ti. Sale en `FAIL` si la rama cambia código
-   sin bump. Están exentos los cambios que no llegan a ejecutarse en ninguna
-   instancia: documentación (`.md`), `.github/`, `fleet/` y `scripts/`.
+   **Esto lo verifica CI**: el job `Version bump` de
+   `.github/workflows/ci.yml` corre ese mismo script en cada PR y sale en
+   `FAIL` si la rama cambia código sin bump. Ejecútalo también en local si
+   quieres saberlo antes de abrir el PR. Están exentos los cambios que no
+   llegan a ejecutarse en ninguna instancia: documentación (`.md`),
+   `.github/`, `fleet/` y `scripts/`.
+
+   El job solo corre en `pull_request`: en un push a `main`, `HEAD` *es*
+   `origin/main`, así que el script no vería cambios y pasaría sin comprobar
+   nada. **Un cambio que llegue a `main` sin PR se salta esta puerta** — y
+   esta cuenta no puede forzar protección de rama, así que la regla sigue
+   siendo abrir PR para todo lo que toque código.
+
+   Hasta 2026-09-20 este script era solo local y nadie estaba obligado a
+   ejecutarlo. Así se mergeó el wrapper de tablas (PR #81) sin bump: el CI
+   estaba verde, que era lo único que se miraba. Se corrigió después con
+   v1.8.4, ya en `main`, y el hueco entre el merge y el bump dejó a
+   `fleet-check.mjs` informando de instancias al día que no lo estaban.
 3. **Revisión** → corre `/review` sobre la rama (los cambios de nivel sistema
    son *advisory*: los revisa una persona antes de mergear).
 4. **Merge a `main`.**
