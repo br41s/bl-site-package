@@ -41,6 +41,27 @@ down to a single row, with every endpoint still answering 200. Tests for `site/_
 live in `src/` and import across; `src/build/no-tests-in-site.test.js` fails if one ever
 appears under `site/` again.
 
+**Tables in customer content get a scroll wrapper at build time.**
+`lib/table-scroll.mjs` wraps every `<table>` in
+`<div class="table-scroll" role="region" tabindex="0">`. A table cannot shrink below its
+min-content — the widest cell is a hard floor and `width:100%` is a wish, not a limit — so
+a wide table in an article body used to push the whole document sideways on a phone
+(measured: 620px wide on a 375px viewport). It matters here more than on the flagship,
+because article and page bodies are arbitrary HTML out of the database
+(`{{ post.contentHtml | safe }}`), written by the customer's panel or agent: there is no
+source file anyone could fix by hand, so the build is the only point that HTML passes
+through. The bug is invisible on desktop, where the min-content floor is never reached.
+
+- The file is a **byte-for-byte copy of biglobster's** on purpose, so the two cannot
+  drift. Fix one, copy it across verbatim. The policy difference lives in the CSS.
+- The CSS is scoped to `.site-page-body` / `.site-post-body`, where customer HTML lives.
+  The transform also wraps `.cart-table` and `.product-specs` (package markup, narrow by
+  design), but those wrappers get no styles and stay **inert** — no overflow, no margin,
+  zero height — so the empty cart's `hidden` and `cart.js`'s `getElementById` keep
+  working. If you ever style `.table-scroll` unscoped, you break the empty cart.
+- **`1rem` is 16px in this repo**, unlike biglobster's 62.5% root, and the fade cover uses
+  `--bg`, not `--bg-base`. Neither is interchangeable between the two stylesheets.
+
 ## The catalogue
 
 Clients who sell from a distributor feed get a synced catalogue. Shoroban's is Liderpapel:
