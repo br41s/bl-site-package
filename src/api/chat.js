@@ -39,6 +39,32 @@ const ALLOWED_TEXT_KEYS = new Set([
   "page_blog_subtitle",
 ]);
 
+// OpenRouter's non-streaming completions endpoint can hold a connection open
+// with nothing on it, and Node's fetch sets no deadline of its own, so a
+// request that never answers never returns. The caller here is usually an
+// agent under a watchdog — the content updater's kills the run after 600s
+// idle — so a handler that hangs costs the whole job instead of one article.
+//
+// Two bounds, because one is not enough: a cap per attempt, and a budget
+// across the fallback loop, so five slow models in a row cannot add up past
+// it either. Both must leave room under a 600s watchdog.
+const UPSTREAM_TIMEOUT_MS = 120_000;
+const TOTAL_BUDGET_MS = 300_000;
+
+// Did this fail because we ran out of patience, rather than because the
+// request was wrong? Covers our own AbortSignal.timeout and undici's internal
+// timeouts, which surface as a TypeError carrying a cause code.
+const UNDICI_TIMEOUT_CODES = new Set([
+  "UND_ERR_HEADERS_TIMEOUT",
+  "UND_ERR_BODY_TIMEOUT",
+  "UND_ERR_CONNECT_TIMEOUT",
+]);
+function isTimeoutError(err) {
+  if (!err) return false;
+  if (err.name === "TimeoutError" || err.name === "AbortError") return true;
+  return UNDICI_TIMEOUT_CODES.has(err.cause?.code);
+}
+
 function generateSlug(title) {
   return title
     .toLowerCase()
@@ -172,11 +198,15 @@ async function requestChatCompletion({
   messages,
   companyName,
   sector,
+  timeoutMs,
 }) {
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
     {
       method: "POST",
+      // Covers reading the body too, not just the headers: a response that
+      // starts and then stalls mid-article is the same hang to the caller.
+      signal: AbortSignal.timeout(timeoutMs),
       headers: {
         Authorization: "Bearer " + apiKey,
         "Content-Type": "application/json",
@@ -284,15 +314,35 @@ router.post("/send", requireAuth, chatLimiter, async (req, res) => {
     { role: "user", content: message },
   ];
 
+  const deadline = Date.now() + TOTAL_BUDGET_MS;
+  let timedOut = false;
+
   try {
     for (const candidateModel of modelsToTry) {
-      const result = await requestChatCompletion({
-        apiKey,
-        model: candidateModel,
-        messages,
-        companyName,
-        sector,
-      });
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        timedOut = true;
+        break;
+      }
+
+      let result;
+      try {
+        result = await requestChatCompletion({
+          apiKey,
+          model: candidateModel,
+          messages,
+          companyName,
+          sector,
+          timeoutMs: Math.min(UPSTREAM_TIMEOUT_MS, remaining),
+        });
+      } catch (err) {
+        if (!isTimeoutError(err)) throw err;
+        // One wedged model shouldn't lose the run: note it and try the next
+        // one. The budget above is what stops this from going on forever.
+        console.error(`Chat timeout (${candidateModel}):`, err.message);
+        timedOut = true;
+        continue;
+      }
 
       if (result.ok && result.reply) {
         const applied = applyAgentAction(result.reply);
@@ -315,6 +365,17 @@ router.post("/send", requireAuth, chatLimiter, async (req, res) => {
           .status(502)
           .json({ error: "Error al contactar el agente de contenidos." });
       }
+    }
+
+    if (timedOut) {
+      // 504 so an agent calling this can tell "too slow" from "broken" and
+      // retry deliberately; `reply` so the panel, which only renders that
+      // field, still says something a client understands.
+      return res.status(504).json({
+        error: "timeout",
+        reply:
+          "El agente de contenidos ha tardado demasiado en responder. Inténtalo de nuevo en unos minutos.",
+      });
     }
 
     return res.json({

@@ -303,6 +303,8 @@ router.post("/notify", requireAuth, notifyLimiter, async (req, res) => {
   }
 });
 
+const MODELS_TIMEOUT_MS = 15_000;
+
 // GET /api/site/models?q=term — proxy OpenRouter model list
 router.get("/models", requireAuth, async (req, res) => {
   const q = (req.query.q || "").toLowerCase().trim();
@@ -314,6 +316,9 @@ router.get("/models", requireAuth, async (req, res) => {
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
     const response = await fetch("https://openrouter.ai/api/v1/models", {
       headers,
+      // Same reason as the completions call in chat.js: Node's fetch waits
+      // forever by default, and the panel's model picker blocks on this.
+      signal: AbortSignal.timeout(MODELS_TIMEOUT_MS),
     });
     const data = await response.json();
     let models = (data.data || []).map((m) => ({
