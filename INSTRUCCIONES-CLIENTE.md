@@ -42,7 +42,22 @@ Gestiona los artículos de tu web:
 - **Nuevo artículo** — escribe el título y contenido, elige si publicarlo o guardarlo como borrador
 - **Editar** — modifica cualquier artículo existente
 - **Publicar / Despublicar** — controla qué artículos ven tus visitantes
+- **Historial** — mira cómo estaba un artículo antes de cada cambio, y vuelve atrás si hace falta
 - **Eliminar** — borra artículos que ya no necesites
+
+#### Volver atrás en un artículo
+
+Cada vez que se edita un artículo — lo edites tú o lo haga uno de tus agentes —
+tu web guarda antes cómo estaba. Pulsa **Historial** en el artículo y verás la
+lista de versiones anteriores, cada una con su fecha y quién la cambió.
+
+- **Ver** te enseña el texto completo de esa versión, sin tocar nada.
+- **Restaurar** deja el artículo tal y como estaba en esa fecha.
+
+Restaurar tampoco tiene riesgo: la versión que estaba publicada se guarda
+también, así que puedes volver a ella si cambias de idea.
+
+Si borras un artículo, su historial se borra con él.
 
 ## Configuración de notificaciones por email
 

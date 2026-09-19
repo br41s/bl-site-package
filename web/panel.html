@@ -606,6 +606,23 @@
               </div>
             </div>
             <div id="articles-list"></div>
+
+            <!-- Historial de versiones. Cada edicion de un articulo -- tuya o de
+                 un agente -- guarda antes la version que reemplaza, asi que
+                 aqui siempre se puede volver atras. -->
+            <div id="article-history-wrap" class="article-history-wrap" hidden>
+              <div class="article-history-head">
+                <h3 id="article-history-title">Historial de versiones</h3>
+                <button type="button" class="btn-ghost-sm" id="article-history-close">Cerrar</button>
+              </div>
+              <p class="article-history-hint">
+                Cada vez que alguien edita este articulo -- tu o uno de tus
+                agentes -- guardamos antes como estaba. Restaurar vuelve a dejar
+                el articulo tal cual estaba en esa fecha, y tambien se puede
+                deshacer.
+              </p>
+              <div id="article-history-list"></div>
+            </div>
           </section>
 
           <!-- MESSAGES -->

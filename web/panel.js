@@ -359,6 +359,10 @@ document.addEventListener("DOMContentLoaded", function () {
         .getElementById("article-cta-label-input")
         .value.trim(),
       status: document.getElementById("article-status-select").value,
+      // Stamped so the history can tell the client's own edits apart from an
+      // agent's. Without it every hand edit reads the same as a row an agent
+      // never labelled, and the column stops being worth reading.
+      author: "panel",
     };
     var url = id ? "/api/blog/posts/" + id : "/api/blog/posts";
     var method = id ? "PUT" : "POST";
@@ -423,7 +427,9 @@ document.addEventListener("DOMContentLoaded", function () {
               badge +
               '</div><div class="article-row-actions"><button class="btn-ghost-sm" data-edit="' +
               p.id +
-              '">Editar</button><button class="btn-ghost-sm btn-danger" data-delete="' +
+              '">Editar</button><button class="btn-ghost-sm" data-history="' +
+              p.id +
+              '">Historial</button><button class="btn-ghost-sm btn-danger" data-delete="' +
               p.id +
               '">Eliminar</button></div></div>'
             );
@@ -450,6 +456,14 @@ document.addEventListener("DOMContentLoaded", function () {
             articleFormWrap.hidden = false;
           });
         });
+        list.querySelectorAll("[data-history]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var post = posts.find(function (p) {
+              return p.id == btn.dataset.history;
+            });
+            loadHistory(btn.dataset.history, post ? post.title : "");
+          });
+        });
         list.querySelectorAll("[data-delete]").forEach(function (btn) {
           btn.addEventListener("click", async function () {
             if (!confirm("¿Eliminar este artículo?")) return;
@@ -462,6 +476,145 @@ document.addEventListener("DOMContentLoaded", function () {
         });
       })
       .catch(function () {});
+  }
+
+  // ── HISTORIAL DE VERSIONES ───────────────────────────────────────
+  // Existe porque los agentes de contenido editan articulos ya publicados
+  // sin pedir permiso cada vez. Eso solo es defendible si el cliente puede
+  // deshacerlo desde aqui, sin llamar a nadie y sin tocar la API.
+  var historyWrap = document.getElementById("article-history-wrap");
+  var historyList = document.getElementById("article-history-list");
+  var historyTitle = document.getElementById("article-history-title");
+  var historyClose = document.getElementById("article-history-close");
+
+  if (historyClose) {
+    historyClose.addEventListener("click", function () {
+      historyWrap.hidden = true;
+    });
+  }
+
+  // Quien hizo la edicion que reemplazo a esta version. Lo manda el que
+  // escribe, asi que es una etiqueta para orientarse, no una identidad
+  // verificada -- todos los agentes entran con la misma contrasena de panel.
+  function historyAuthor(author) {
+    // Nothing is asserted that is not known: a row with no author is a legacy
+    // row or a caller that did not label itself, and saying "manual" there
+    // would put the blame for an agent's edit on the client.
+    if (!author) return "Autor no registrado";
+    if (author === "panel") return "Edicion manual desde el panel";
+    if (author === "revert") return "Restauracion anterior";
+    if (author === "article_edit") return "Propuesta aprobada";
+    return "Agente: " + author;
+  }
+
+  function historyWhen(iso) {
+    if (!iso) return "";
+    var d = new Date(iso.replace(" ", "T") + "Z");
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleString();
+  }
+
+  function loadHistory(postId, postTitle) {
+    historyTitle.textContent = postTitle
+      ? "Historial: " + postTitle
+      : "Historial de versiones";
+    historyList.innerHTML = '<p style="color:var(--text-muted)">Cargando…</p>';
+    historyWrap.hidden = false;
+    historyWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    fetch("/api/blog/posts/" + postId + "/revisions", { headers: authHeaders() })
+      .then(function (r) {
+        // A failed request must NOT fall through to the empty-state message.
+        // "data.revisions || []" on a 401 body renders "no hay versiones
+        // anteriores", which tells the client their history is empty when it
+        // is really unreachable -- the one wrong answer to give about a
+        // safety net.
+        if (!r.ok) throw new Error("http " + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        var revisions = data.revisions || [];
+        if (!revisions.length) {
+          historyList.innerHTML =
+            '<p style="color:var(--text-muted)">Este articulo no se ha editado desde que se creo, asi que todavia no hay versiones anteriores.</p>';
+          return;
+        }
+        historyList.innerHTML = revisions
+          .map(function (rev) {
+            return (
+              '<div class="article-row"><div class="article-row-info">' +
+              '<span class="article-row-title">' +
+              escapeHtml(rev.title || "(sin titulo)") +
+              "</span>" +
+              '<span class="article-history-meta">' +
+              escapeHtml(historyWhen(rev.created_at)) +
+              " · " +
+              escapeHtml(historyAuthor(rev.author)) +
+              "</span>" +
+              '</div><div class="article-row-actions">' +
+              '<button class="btn-ghost-sm" data-preview="' +
+              rev.id +
+              '">Ver</button>' +
+              '<button class="btn-ghost-sm" data-restore="' +
+              rev.id +
+              '" data-post="' +
+              postId +
+              '">Restaurar</button>' +
+              "</div></div>"
+            );
+          })
+          .join("");
+
+        historyList.querySelectorAll("[data-preview]").forEach(function (btn) {
+          btn.addEventListener("click", async function () {
+            var res = await fetch("/api/blog/revisions/" + btn.dataset.preview, {
+              headers: authHeaders(),
+            });
+            var rev = await res.json();
+            var box = document.createElement("div");
+            box.className = "article-history-preview";
+            box.textContent = rev.content || "";
+            var existing = btn.closest(".article-row").nextElementSibling;
+            if (existing && existing.className === "article-history-preview") {
+              existing.remove();
+              return;
+            }
+            btn.closest(".article-row").after(box);
+          });
+        });
+
+        historyList.querySelectorAll("[data-restore]").forEach(function (btn) {
+          btn.addEventListener("click", async function () {
+            if (
+              !confirm(
+                "Se va a dejar el articulo como estaba en esa fecha. La version actual se guarda tambien, asi que podras volver a ella.",
+              )
+            )
+              return;
+            btn.disabled = true;
+            var res = await fetch(
+              "/api/blog/posts/" + btn.dataset.post + "/revert",
+              {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({ revision_id: Number(btn.dataset.restore) }),
+              },
+            );
+            var data = await res.json();
+            btn.disabled = false;
+            if (data.success) {
+              loadArticles();
+              loadHistory(btn.dataset.post, data.title || "");
+            } else {
+              alert(data.error || "No se pudo restaurar");
+            }
+          });
+        });
+      })
+      .catch(function () {
+        historyList.innerHTML =
+          '<p style="color:var(--text-muted)">No se pudo cargar el historial. Vuelve a entrar en el panel e intentalo de nuevo.</p>';
+      });
   }
 
   function loadMessages() {

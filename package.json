@@ -1,6 +1,6 @@
 {
   "name": "bl-site-package",
-  "version": "1.7.1",
+  "version": "1.8.2",
   "type": "module",
   "main": "src/server.js",
   "engines": {

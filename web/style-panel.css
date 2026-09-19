@@ -968,6 +968,53 @@ body {
   }
 }
 
+/* HISTORIAL DE VERSIONES DE ARTICULOS
+   Los agentes de contenido editan articulos ya publicados sin pedir permiso
+   cada vez; esto es lo que deja al cliente volver atras por su cuenta. */
+.article-history-wrap {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border, #ddd);
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-subtle, #fafafa);
+}
+.article-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+.article-history-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.article-history-hint {
+  margin: 0 0 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--text-muted, #888);
+}
+.article-history-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted, #888);
+}
+.article-history-preview {
+  margin: 0 0 0.75rem;
+  padding: 0.75rem;
+  max-height: 16rem;
+  overflow: auto;
+  border: 1px solid var(--border, #ddd);
+  border-radius: var(--radius-sm, 4px);
+  background: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* 18. SCROLLBAR */
 ::-webkit-scrollbar {
   width: 8px;
