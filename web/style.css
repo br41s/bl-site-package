@@ -318,12 +318,68 @@ body {
   color: var(--text-muted);
   text-align: center;
 }
+/* El wrapper lo genera el build (lib/table-scroll.mjs), no se escribe a mano.
+   Una tabla no baja de su min-content, asi que una tabla ancha en el cuerpo de
+   un articulo no encogia: empujaba el documento entero fuera de la pantalla en
+   movil. Aqui el desbordamiento se queda dentro de la tabla.
+
+   Acotado a .site-page-body / .site-post-body a proposito: ahi vive el HTML
+   arbitrario que escribe el cliente. El transform envuelve tambien .cart-table
+   y .product-specs, pero esos wrappers se quedan sin estilos — inertes, sin
+   margen ni altura, para no romper el `hidden` del carrito vacio. */
+.site-page-body .table-scroll,
+.site-post-body .table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 0 1.15rem;
+
+  /* Degradado de borde: avisa de que quedan columnas fuera de vista. En iOS la
+     barra de scroll es overlay y no aparece hasta DESPUES de deslizar, asi que
+     no sirve de aviso. Sin JS: las dos capas "tapa" van en `local` (se
+     desplazan con el contenido) y las de sombra en `scroll` (fijas). Si la
+     tabla cabe entera no hay desplazamiento, las tapas no se mueven y no se ve
+     nada — por eso no hace falta acotarlo por media query.
+
+     La tapa DEBE ser el color de fondo real que hay detras (body usa --bg). */
+  --table-fade: rgba(0, 0, 0, 0.16);
+  background-image:
+    linear-gradient(to right, var(--bg) 40%, transparent),
+    linear-gradient(to left, var(--bg) 40%, transparent),
+    radial-gradient(farthest-side at 0 50%, var(--table-fade), transparent),
+    radial-gradient(farthest-side at 100% 50%, var(--table-fade), transparent);
+  background-position: left center, right center, left center, right center;
+  background-repeat: no-repeat;
+  background-size: 32px 100%, 32px 100%, 14px 100%, 14px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* Sobre fondo oscuro una sombra negra no se ve: se invierte a luz. */
+[data-theme="dark"] .site-page-body .table-scroll,
+[data-theme="dark"] .site-post-body .table-scroll {
+  --table-fade: rgba(255, 255, 255, 0.14);
+}
+
+/* La region es desplazable, asi que tiene que alcanzarse con teclado
+   (WCAG 2.1.1). El transform le pone tabindex="0"; esto le da foco visible. */
+.site-page-body .table-scroll:focus-visible,
+.site-post-body .table-scroll:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .site-page-body table,
 .site-post-body table {
   width: 100%;
   border-collapse: collapse;
   margin: 0 0 1.15rem;
   font-size: 0.9375rem;
+}
+
+/* El margen inferior lo lleva ya el wrapper. */
+.site-page-body .table-scroll > table,
+.site-post-body .table-scroll > table {
+  margin-bottom: 0;
 }
 .site-page-body th,
 .site-page-body td,
