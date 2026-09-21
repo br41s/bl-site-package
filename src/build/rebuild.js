@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { DB_PATH } from "../db/database.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "../..");
@@ -68,17 +69,38 @@ function runBuild() {
       }
     };
 
-    const child = spawn(process.execPath, [childEntry], {
-      cwd: root,
-      env: process.env,
-      stdio: ["ignore", "inherit", "inherit"],
-    });
+    // The child gets the database by absolute path, not by re-resolving
+    // DB_PATH against its own cwd: the default is relative ("./data/app.db"),
+    // and a server started from any directory but the repo root would
+    // otherwise have its build create a fresh empty database, render an empty
+    // site and exit 0. The flag keeps the child from ever scheduling a build
+    // of its own — its data providers import database.js, which imports this
+    // module, and one setConfig() at build time would spawn a grandchild.
+    const env = { ...process.env, DB_PATH, BL_SITE_DISABLE_REBUILD: "1" };
+
+    let child;
+    try {
+      child = spawn(process.execPath, [childEntry], {
+        cwd: root,
+        env,
+        stdio: ["ignore", "inherit", "inherit"],
+      });
+    } catch (err) {
+      // spawn() throws synchronously for some errnos (fork ENOMEM among them)
+      // rather than emitting "error"; without this the rejection would be
+      // unhandled from the debounce timer and take the server down.
+      ok = false;
+      console.error("[BUILD] could not start the Eleventy build:", err.message);
+      finish();
+      return;
+    }
     child.on("error", (err) => {
       ok = false;
       console.error("[BUILD] could not start the Eleventy build:", err.message);
       finish();
     });
     child.on("close", (code, signal) => {
+      if (settled) return;
       if (code !== 0) {
         ok = false;
         // The child already printed the Eleventy error to our stderr.

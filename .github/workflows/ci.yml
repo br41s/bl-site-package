@@ -34,11 +34,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # The suite is 282 tests in ~1.2s and needs no database: the API and
-      # build tests stub their own storage. Deliberately NOT running
-      # `npm run build` — eleventy.config.mjs reads live SQLite content via
-      # site/_data/*, so a build here would assert nothing and fail on an
-      # empty DB.
+      # The suite is ~330 tests in a few seconds and needs no database: every
+      # suite that touches storage points DB_PATH at a throwaway directory.
+      # src/build/rebuild.test.js runs real Eleventy builds of that throwaway
+      # database in a child process, which is most of the wall time.
+      # Deliberately NOT running `npm run build` as a step — eleventy.config.mjs
+      # reads live SQLite content via site/_data/*, so a build here would
+      # assert nothing about a customer's content.
       - name: Test
         run: npm test
 

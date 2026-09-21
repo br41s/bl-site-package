@@ -16,7 +16,7 @@
 
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -30,10 +30,12 @@ const express = (await import("express")).default;
 const db = (await import("../db/database.js")).default;
 const { scheduleRebuild, getBuildState } = await import("./rebuild.js");
 
-// Enough product pages that the build is CPU-bound for a couple of seconds,
-// which is what starved the event loop in-process. A dozen static pages
-// finish before the request would notice.
-const PRODUCTS = 1500;
+const root = join(import.meta.dirname, "../..");
+
+// Enough product pages that the build is CPU-bound for about a second, which
+// is what starved the event loop in-process. A dozen static pages finish
+// before the request would notice; more than this only slows the suite.
+const PRODUCTS = 600;
 
 let server;
 let baseUrl;
@@ -94,11 +96,17 @@ describe("rebuild", () => {
     const state = getBuildState();
     assert.equal(state.ok, true, "the build itself should succeed");
     assert.ok(state.at, "a finished build records its time");
-
-    // In-process, the request took as long as the build had left to run. Out
-    // of process it takes milliseconds, whatever the build takes.
     assert.ok(
-      requestMs < buildMs / 4,
+      existsSync(join(root, "_site", "productos", `${PRODUCTS}-producto.html`)),
+      "the build rendered the product pages it was seeded with",
+    );
+
+    // In-process, the request took as long as the build had left to run
+    // (measured: 1357ms of a 1368ms build). Out of process it takes
+    // milliseconds, whatever the build takes; half is a loose bound so a busy
+    // CI runner does not fail it.
+    assert.ok(
+      requestMs < buildMs / 2,
       `request took ${requestMs}ms during a ${buildMs}ms build`,
     );
   });
@@ -130,5 +138,36 @@ describe("rebuild", () => {
 
     assert.equal(getBuildState().building, false);
     assert.equal(finished.size, 2, `builds finished: ${[...finished].join(", ")}`);
+  });
+
+  test("a failed build reports ok=false and does not block the next one", async () => {
+    // The child inherits the environment at spawn time, so a Node option
+    // that NODE_OPTIONS refuses makes it exit 9 before Eleventy loads — a
+    // failure with no database or filesystem side effects.
+    const previous = getBuildState().at;
+    process.env.NODE_OPTIONS = "--nonexistent-option";
+    try {
+      scheduleRebuild(0);
+      await until(() => getBuildState().building, "the failing build to start");
+    } finally {
+      delete process.env.NODE_OPTIONS;
+    }
+    // Queued behind the failing build; spawned after it, with a clean env.
+    scheduleRebuild(0);
+
+    const results = new Map();
+    const deadline = Date.now() + 60_000;
+    let quietSince = null;
+    while (Date.now() < deadline) {
+      const { at, ok, building } = getBuildState();
+      if (at && at !== previous) results.set(at, ok);
+      if (!building && quietSince === null) quietSince = Date.now();
+      if (building) quietSince = null;
+      if (quietSince !== null && Date.now() - quietSince > 500) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    assert.deepEqual([...results.values()], [false, true]);
+    assert.equal(getBuildState().building, false);
   });
 });
