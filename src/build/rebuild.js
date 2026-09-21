@@ -1,12 +1,70 @@
-import Eleventy from "@11ty/eleventy";
+import { spawn } from "node:child_process";
+import { lstatSync, readlinkSync, renameSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { DB_PATH } from "../db/database.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "../..");
-const inputDir = join(root, "site");
-const outputDir = join(root, "_site");
-const configPath = join(root, "eleventy.config.mjs");
+const childEntry = join(__dirname, "eleventy-child.js");
+
+// _site/ — what express.static serves — is a symlink to one of two build
+// slots, and a build never writes into the slot being served.
+//
+// Eleventy writes every output file in place: truncate, then write. While the
+// build ran in-process nobody could observe that, because the server answered
+// nothing until it was done. Now that it answers throughout, a visitor could
+// be served a half-written page or stylesheet out of the directory the build
+// is rewriting — and it rewrites all ~15,000 files, every publish. So the
+// child builds into the idle slot, from empty, and only once it has exited 0
+// is the _site symlink repointed. rename(2) over a symlink is atomic, so
+// every request sees either the whole old site or the whole new one. Building
+// from empty also means a deleted post or product disappears from the site,
+// which writing in place never did.
+//
+// On an instance upgraded from a version that had a real _site/ directory,
+// the first publication moves that directory into the other slot, where the
+// next build empties it. Slot names are stored relative in the link so a
+// checkout can move.
+const liveLink = join(root, "_site");
+const SLOTS = ["_site.a", "_site.b"];
+
+function liveSlot() {
+  try {
+    return readlinkSync(liveLink);
+  } catch {
+    return null; // no _site yet, or a real directory from an older version
+  }
+}
+
+function idleSlot() {
+  const live = liveSlot();
+  return SLOTS.find((slot) => slot !== live);
+}
+
+function publish(slot) {
+  const tmp = join(root, "_site.tmp");
+  rmSync(tmp, { force: true });
+  symlinkSync(slot, tmp);
+  let existing = null;
+  try {
+    existing = lstatSync(liveLink);
+  } catch {}
+  if (existing?.isDirectory()) {
+    const other = join(root, SLOTS.find((s) => s !== slot));
+    rmSync(other, { recursive: true, force: true });
+    renameSync(liveLink, other);
+  }
+  renameSync(tmp, liveLink);
+}
+
+// A build that never finishes would leave `building` true for the life of
+// the process and every later publish silently queued behind it. Ten
+// minutes is many times the ~30s a catalogue client's build takes.
+const BUILD_TIMEOUT_MS = 10 * 60_000;
+
+// The child in flight, for stopBuild().
+let current = null;
 
 let debounceTimer = null;
 let building = false;
@@ -28,29 +86,104 @@ let rebuildQueued = false;
 let lastBuild = { at: null, ok: null };
 
 export function getBuildState() {
-  return { ...lastBuild };
+  return { ...lastBuild, building };
 }
 
-async function runBuild() {
+// The build runs in a separate Node process, never in this one.
+//
+// It used to be `new Eleventy(...).write()` right here, and for a catalogue
+// client that is ~14,500 product pages rendered in the server's own event
+// loop: around 30s on a client's host during which the process answered no
+// HTTP request at all. The Product Sheet Writer agent publishes a sheet and
+// immediately reads the next one; that read landed inside the build window
+// and timed out (30s), 10-23 times a day. The panel and every visitor whose
+// request arrived in that window waited just the same.
+//
+// A child process rather than a worker thread because it is the plainer of
+// the two: it is `npm run build` with an exit code, it needs nothing from the
+// server process but the environment (DB_PATH, which site/_data/* opens on
+// import — SQLite is in WAL mode, so the build reads while the API keeps
+// writing), and an Eleventy crash or out-of-memory kills the build, not the
+// site. process.execPath is whichever Node is running the server, so it is
+// the same binary under Passenger on a Plesk host and under the Dockerfile on
+// Zeabur. Memory: the build's transient peak is the same as it was
+// in-process; what is added is only this process's resting footprint.
+function runBuild() {
   building = true;
-  let ok = true;
-  try {
-    const elev = new Eleventy(inputDir, outputDir, {
-      configPath,
-      quietMode: true,
-    });
-    await elev.write();
-  } catch (err) {
-    ok = false;
-    console.error("[BUILD] Eleventy rebuild failed:", err.message);
-  } finally {
-    lastBuild = { at: new Date().toISOString(), ok };
-    building = false;
-    if (rebuildQueued) {
-      rebuildQueued = false;
-      runBuild();
+  return new Promise((resolve) => {
+    let ok = true;
+    let settled = false;
+
+    // "error" (spawn itself failed) may or may not be followed by "close",
+    // so both paths funnel through one idempotent finish.
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      lastBuild = { at: new Date().toISOString(), ok };
+      building = false;
+      resolve();
+      if (rebuildQueued) {
+        rebuildQueued = false;
+        runBuild();
+      }
+    };
+
+    // The child gets the database by absolute path, not by re-resolving
+    // DB_PATH against its own cwd: the default is relative ("./data/app.db"),
+    // and a server started from any directory but the repo root would
+    // otherwise have its build create a fresh empty database, render an empty
+    // site and exit 0. The flag keeps the child from ever scheduling a build
+    // of its own — its data providers import database.js, which imports this
+    // module, and one setConfig() at build time would spawn a grandchild.
+    const env = { ...process.env, DB_PATH, BL_SITE_DISABLE_REBUILD: "1" };
+
+    const slot = idleSlot();
+    let child;
+    try {
+      child = spawn(process.execPath, [childEntry, join(root, slot)], {
+        cwd: root,
+        env,
+        stdio: ["ignore", "inherit", "inherit"],
+      });
+    } catch (err) {
+      // spawn() throws synchronously for some errnos (fork ENOMEM among them)
+      // rather than emitting "error"; without this the rejection would be
+      // unhandled from the debounce timer and take the server down.
+      ok = false;
+      console.error("[BUILD] could not start the Eleventy build:", err.message);
+      finish();
+      return;
     }
-  }
+    current = child;
+    const watchdog = setTimeout(() => {
+      console.error(`[BUILD] Eleventy rebuild still running after ${BUILD_TIMEOUT_MS}ms, killing it`);
+      child.kill("SIGKILL");
+    }, BUILD_TIMEOUT_MS);
+
+    child.on("error", (err) => {
+      ok = false;
+      console.error("[BUILD] could not start the Eleventy build:", err.message);
+      finish();
+    });
+    child.on("close", (code, signal) => {
+      clearTimeout(watchdog);
+      current = null;
+      if (settled) return;
+      if (code !== 0) {
+        ok = false;
+        // The child already printed the Eleventy error to our stderr.
+        console.error(`[BUILD] Eleventy rebuild failed (${signal ?? `exit ${code}`})`);
+      } else {
+        try {
+          publish(slot);
+        } catch (err) {
+          ok = false;
+          console.error("[BUILD] built but could not repoint _site:", err.message);
+        }
+      }
+      finish();
+    });
+  });
 }
 
 // Debounces rapid successive content writes (e.g. multiple setConfig calls
@@ -78,4 +211,12 @@ export function scheduleRebuild(delayMs = 400) {
 // so it's always regenerated fresh from the DB on boot.
 export async function buildOnStartup() {
   await runBuild();
+}
+
+// Node does not forward signals to children, so a server stopped mid-build
+// would leave the child running: on a Plesk host, still writing its slot while
+// the replacement process builds into the same one. server.js calls this from
+// its signal handlers.
+export function stopBuild() {
+  current?.kill("SIGKILL");
 }

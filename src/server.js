@@ -2,7 +2,7 @@ import express from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { getConfig, DB_PATH } from "./db/database.js";
-import { buildOnStartup } from "./build/rebuild.js";
+import { buildOnStartup, stopBuild } from "./build/rebuild.js";
 import { UPLOADS_DIR as uploadsDir } from "./media/uploads-dir.js";
 import authRouter from "./api/auth.js";
 import chatRouter from "./api/chat.js";
@@ -137,6 +137,16 @@ app.use((req, res) => {
     if (err) res.status(404).json({ error: "Not found" });
   });
 });
+
+// A stop signal must take the build child with it (see stopBuild). Without
+// a handler Node exits on SIGTERM without running anything — and as PID 1 in
+// the container it ignores SIGTERM outright until the runtime sends SIGKILL.
+for (const [signal, code] of [["SIGTERM", 143], ["SIGINT", 130]]) {
+  process.on(signal, () => {
+    stopBuild();
+    process.exit(code);
+  });
+}
 
 await buildOnStartup();
 startLiderpapelScheduler();

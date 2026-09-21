@@ -7,6 +7,9 @@ import { join } from "node:path";
 // database.js resolves DB_PATH at import time, so point it at a throwaway dir
 // before anything that imports it loads. Same reasoning as redirects.test.js.
 process.env.DB_PATH = join(mkdtempSync(join(tmpdir(), "bl-site-blog-rev-")), "app.db");
+// Write routes schedule a real Eleventy build 400ms later (src/build/rebuild.js);
+// this suite is about the API, not the site it regenerates.
+process.env.BL_SITE_DISABLE_REBUILD = "1";
 process.env.JWT_SECRET = "test-secret-for-blog-revisions";
 
 const express = (await import("express")).default;

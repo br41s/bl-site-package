@@ -9,6 +9,9 @@ import { join } from "node:path";
 // imports it is loaded.
 process.env.DB_PATH = join(mkdtempSync(join(tmpdir(), "bl-site-api-")), "app.db");
 process.env.JWT_SECRET = "test-secret-for-site-status";
+// Write routes schedule a real Eleventy build 400ms later (src/build/rebuild.js);
+// this suite is about the API, not the site it regenerates.
+process.env.BL_SITE_DISABLE_REBUILD = "1";
 
 const express = (await import("express")).default;
 const jwt = (await import("jsonwebtoken")).default;

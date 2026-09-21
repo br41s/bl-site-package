@@ -30,8 +30,8 @@ RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 # npm ci installs the exact tree from the committed package-lock.json, so
 # every client build is reproducible. --omit=dev keeps the image lean;
-# @11ty/eleventy is a runtime dependency (see src/build/rebuild.js), so it
-# stays installed.
+# @11ty/eleventy is a runtime dependency (see src/build/eleventy-child.js),
+# so it stays installed.
 RUN npm ci --omit=dev
 
 # Runtime stage: lean image, no build tools. The better-sqlite3 binary rides

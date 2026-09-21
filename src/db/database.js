@@ -124,6 +124,9 @@ export const DB_PATH = resolve(process.env.DB_PATH || "./data/app.db");
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const servedDirs = [
   join(appRoot, "_site"),
+  // The two build slots _site points at (see src/build/rebuild.js).
+  join(appRoot, "_site.a"),
+  join(appRoot, "_site.b"),
   join(appRoot, "web"),
   join(appRoot, "public"),
   join(appRoot, "data", "uploads"),
@@ -485,7 +488,16 @@ if (productsNeedingSearchText.length > 0) {
 
 // Seeds a config default without triggering scheduleRebuild() (unlike
 // setConfig) and without overwriting a value an admin already set.
+//
+// Reads before it writes. INSERT OR IGNORE takes the write lock even when it
+// ignores, and this runs on import — so the build child (src/build/rebuild.js)
+// opening a settled database used to queue behind the catalogue sync's
+// transaction and fail with SQLITE_BUSY after better-sqlite3's 5s timeout.
+// On a settled database the SELECT is all that runs, and a SELECT never waits
+// for a writer in WAL mode.
+const hasConfig = db.prepare("SELECT 1 FROM config WHERE key = ?");
 function seedConfigDefault(key, value) {
+  if (hasConfig.get(key)) return;
   db.prepare("INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)").run(key, value);
 }
 

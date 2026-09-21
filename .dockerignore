@@ -21,8 +21,10 @@ data
 *.sqlite
 *.sqlite3
 
-# Salida de build: se regenera en runtime
+# Salida de build: se regenera en runtime. _site es un enlace simbólico a uno
+# de los dos slots (src/build/rebuild.js).
 _site
+_site.*
 
 # npm ci ya instaló las dependencias en la etapa de build, con better-sqlite3
 # compilado para musl. Copiar las locales encima las rompería.
