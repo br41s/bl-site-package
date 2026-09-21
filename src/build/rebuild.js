@@ -1,12 +1,10 @@
-import Eleventy from "@11ty/eleventy";
+import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "../..");
-const inputDir = join(root, "site");
-const outputDir = join(root, "_site");
-const configPath = join(root, "eleventy.config.mjs");
+const childEntry = join(__dirname, "eleventy-child.js");
 
 let debounceTimer = null;
 let building = false;
@@ -28,29 +26,67 @@ let rebuildQueued = false;
 let lastBuild = { at: null, ok: null };
 
 export function getBuildState() {
-  return { ...lastBuild };
+  return { ...lastBuild, building };
 }
 
-async function runBuild() {
+// The build runs in a separate Node process, never in this one.
+//
+// It used to be `new Eleventy(...).write()` right here, and for a catalogue
+// client that is ~14,500 product pages rendered in the server's own event
+// loop: around 30s on a client's host during which the process answered no
+// HTTP request at all. The Product Sheet Writer agent publishes a sheet and
+// immediately reads the next one; that read landed inside the build window
+// and timed out (30s), 10-23 times a day. The panel and every visitor whose
+// request arrived in that window waited just the same.
+//
+// A child process rather than a worker thread because it is the plainer of
+// the two: it is `npm run build` with an exit code, it needs nothing from the
+// server process but the environment (DB_PATH, which site/_data/* opens on
+// import — SQLite is in WAL mode, so the build reads while the API keeps
+// writing), and an Eleventy crash or out-of-memory kills the build, not the
+// site. process.execPath is whichever Node is running the server, so it is
+// the same binary under Passenger on a Plesk host and under the Dockerfile on
+// Zeabur. Memory: the build's transient peak is the same as it was
+// in-process; what is added is only this process's resting footprint.
+function runBuild() {
   building = true;
-  let ok = true;
-  try {
-    const elev = new Eleventy(inputDir, outputDir, {
-      configPath,
-      quietMode: true,
+  return new Promise((resolve) => {
+    let ok = true;
+    let settled = false;
+
+    // "error" (spawn itself failed) may or may not be followed by "close",
+    // so both paths funnel through one idempotent finish.
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      lastBuild = { at: new Date().toISOString(), ok };
+      building = false;
+      resolve();
+      if (rebuildQueued) {
+        rebuildQueued = false;
+        runBuild();
+      }
+    };
+
+    const child = spawn(process.execPath, [childEntry], {
+      cwd: root,
+      env: process.env,
+      stdio: ["ignore", "inherit", "inherit"],
     });
-    await elev.write();
-  } catch (err) {
-    ok = false;
-    console.error("[BUILD] Eleventy rebuild failed:", err.message);
-  } finally {
-    lastBuild = { at: new Date().toISOString(), ok };
-    building = false;
-    if (rebuildQueued) {
-      rebuildQueued = false;
-      runBuild();
-    }
-  }
+    child.on("error", (err) => {
+      ok = false;
+      console.error("[BUILD] could not start the Eleventy build:", err.message);
+      finish();
+    });
+    child.on("close", (code, signal) => {
+      if (code !== 0) {
+        ok = false;
+        // The child already printed the Eleventy error to our stderr.
+        console.error(`[BUILD] Eleventy rebuild failed (${signal ?? `exit ${code}`})`);
+      }
+      finish();
+    });
+  });
 }
 
 // Debounces rapid successive content writes (e.g. multiple setConfig calls

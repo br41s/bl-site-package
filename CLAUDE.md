@@ -17,6 +17,13 @@ for Passenger-based hosts.
 - `npm run build` — Eleventy, `site/` → `_site/`
 - `npm start` / `npm run dev` — Node server (`--watch` on dev)
 
+**Rebuilds run in a child process, never in the server's.** `src/build/rebuild.js` spawns
+`src/build/eleventy-child.js` (the same programmatic Eleventy call `npm run build` makes).
+A catalogue client's site is ~14,500 pages; built in-process that was ~30s per publish
+during which the event loop answered no request at all, and the Product Sheet Writer's
+read right after each publish timed out 10-23 times a day. `src/build/rebuild.test.js`
+runs a real build and fails if a request is not served while it is in flight.
+
 ## Content — same rule as biglobster
 
 **`site/` is the source of truth. `_site/` is build output — never edit it.**
