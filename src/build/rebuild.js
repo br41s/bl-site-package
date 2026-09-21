@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { lstatSync, readlinkSync, renameSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { DB_PATH } from "../db/database.js";
@@ -6,6 +7,64 @@ import { DB_PATH } from "../db/database.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "../..");
 const childEntry = join(__dirname, "eleventy-child.js");
+
+// _site/ — what express.static serves — is a symlink to one of two build
+// slots, and a build never writes into the slot being served.
+//
+// Eleventy writes every output file in place: truncate, then write. While the
+// build ran in-process nobody could observe that, because the server answered
+// nothing until it was done. Now that it answers throughout, a visitor could
+// be served a half-written page or stylesheet out of the directory the build
+// is rewriting — and it rewrites all ~15,000 files, every publish. So the
+// child builds into the idle slot, from empty, and only once it has exited 0
+// is the _site symlink repointed. rename(2) over a symlink is atomic, so
+// every request sees either the whole old site or the whole new one. Building
+// from empty also means a deleted post or product disappears from the site,
+// which writing in place never did.
+//
+// On an instance upgraded from a version that had a real _site/ directory,
+// the first publication moves that directory into the other slot, where the
+// next build empties it. Slot names are stored relative in the link so a
+// checkout can move.
+const liveLink = join(root, "_site");
+const SLOTS = ["_site.a", "_site.b"];
+
+function liveSlot() {
+  try {
+    return readlinkSync(liveLink);
+  } catch {
+    return null; // no _site yet, or a real directory from an older version
+  }
+}
+
+function idleSlot() {
+  const live = liveSlot();
+  return SLOTS.find((slot) => slot !== live);
+}
+
+function publish(slot) {
+  const tmp = join(root, "_site.tmp");
+  rmSync(tmp, { force: true });
+  symlinkSync(slot, tmp);
+  let existing = null;
+  try {
+    existing = lstatSync(liveLink);
+  } catch {}
+  if (existing?.isDirectory()) {
+    const other = join(root, SLOTS.find((s) => s !== slot));
+    rmSync(other, { recursive: true, force: true });
+    renameSync(liveLink, other);
+  }
+  renameSync(tmp, liveLink);
+}
+
+// A build that never finishes would leave `building` true for the life of
+// the process and every later publish silently queued behind it. Ten
+// minutes is many times the ~30s a catalogue client's build takes.
+const BUILD_TIMEOUT_MS = 10 * 60_000;
+
+// The child in flight, for stopBuild().
+let current = null;
 
 let debounceTimer = null;
 let building = false;
@@ -78,9 +137,10 @@ function runBuild() {
     // module, and one setConfig() at build time would spawn a grandchild.
     const env = { ...process.env, DB_PATH, BL_SITE_DISABLE_REBUILD: "1" };
 
+    const slot = idleSlot();
     let child;
     try {
-      child = spawn(process.execPath, [childEntry], {
+      child = spawn(process.execPath, [childEntry, join(root, slot)], {
         cwd: root,
         env,
         stdio: ["ignore", "inherit", "inherit"],
@@ -94,17 +154,32 @@ function runBuild() {
       finish();
       return;
     }
+    current = child;
+    const watchdog = setTimeout(() => {
+      console.error(`[BUILD] Eleventy rebuild still running after ${BUILD_TIMEOUT_MS}ms, killing it`);
+      child.kill("SIGKILL");
+    }, BUILD_TIMEOUT_MS);
+
     child.on("error", (err) => {
       ok = false;
       console.error("[BUILD] could not start the Eleventy build:", err.message);
       finish();
     });
     child.on("close", (code, signal) => {
+      clearTimeout(watchdog);
+      current = null;
       if (settled) return;
       if (code !== 0) {
         ok = false;
         // The child already printed the Eleventy error to our stderr.
         console.error(`[BUILD] Eleventy rebuild failed (${signal ?? `exit ${code}`})`);
+      } else {
+        try {
+          publish(slot);
+        } catch (err) {
+          ok = false;
+          console.error("[BUILD] built but could not repoint _site:", err.message);
+        }
       }
       finish();
     });
@@ -136,4 +211,12 @@ export function scheduleRebuild(delayMs = 400) {
 // so it's always regenerated fresh from the DB on boot.
 export async function buildOnStartup() {
   await runBuild();
+}
+
+// Node does not forward signals to children, so a server stopped mid-build
+// would leave the child running: on a Plesk host, still writing its slot while
+// the replacement process builds into the same one. server.js calls this from
+// its signal handlers.
+export function stopBuild() {
+  current?.kill("SIGKILL");
 }

@@ -16,7 +16,7 @@
 
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync } from "node:fs";
+import { existsSync, lstatSync, mkdtempSync, readlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -64,6 +64,15 @@ after(() => {
   db.close();
 });
 
+// Which slot _site points at, or null before the first build ever completes.
+function liveSlot() {
+  try {
+    return readlinkSync(join(root, "_site"));
+  } catch {
+    return null;
+  }
+}
+
 async function until(predicate, what, timeoutMs = 60_000) {
   const deadline = Date.now() + timeoutMs;
   while (!predicate()) {
@@ -75,6 +84,7 @@ async function until(predicate, what, timeoutMs = 60_000) {
 describe("rebuild", () => {
   test("serves an HTTP request while an Eleventy build is in flight", async () => {
     assert.equal(getBuildState().building, false);
+    const slotBefore = liveSlot();
 
     scheduleRebuild(0);
     await until(() => getBuildState().building, "the build to start");
@@ -96,6 +106,10 @@ describe("rebuild", () => {
     const state = getBuildState();
     assert.equal(state.ok, true, "the build itself should succeed");
     assert.ok(state.at, "a finished build records its time");
+    // Served through the symlink, which the build repointed only once the
+    // slot was complete — and never at the slot that was being served.
+    assert.ok(lstatSync(join(root, "_site")).isSymbolicLink(), "_site is a symlink");
+    assert.notEqual(liveSlot(), slotBefore);
     assert.ok(
       existsSync(join(root, "_site", "productos", `${PRODUCTS}-producto.html`)),
       "the build rendered the product pages it was seeded with",
@@ -113,6 +127,7 @@ describe("rebuild", () => {
 
   test("publishes during a build coalesce into exactly one more build", async () => {
     const previous = getBuildState().at;
+    const slotBefore = liveSlot();
     scheduleRebuild(0);
     await until(() => getBuildState().building, "the build to start");
 
@@ -138,6 +153,9 @@ describe("rebuild", () => {
 
     assert.equal(getBuildState().building, false);
     assert.equal(finished.size, 2, `builds finished: ${[...finished].join(", ")}`);
+    // Two builds, two flips: consecutive builds alternate slots, so the one
+    // being served is never the one being written.
+    assert.equal(liveSlot(), slotBefore);
   });
 
   test("a failed build reports ok=false and does not block the next one", async () => {

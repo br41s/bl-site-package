@@ -3,7 +3,8 @@
 // content at build time (config table + articles), not static files — the
 // customer panel/chat agent still writes to the DB; every write schedules a
 // rebuild (see src/build/rebuild.js) so this stays in sync.
-// Output: _site/ (served by Express via express.static, see src/server.js).
+// Output: _site/ (served by Express via express.static, see src/server.js) —
+// a symlink to the build slot src/build/rebuild.js last completed.
 
 import tableScroll from "./lib/table-scroll.mjs";
 
@@ -39,10 +40,14 @@ export default function (eleventyConfig) {
     JSON.stringify(obj).replace(/</g, "\\u003c"),
   );
 
+  // No dir.output on purpose. A value here overrides the output directory a
+  // programmatic caller passes to `new Eleventy(input, output)`, and
+  // src/build/rebuild.js builds each run into a slot (_site.a / _site.b) that
+  // it then points _site at. Left unset, the CLI (`npm run build`) falls back
+  // to Eleventy's default of _site — the same directory as before.
   return {
     dir: {
       input: "site",
-      output: "_site",
       includes: "_includes",
       data: "_data",
     },

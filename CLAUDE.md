@@ -24,6 +24,12 @@ during which the event loop answered no request at all, and the Product Sheet Wr
 read right after each publish timed out 10-23 times a day. `src/build/rebuild.test.js`
 runs a real build and fails if a request is not served while it is in flight.
 
+**`_site` is a symlink, and a build never writes into the slot being served.** The child
+builds into whichever of `_site.a` / `_site.b` is idle, from empty, and only on exit 0 is
+`_site` repointed (an atomic rename). Eleventy writes files in place, so a visitor served
+out of the directory being rebuilt could get a half-written page. `eleventy.config.mjs`
+therefore sets no `dir.output`: a value there overrides the slot the child asks for.
+
 ## Content — same rule as biglobster
 
 **`site/` is the source of truth. `_site/` is build output — never edit it.**

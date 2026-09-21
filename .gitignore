@@ -7,7 +7,10 @@ data/
 .env
 *.db
 .DS_Store
-_site/
+# _site is a symlink to one of the two build slots (src/build/rebuild.js);
+# a trailing slash would match only a real directory.
+_site
+_site.*
 .gstack/
 
 # Session planning files (Claude worktrees)
