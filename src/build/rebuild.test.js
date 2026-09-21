@@ -161,31 +161,25 @@ describe("rebuild", () => {
   test("a failed build reports ok=false and does not block the next one", async () => {
     // The child inherits the environment at spawn time, so a Node option
     // that NODE_OPTIONS refuses makes it exit 9 before Eleventy loads — a
-    // failure with no database or filesystem side effects.
+    // failure with no database or filesystem side effects. It fails within
+    // milliseconds, too fast for a poll on `building` to catch (it did not,
+    // on CI), so the test watches the recorded outcome instead.
     const previous = getBuildState().at;
     process.env.NODE_OPTIONS = "--nonexistent-option";
     try {
       scheduleRebuild(0);
-      await until(() => getBuildState().building, "the failing build to start");
+      await until(() => getBuildState().at !== previous, "the failing build to finish");
     } finally {
       delete process.env.NODE_OPTIONS;
     }
-    // Queued behind the failing build; spawned after it, with a clean env.
+    const failed = getBuildState();
+    assert.equal(failed.ok, false);
+    assert.equal(failed.building, false);
+
+    // The next build is not blocked by the failure.
     scheduleRebuild(0);
-
-    const results = new Map();
-    const deadline = Date.now() + 60_000;
-    let quietSince = null;
-    while (Date.now() < deadline) {
-      const { at, ok, building } = getBuildState();
-      if (at && at !== previous) results.set(at, ok);
-      if (!building && quietSince === null) quietSince = Date.now();
-      if (building) quietSince = null;
-      if (quietSince !== null && Date.now() - quietSince > 500) break;
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    }
-
-    assert.deepEqual([...results.values()], [false, true]);
+    await until(() => getBuildState().at !== failed.at, "the next build to finish");
+    assert.equal(getBuildState().ok, true);
     assert.equal(getBuildState().building, false);
   });
 });
