@@ -200,6 +200,77 @@ function initProductGallery() {
   });
 }
 
+// Boton "Ampliar" en cada infografia, mas su visor a pantalla completa.
+//
+// Va aqui y no en el contenido del articulo a proposito: el saneador de
+// src/content/format-content.js permite <svg> y <figure>, pero no <button>,
+// asi que un boton escrito por el agente desapareceria en silencio al
+// renderizar. Inyectarlo desde el sitio tambien significa que TODAS las
+// infografias ya publicadas lo ganan sin tocar ni una fila de la base de datos.
+function initInfographicZoom() {
+  var figures = document.querySelectorAll(".article-infographic");
+  if (!figures.length) return;
+  var isEs = document.documentElement.lang !== "en";
+  var T = isEs
+    ? { open: "Ampliar", close: "Cerrar", label: "Infografia ampliada" }
+    : { open: "Enlarge", close: "Close", label: "Enlarged infographic" };
+
+  Array.prototype.forEach.call(figures, function (fig) {
+    var art = fig.querySelector("svg, img");
+    if (!art) return;
+    fig.classList.add("has-zoom");
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "infographic-zoom";
+    btn.textContent = T.open;
+    fig.appendChild(btn);
+
+    btn.addEventListener("click", function () {
+      var box = document.createElement("div");
+      box.className = "infographic-lightbox";
+      box.setAttribute("role", "dialog");
+      box.setAttribute("aria-modal", "true");
+      box.setAttribute("aria-label", T.label);
+
+      var bar = document.createElement("div");
+      bar.className = "infographic-lightbox__bar";
+      var close = document.createElement("button");
+      close.type = "button";
+      close.className = "infographic-lightbox__close";
+      close.textContent = "\u2715 " + T.close;
+      bar.appendChild(close);
+
+      var surface = document.createElement("div");
+      surface.className = "infographic-lightbox__surface";
+      var clone = art.cloneNode(true);
+      clone.removeAttribute("style");
+      surface.appendChild(clone);
+
+      box.appendChild(bar);
+      box.appendChild(surface);
+      document.body.appendChild(box);
+      document.body.classList.add("infographic-lightbox-open");
+      close.focus();
+
+      function dismiss() {
+        document.removeEventListener("keydown", onKey);
+        box.remove();
+        document.body.classList.remove("infographic-lightbox-open");
+        btn.focus();
+      }
+      function onKey(e) {
+        if (e.key === "Escape") { e.preventDefault(); dismiss(); }
+      }
+      document.addEventListener("keydown", onKey);
+      close.addEventListener("click", dismiss);
+      box.addEventListener("click", function (e) {
+        if (e.target === box || e.target === surface) dismiss();
+      });
+    });
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   initTheme();
   initCookieConsent();
@@ -207,4 +278,5 @@ document.addEventListener("DOMContentLoaded", function () {
   initContactForm();
   initTOC();
   initProductGallery();
+  initInfographicZoom();
 });

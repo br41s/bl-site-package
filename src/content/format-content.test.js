@@ -239,4 +239,49 @@ describe("formatContent — pre-existing behaviour is unchanged", () => {
     assert.equal(formatContent(null), "");
     assert.equal(formatContent(undefined), "");
   });
+
+  // El Infographic Engineer es un agente compartido con biglobster: un unico
+  // prompt dibuja para los dos sitios. Depende de que ESTA forma exacta
+  // sobreviva al saneador. Si alguien recorta la lista de etiquetas o de
+  // atributos, el agente seguira publicando y el grafico desaparecera de la
+  // pagina sin ningun error en ningun sitio, asi que se fija aqui.
+  test("una infografia del formato estandar sobrevive entera", () => {
+    const svg = [
+      '<figure class="article-infographic">',
+      '<svg viewBox="0 0 800 400" role="img" aria-labelledby="t d">',
+      '<title id="t">Comparativa</title><desc id="d">Dos modalidades.</desc>',
+      '<g fill="currentColor">',
+      '<rect x="40" y="40" width="340" height="120" rx="8" fill="var(--bg-subtle)" stroke="var(--border)"/>',
+      '<path d="M 8 0 h 324 a 8 8 0 0 1 8 8 v 52 h -340 z" fill="var(--accent)"/>',
+      '<circle cx="60" cy="100" r="12"/><line x1="40" y1="180" x2="380" y2="180"/>',
+      '<polygon points="175,170 185,170 180,176"/>',
+      '<text x="60" y="80" font-size="16" font-weight="600" text-anchor="middle">Titulo',
+      '<tspan x="60" dy="1.2em">Segunda linea</tspan></text>',
+      "</g></svg>",
+      "<figcaption>La conclusion.</figcaption></figure>",
+    ].join("");
+
+    const out = formatContent(svg);
+
+    for (const tag of ["figure", "svg", "title", "desc", "g", "rect", "path",
+                       "circle", "line", "polygon", "text", "tspan", "figcaption"]) {
+      assert.ok(out.includes(`<${tag}`), `<${tag}> fue eliminado: ${out}`);
+    }
+    // viewBox sale en minusculas porque sanitize-html normaliza el nombre; el
+    // parser de SVG en linea lo vuelve a mapear, asi que es correcto.
+    assert.ok(/viewbox="0 0 800 400"/i.test(out), `viewBox eliminado: ${out}`);
+    assert.ok(out.includes("article-infographic"), `la clase marcadora se perdio: ${out}`);
+    assert.ok(out.includes("var(--bg-subtle)"), `los tokens de color se perdieron: ${out}`);
+    assert.ok(out.includes("currentColor"), `currentColor se perdio: ${out}`);
+    assert.ok(out.includes('font-size="16"'), `font-size se perdio: ${out}`);
+    assert.ok(out.includes('text-anchor="middle"'), `text-anchor se perdio: ${out}`);
+    assert.ok(out.includes('dy="1.2em"'), `dy se perdio: ${out}`);
+  });
+
+  // El agente ya NO escribe este centinela, precisamente por esto. Se fija el
+  // comportamiento para que nadie lo reintroduzca creyendo que funciona.
+  test("un comentario HTML no llega a la pagina", () => {
+    const out = formatContent("<!-- infographic:auto -->\n\nTexto");
+    assert.ok(!out.includes("infographic:auto"), `el comentario sobrevivio: ${out}`);
+  });
 });
