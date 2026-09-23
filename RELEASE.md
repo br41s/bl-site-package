@@ -134,7 +134,7 @@ credenciales de su perfil; el script es la vista bajo demanda del operador.
 ## Qué cubre pruebas (Zeabur) y qué NO
 
 Nuestra instancia de pruebas corre sobre **Alpine/Docker** (multi-stage
-`Dockerfile`, base `node:20-alpine`). Los entornos de cliente corren sobre otra
+`Dockerfile`, base `node:22-alpine`). Los entornos de cliente corren sobre otra
 cosa: el primero, Shoroban, sobre **Plesk/Passenger (Debian)**
 (`passenger-startup.cjs`, Node 20); otros clientes pueden diferir. Son entornos
 distintos del de pruebas y, potencialmente, distintos entre sí.
