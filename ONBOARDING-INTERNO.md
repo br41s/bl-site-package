@@ -10,7 +10,7 @@ Este documento es para el equipo de BigLobster. No compartir con el cliente.
 - [ ] Confirmar plan de web, nivel de inteligencia y agentes adicionales elegidos (del formulario, o de su selección en biglobster.top/agentes-en-alquiler.html si vino por ahí)
 - [ ] Confirmar si tienen dominio propio o necesitan uno
 - [ ] Confirmar email donde quieren recibir los mensajes de contacto
-- [ ] Confirmar que tienen logo en PNG o SVG (fondo transparente)
+- [ ] Confirmar que tienen logo en PNG, JPG o WebP de máx. 2 MB (mejor PNG con fondo transparente; el panel no acepta SVG)
 
 ---
 
