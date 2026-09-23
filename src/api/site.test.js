@@ -1,6 +1,6 @@
 import { test, describe, before, beforeEach, after, mock } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -9,6 +9,8 @@ import { join } from "node:path";
 // imports it is loaded.
 process.env.DB_PATH = join(mkdtempSync(join(tmpdir(), "bl-site-api-")), "app.db");
 process.env.JWT_SECRET = "test-secret-for-site-status";
+// Same for UPLOADS_DIR (src/media/uploads-dir.js): the logo tests write files.
+process.env.UPLOADS_DIR = mkdtempSync(join(tmpdir(), "bl-site-uploads-"));
 // Write routes schedule a real Eleventy build 400ms later (src/build/rebuild.js);
 // this suite is about the API, not the site it regenerates.
 process.env.BL_SITE_DISABLE_REBUILD = "1";
@@ -320,5 +322,63 @@ describe("POST /api/site/notify — rate limit", () => {
       await last.text();
     }
     assert.equal(last.status, 429);
+  });
+});
+
+describe("POST /api/site/logo", () => {
+  const uploads = process.env.UPLOADS_DIR;
+
+  beforeEach(() => {
+    for (const name of readdirSync(uploads)) rmSync(join(uploads, name));
+  });
+
+  function uploadLogo(bytes, type) {
+    const form = new FormData();
+    form.append("logo", new Blob([bytes], { type }), "logo");
+    return fetch(baseUrl + "/api/site/logo", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${TOKEN}` },
+      body: form,
+    });
+  }
+
+  function logoExt() {
+    return db.prepare("SELECT value FROM config WHERE key = 'logo_ext'").get()
+      ?.value;
+  }
+
+  test("an oversized upload leaves the live logo in place", async () => {
+    const live = Buffer.from("current logo bytes");
+    assert.equal((await uploadLogo(live, "image/png")).status, 200);
+
+    // multer aborts mid-stream past 2 MiB and removes what it wrote. With a
+    // fixed filename that was logo.png itself: the site's logo 404'd while
+    // logo_ext still said png.
+    const res = await uploadLogo(Buffer.alloc(2 * 1024 * 1024 + 1), "image/png");
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, "El logo no puede superar los 2 MB");
+
+    assert.deepEqual(readFileSync(join(uploads, "logo.png")), live);
+    assert.equal(logoExt(), "png");
+    assert.deepEqual(readdirSync(uploads), ["logo.png"]);
+  });
+
+  test("a new format replaces the config only once its file exists", async () => {
+    assert.equal((await uploadLogo(Buffer.from("png"), "image/png")).status, 200);
+    const res = await uploadLogo(Buffer.from("jpg"), "image/jpeg");
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).path, "/uploads/logo.jpg");
+    assert.equal(logoExt(), "jpg");
+    assert.equal(readFileSync(join(uploads, "logo.jpg"), "utf8"), "jpg");
+    // No temp file left behind.
+    assert.deepEqual(readdirSync(uploads).sort(), ["logo.jpg", "logo.png"]);
+  });
+
+  test("a rejected type is refused in Spanish and writes nothing", async () => {
+    const res = await uploadLogo(Buffer.from("<svg/>"), "image/svg+xml");
+    assert.equal(res.status, 400);
+    assert.match((await res.json()).error, /Solo se permiten/);
+    assert.deepEqual(readdirSync(uploads), []);
+    assert.equal(logoExt(), undefined);
   });
 });

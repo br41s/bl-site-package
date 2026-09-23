@@ -1,7 +1,8 @@
 import express from "express";
 import multer from "multer";
 import { readFileSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
+import { writeFile, rename, unlink } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import db, { getConfig, setConfig, PUBLIC_CONFIG_KEYS } from "../db/database.js";
@@ -43,20 +44,49 @@ const LOGO_MIME_EXT = {
   "image/webp": "webp",
 };
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    cb(null, "logo." + LOGO_MIME_EXT[file.mimetype]);
-  },
-});
+// Memory, not disk: the file is only written once multer has accepted the whole
+// upload. The logo used to go straight to data/uploads/logo.<ext> through
+// diskStorage, and when an upload was rejected mid-stream (over the size limit)
+// multer deleted the partial file — which was the customer's live logo, at the
+// same fixed path. logo_ext still pointed at it, so the public site showed a
+// broken image. 2 MiB in memory for one authenticated route is nothing.
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (LOGO_MIME_EXT[file.mimetype]) cb(null, true);
     else cb(new Error("Solo se permiten imágenes PNG, JPG o WebP"));
   },
 });
+
+// Multer's own messages are English ("File too large") and reach the
+// customer's panel verbatim.
+const MULTER_ERRORS_ES = {
+  LIMIT_FILE_SIZE: "El logo no puede superar los 2 MB",
+  LIMIT_UNEXPECTED_FILE: "Campo de archivo inesperado",
+};
+
+// Write-then-rename: a failed write (disk full) leaves the old logo intact, and
+// a visitor never gets a half-written file. The temp name is a dotfile in the
+// same directory, so the rename is atomic, express.static never serves it, and
+// the uploads sweeper (hash-named *.webp only) never sees it.
+//
+// A logo of a different format (logo.png -> logo.jpg) leaves the old file on
+// disk on purpose. Pages already built still point at it until the background
+// rebuild swaps _site, and two concurrent uploads can finish in either order,
+// so deleting "the other" variant could leave logo_ext naming a file that is
+// gone. At most two stale files of 2 MiB each, one per other format.
+async function writeLogo(buffer, ext) {
+  const tmp = join(uploadsDir, `.logo-${randomBytes(8).toString("hex")}.tmp`);
+  try {
+    await writeFile(tmp, buffer);
+    await rename(tmp, join(uploadsDir, "logo." + ext));
+  } catch (err) {
+    await unlink(tmp).catch(() => {});
+    throw err;
+  }
+}
+
 
 const router = express.Router();
 
@@ -155,14 +185,24 @@ router.post("/texts", requireAuth, (req, res) => {
 // rejected upload (wrong type, too large) into a clean 400 instead of the
 // default 500 HTML error page.
 router.post("/logo", requireAuth, (req, res) => {
-  upload.single("logo")(req, res, (err) => {
+  upload.single("logo")(req, res, async (err) => {
     if (err)
       return res.status(400).json({
-        error: err.message || "No se pudo subir el archivo",
+        error:
+          (err instanceof multer.MulterError && MULTER_ERRORS_ES[err.code]) ||
+          err.message ||
+          "No se pudo subir el archivo",
       });
     if (!req.file)
       return res.status(400).json({ error: "No se recibió ningún archivo" });
     const ext = LOGO_MIME_EXT[req.file.mimetype];
+    try {
+      await writeLogo(req.file.buffer, ext);
+    } catch (writeErr) {
+      console.error("logo: no se pudo guardar:", writeErr.message);
+      return res.status(500).json({ error: "No se pudo guardar el logo" });
+    }
+    // Only after the file is in place, so logo_ext never names a missing file.
     setConfig("logo_ext", ext);
     res.json({ success: true, path: "/uploads/logo." + ext });
   });
