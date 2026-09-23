@@ -1,6 +1,6 @@
 {
   "name": "bl-site-package",
-  "version": "1.8.8",
+  "version": "1.8.9",
   "type": "module",
   "main": "src/server.js",
   "engines": {
@@ -20,7 +20,7 @@
     "marked": "^18.0.5",
     "multer": "^2.2.0",
     "node-cron": "^4.6.0",
-    "nodemailer": "^9.0.0",
+    "nodemailer": "^10.0.10",
     "sanitize-html": "^2.17.5",
     "sharp": "^0.35.3",
     "ssh2-sftp-client": "^12.1.1"
