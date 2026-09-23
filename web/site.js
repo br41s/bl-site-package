@@ -216,8 +216,11 @@ function initInfographicZoom() {
     : { open: "Enlarge", close: "Close", label: "Enlarged infographic" };
 
   Array.prototype.forEach.call(figures, function (fig) {
-    var art = fig.querySelector("svg, img");
-    if (!art) return;
+    // Una infografia poster son DOS nodos: la lamina <img> y la capa de datos
+    // <svg> encima. querySelector devolvia solo el primero -- el <img> -- asi
+    // que "Ampliar" abria el dibujo sin una sola cifra y nada parecia roto.
+    var layers = fig.querySelectorAll(":scope > svg, :scope > img");
+    if (!layers.length) return;
     fig.classList.add("has-zoom");
 
     var btn = document.createElement("button");
@@ -243,8 +246,19 @@ function initInfographicZoom() {
 
       var surface = document.createElement("div");
       surface.className = "infographic-lightbox__surface";
-      var clone = art.cloneNode(true);
-      clone.removeAttribute("style");
+      var clone;
+      if (layers.length > 1) {
+        clone = document.createElement("div");
+        clone.className = "infographic-lightbox__stack";
+        Array.prototype.forEach.call(layers, function (l) {
+          var c = l.cloneNode(true);
+          c.removeAttribute("style");
+          clone.appendChild(c);
+        });
+      } else {
+        clone = layers[0].cloneNode(true);
+        clone.removeAttribute("style");
+      }
       surface.appendChild(clone);
 
       box.appendChild(bar);

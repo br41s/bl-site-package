@@ -319,6 +319,40 @@ body {
   text-align: center;
 }
 
+/* Infografia poster: lamina ilustrada + capa de datos en SVG.
+   El <img> es el arte generado (sin una sola letra dentro) y el <svg> encima
+   lleva TODO el texto, que asi sigue siendo nitido, indexable y traducible.
+   Las dos capas comparten viewBox y relacion de aspecto.
+
+   height:auto, NUNCA height:100%: con inset:0 el SVG se estiraria tambien
+   sobre el <figcaption>, el viewBox haria letterbox y cada etiqueta caeria
+   ~32px por debajo del dibujo al que pertenece. Con width:100% el SVG toma su
+   altura de su propio viewBox y las dos capas casan al pixel.
+
+   La regla generica de arriba pone width:100%/height:auto a CUALQUIER svg o
+   img dentro de .article-infographic, asi que aqui hace falta mas
+   especificidad para que el svg quede absoluto. */
+.article-infographic--poster {
+  position: relative;
+}
+.site-page-body .article-infographic--poster > img,
+.site-post-body .article-infographic--poster > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 0;
+  border-radius: var(--radius);
+}
+.site-page-body .article-infographic--poster > svg,
+.site-post-body .article-infographic--poster > svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  font-family: var(--font);
+}
+
 /* Ampliar una infografia.
    El agente dibuja siempre en un lienzo de 800 unidades, asi que el grafico se
    lee bien en la columna de escritorio y se queda pequenio en un movil. En vez
@@ -386,6 +420,26 @@ body {
   display: flex;
   align-items: flex-start;
   justify-content: center;
+}
+
+/* Una infografia poster son DOS nodos (lamina + capa de datos). El visor
+   clonaba solo el primero, asi que "Ampliar" abria el dibujo sin una sola
+   cifra y nada parecia roto. Aqui se reconstruye el apilado. */
+.infographic-lightbox__stack {
+  position: relative;
+  width: 100%;
+}
+.infographic-lightbox__stack > img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.infographic-lightbox__stack > svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
 }
 .infographic-lightbox__surface > svg,
 .infographic-lightbox__surface > img {
