@@ -136,7 +136,7 @@ credenciales de su perfil; el script es la vista bajo demanda del operador.
 Nuestra instancia de pruebas corre sobre **Alpine/Docker** (multi-stage
 `Dockerfile`, base `node:22-alpine`). Los entornos de cliente corren sobre otra
 cosa: el primero, Shoroban, sobre **Plesk/Passenger (Debian)**
-(`passenger-startup.cjs`, Node 20); otros clientes pueden diferir. Son entornos
+(`passenger-startup.cjs`, Node 22); otros clientes pueden diferir. Son entornos
 distintos del de pruebas y, potencialmente, distintos entre sí.
 
 Pruebas **sí** detecta:
@@ -308,9 +308,12 @@ staging-first arriba. Pasos, en orden:
 
 3. **Traer el código**: `git pull --ff-only` (no re-clonar).
 
-4. **Versión de Node**: debe ser **20.x o 22.x LTS**, y debe coincidir con la
-   versión contra la que se compiló el módulo nativo `better-sqlite3`. En Plesk
-   se fija en la config Node del dominio.
+4. **Versión de Node**: debe ser **22.x, 22.12 o superior** (`engines` en
+   `package.json` exige `>=22`), y debe coincidir con la versión contra la que
+   se compiló el módulo nativo `better-sqlite3`. En Plesk se fija en la config
+   Node del dominio. Node 20 ya no vale: `better-sqlite3` no publica binario
+   para su ABI (ver cabecera del `Dockerfile`) y `sanitize-html` exige
+   `>=22.12.0`, la primera 22.x que hace `require()` de un módulo ESM.
 
 5. **Instalar dependencias**: `npm ci --omit=dev`.
    - **Al cambiar la versión de Node hay que RECONSTRUIR el binario nativo**:
@@ -363,27 +366,22 @@ usa *Reiniciar app*.
 
 ## Vulnerabilidades npm (`npm audit`)
 
-`npm audit` reporta 4 high-severity, todas la misma cadena transitiva:
-`@11ty/eleventy` → `@11ty/recursive-copy` → `minimatch@3.1.5` →
-`brace-expansion` (DoS/OOM, [GHSA-mh99-v99m-4gvg], CVSS 7.5, solo
-disponibilidad).
+**Estado a 2026-09-23 (v1.8.10): `npm audit --omit=dev` limpio, 0 avisos.**
+Se resolvieron 10 avisos (5 high, 5 moderate) con `npm audit fix` **sin
+`--force`**: todas las versiones corregidas caen dentro de los rangos de
+`package.json`, así que solo cambió el `package-lock.json`. Entre ellos,
+`multer` 2.4.0, `sharp` 0.35.4, `sanitize-html` 2.17.7, `express` 4.22.3 y
+`qs` 6.16.0.
 
-**Estado: documentada y diferida a propósito.** No se aplica fix por ahora:
-- Es una dependencia **de build** (Eleventy la usa al copiar estáticos con
-  globs). Los patrones de glob están **hardcodeados** en `eleventy.config.mjs`;
-  **ningún input de un visitante llega a `brace-expansion`**. No es explotable
-  desde la web.
-- Impacto solo de disponibilidad (A:H), no de confidencialidad ni integridad.
-- La **única versión parcheada es `brace-expansion@5.0.8`, que es ESM puro**
-  (`type: module`), incompatible con el `minimatch@3.1.5` (CommonJS, hace
-  `require('brace-expansion')`) que Eleventy fija. Forzarla rompería el build en
-  las versiones de Node soportadas por debajo de 20.19 / 22.12 (donde
-  `require()` de un módulo ESM falla).
-- `npm audit fix --force` **degradaría** `@11ty/eleventy` 3.1.6 → 3.1.2 (una
-  regresión), no es un fix real. **Nunca** usar `--force` aquí.
+**Resuelto también el aviso antiguo de `brace-expansion`** ([GHSA-mh99-v99m-4gvg],
+cadena `@11ty/eleventy` → `@11ty/recursive-copy` → `minimatch@3.1.5`). Estuvo
+diferido porque la única versión parcheada era la 5.x, ESM puro e incompatible
+con el `require()` de `minimatch@3`. Desde entonces se publicó un parche en la
+rama 1.x (`brace-expansion@1.1.21`, sigue siendo CommonJS), que es la que usa
+ahora el lockfile.
 
-**Acción de seguimiento**: revisar en cada release de Eleventy si actualiza
-`recursive-copy`/`minimatch` a una cadena con `brace-expansion` parcheado, y
-re-auditar. Mientras tanto el riesgo real en producción es nulo.
+Regla que se mantiene: **nunca** `npm audit fix --force`. En este paquete ha
+propuesto degradar `@11ty/eleventy` en lugar de arreglar nada. Si un aviso solo
+se cierra con un salto de versión mayor, se evalúa en su propia PR.
 
 [GHSA-mh99-v99m-4gvg]: https://github.com/advisories/GHSA-mh99-v99m-4gvg
