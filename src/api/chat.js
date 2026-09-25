@@ -3,6 +3,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 import db, { getConfig, setConfig } from "../db/database.js";
 import { scheduleRebuild } from "../build/rebuild.js";
+import { asyncHandler } from "../middleware/async-handler.js";
 
 const router = Router();
 
@@ -274,7 +275,7 @@ Si no hay acción que aplicar, no incluyas el bloque ACTION.`,
 }
 
 // POST /api/chat/send
-router.post("/send", requireAuth, chatLimiter, async (req, res) => {
+router.post("/send", requireAuth, chatLimiter, asyncHandler(async (req, res) => {
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: "Mensaje requerido" });
 
@@ -388,6 +389,6 @@ router.post("/send", requireAuth, chatLimiter, async (req, res) => {
       .status(500)
       .json({ error: "Error al contactar el agente de contenidos." });
   }
-});
+}));
 
 export default router;

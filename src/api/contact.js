@@ -11,6 +11,7 @@ import {
   recordVisitorEmailResult,
 } from "../mail/mailer.js";
 import { isTurnstileConfigured, verifyTurnstileToken } from "../turnstile.js";
+import { asyncHandler } from "../middleware/async-handler.js";
 
 const router = Router();
 
@@ -42,7 +43,7 @@ router.get("/", requireAuth, (req, res) => {
 });
 
 // POST /api/contact — formulario público
-router.post("/", contactLimiter, async (req, res) => {
+router.post("/", contactLimiter, asyncHandler(async (req, res) => {
   const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
   const email = typeof req.body.email === "string" ? req.body.email.trim() : "";
   const message =
@@ -131,6 +132,6 @@ router.post("/", contactLimiter, async (req, res) => {
   }
 
   res.json({ success: true });
-});
+}));
 
 export default router;

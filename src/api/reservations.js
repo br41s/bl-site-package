@@ -4,6 +4,7 @@ import db, { getConfig } from "../db/database.js";
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 import { resolveB2bAccount, b2bPricing, b2bUnitPriceCents } from "./b2b.js";
+import { asyncHandler } from "../middleware/async-handler.js";
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.get("/:id", requireAuth, (req, res) => {
 });
 
 // POST /api/reservations — public checkout submission
-router.post("/", reservationLimiter, async (req, res) => {
+router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
   const customer_name = typeof req.body.customer_name === "string" ? req.body.customer_name.trim() : "";
   const customer_email = typeof req.body.customer_email === "string" ? req.body.customer_email.trim() : "";
   const customer_phone = typeof req.body.customer_phone === "string" ? req.body.customer_phone.trim() : "";
@@ -125,7 +126,7 @@ router.post("/", reservationLimiter, async (req, res) => {
   }
 
   res.status(201).json({ success: true, id: reservationId, total_cents, b2b: Boolean(b2bAccount) });
-});
+}));
 
 // PUT /api/reservations/:id — status update
 router.put("/:id", requireAuth, (req, res) => {

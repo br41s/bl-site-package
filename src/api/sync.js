@@ -2,6 +2,7 @@ import { Router } from "express";
 import { getConfig, setConfig } from "../db/database.js";
 import { requireAuth } from "../middleware/auth.js";
 import { runLiderpapelSync } from "../sync/liderpapel/sync.js";
+import { asyncHandler } from "../middleware/async-handler.js";
 
 const router = Router();
 
@@ -38,13 +39,13 @@ router.post("/liderpapel/config", requireAuth, (req, res) => {
 });
 
 // POST /api/sync/liderpapel/run — manual trigger
-router.post("/liderpapel/run", requireAuth, async (req, res) => {
+router.post("/liderpapel/run", requireAuth, asyncHandler(async (req, res) => {
   try {
     const result = await runLiderpapelSync();
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+}));
 
 export default router;

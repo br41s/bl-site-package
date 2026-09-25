@@ -8,6 +8,7 @@ import {
   isTurnstileConfigured,
   verifyTurnstileToken,
 } from '../turnstile.js';
+import { asyncHandler } from '../middleware/async-handler.js';
 
 const router = Router();
 
@@ -39,7 +40,7 @@ router.get('/config', (req, res) => {
   res.json({ turnstile_site_key: getTurnstileSettings().siteKey });
 });
 
-router.post('/login', loginLimiter, async (req, res) => {
+router.post('/login', loginLimiter, asyncHandler(async (req, res) => {
   const { password } = req.body;
   if (!password) return res.status(400).json({ error: 'Contraseña requerida' });
 
@@ -71,6 +72,6 @@ router.post('/login', loginLimiter, async (req, res) => {
   const companyName = process.env.CLIENT_COMPANY_NAME || getConfig('company_name') || '';
 
   res.json({ token, companyName });
-});
+}));
 
 export default router;

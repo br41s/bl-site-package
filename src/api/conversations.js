@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
+import { asyncHandler } from "../middleware/async-handler.js";
 
 // Server-side proxy to the central Chatwoot instance for the panel's
 // WhatsApp inbox. The browser never receives CHATWOOT_API_TOKEN -- every
@@ -90,7 +91,7 @@ const STATUS_FILTERS = {
 };
 
 // GET /api/conversations?filter=needs_attention|bot|human|resolved
-router.get("/", requireAuth, requireChatwootConfigured, async (req, res) => {
+router.get("/", requireAuth, requireChatwootConfigured, asyncHandler(async (req, res) => {
   const filter = STATUS_FILTERS[req.query.filter] || null;
   try {
     const qs = new URLSearchParams();
@@ -114,10 +115,10 @@ router.get("/", requireAuth, requireChatwootConfigured, async (req, res) => {
     console.error("Chatwoot conversations list error:", err.message);
     res.status(502).json({ error: "chatwoot_unavailable" });
   }
-});
+}));
 
 // GET /api/conversations/:id — detail + transcript + window state
-router.get("/:id", requireAuth, requireChatwootConfigured, async (req, res) => {
+router.get("/:id", requireAuth, requireChatwootConfigured, asyncHandler(async (req, res) => {
   try {
     const [conversation, messages] = await Promise.all([
       chatwootRequest(`/conversations/${req.params.id}`),
@@ -147,7 +148,7 @@ router.get("/:id", requireAuth, requireChatwootConfigured, async (req, res) => {
     console.error("Chatwoot conversation detail error:", err.message);
     res.status(502).json({ error: "chatwoot_unavailable" });
   }
-});
+}));
 
 async function setStatus(req, res, status) {
   try {
@@ -163,19 +164,19 @@ async function setStatus(req, res, status) {
 }
 
 // POST /api/conversations/:id/takeover — human takes control (bot stops)
-router.post("/:id/takeover", requireAuth, requireChatwootConfigured, (req, res) =>
+router.post("/:id/takeover", requireAuth, requireChatwootConfigured, asyncHandler((req, res) =>
   setStatus(req, res, "open"),
-);
+));
 
 // POST /api/conversations/:id/release — hand back to the bot
-router.post("/:id/release", requireAuth, requireChatwootConfigured, (req, res) =>
+router.post("/:id/release", requireAuth, requireChatwootConfigured, asyncHandler((req, res) =>
   setStatus(req, res, "pending"),
-);
+));
 
 // POST /api/conversations/:id/resolve — close the conversation
-router.post("/:id/resolve", requireAuth, requireChatwootConfigured, (req, res) =>
+router.post("/:id/resolve", requireAuth, requireChatwootConfigured, asyncHandler((req, res) =>
   setStatus(req, res, "resolved"),
-);
+));
 
 const MAX_REPLY_CHARS = 4000;
 
@@ -183,7 +184,7 @@ const MAX_REPLY_CHARS = 4000;
 // The recipient always comes from the stored conversation id in the URL;
 // there is no field anywhere on this route the caller can use to choose
 // a different destination.
-router.post("/:id/messages", requireAuth, requireChatwootConfigured, async (req, res) => {
+router.post("/:id/messages", requireAuth, requireChatwootConfigured, asyncHandler(async (req, res) => {
   const content = typeof req.body?.content === "string" ? req.body.content.trim() : "";
   if (!content) {
     return res.status(400).json({ error: "invalid_body", message: "content es obligatorio" });
@@ -226,6 +227,6 @@ router.post("/:id/messages", requireAuth, requireChatwootConfigured, async (req,
     console.error("Chatwoot send message error:", err.message);
     res.status(502).json({ error: "chatwoot_unavailable" });
   }
-});
+}));
 
 export default router;
