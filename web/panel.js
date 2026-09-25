@@ -1955,7 +1955,13 @@ document.addEventListener("DOMContentLoaded", function () {
           name.textContent =
             res.customer_name +
             (res.b2b_company ? " (empresa: " + res.b2b_company + ", precios profesionales)" : "") +
-            " — " + formatEurCents(res.total_cents);
+            " — " +
+            // vat_included = 0: a B2B reservation priced without VAT, which
+            // is carried separately in vat_cents.
+            (res.vat_included === 0
+              ? formatEurCents(res.total_cents) + " sin IVA · " +
+                formatEurCents(res.total_cents + (res.vat_cents || 0)) + " con IVA"
+              : formatEurCents(res.total_cents));
           var meta = document.createElement("span");
           meta.className = "reservation-card-meta";
           meta.textContent =

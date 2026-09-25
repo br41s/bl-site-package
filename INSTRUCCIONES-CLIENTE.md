@@ -152,7 +152,7 @@ Cuando terminas, pulsa **Guardar portada**. Los cambios aparecen en tu web en un
 
 Sirve para que tus clientes de empresa (colegios, oficinas, comercios…) vean en tu web **sus propios precios**, con el descuento que tú decidas para cada categoría de productos.
 
-**Cómo funciona para la empresa.** Tú le das de alta una cuenta con un email y una contraseña. La empresa entra desde **Área de profesionales**, en el pie de tu web (la dirección es `tudominio.com/profesionales`), y a partir de ahí ve en todo el catálogo el precio de venta al público tachado y, al lado, su precio profesional. Sus reservas se hacen a ese precio, y en la pestaña Pedidos verás qué empresa la ha hecho. Los visitantes normales siguen viendo los precios de siempre.
+**Cómo funciona para la empresa.** Tú le das de alta una cuenta con un email y una contraseña. La empresa entra desde **Área de profesionales**, en el pie de tu web (la dirección es `tudominio.com/profesionales`), y a partir de ahí ve en todo el catálogo su precio profesional **sin IVA**, junto al precio normal sin IVA tachado. Sus reservas se hacen a ese precio: en la pestaña Pedidos verás qué empresa la ha hecho y el total sin IVA y con IVA. Los visitantes normales siguen viendo los precios de siempre.
 
 **1. Activa el área.** Marca *Activar el área de profesionales* y pulsa **Guardar**. En unos segundos aparece el enlace en tu web. Si la desactivas, la página de acceso desaparece y nadie ve precios profesionales.
 
@@ -161,7 +161,7 @@ Sirve para que tus clientes de empresa (colegios, oficinas, comercios…) vean e
 - **Descuento general** — el que se aplica a todas las categorías a las que no pongas uno propio. Déjalo en 0 si solo quieres descontar algunas.
 - **Descuento por categoría** — busca la categoría, escribe el porcentaje y pulsa **Guardar descuentos**. Deja la casilla vacía para que use el descuento general, o pon **0** si quieres que esa categoría no tenga descuento aunque el general sí lo tenga.
 
-El descuento se calcula sobre el precio de venta al público, con IVA incluido. Si tu proveedor cambia un precio, el precio profesional cambia con él: siempre conserva el mismo porcentaje de descuento. Los cambios de descuento se aplican al momento, sin esperar a ninguna actualización.
+El descuento se aplica al precio de venta al público, y la empresa ve el resultado sin IVA. Por ejemplo, un artículo de 12,10 € con IVA con un 20 % de descuento se le muestra a 8,00 € sin IVA. En el carrito ve además el IVA y el total con IVA. Si tu proveedor cambia un precio, el precio profesional cambia con él: siempre conserva el mismo porcentaje de descuento. Los cambios de descuento se aplican al momento, sin esperar a ninguna actualización.
 
 **3. Da de alta a las empresas.** Rellena el nombre de la empresa, el email con el que entrará y una contraseña (el botón **Generar** te propone una), y pulsa **Crear cuenta**. Después **envíale tú** el email y la contraseña: la web no se los manda.
 

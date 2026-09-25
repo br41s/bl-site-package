@@ -24,6 +24,12 @@ during which the event loop answered no request at all, and the Product Sheet Wr
 read right after each publish timed out 10-23 times a day. `src/build/rebuild.test.js`
 runs a real build and fails if a request is not served while it is in flight.
 
+**Every async route goes through `asyncHandler`** (`src/middleware/async-handler.js`).
+Express 4 does not catch a rejected promise, and Node 22 exits on an unhandled rejection:
+one throw in an unwrapped async route takes the client's site down. `apiErrorHandler`,
+mounted last in `server.js`, turns what reaches it into a JSON 500.
+`src/middleware/async-handler.test.js` fails if an unwrapped `async (req` handler appears.
+
 **`_site` is a symlink, and a build never writes into the slot being served.** The child
 builds into whichever of `_site.a` / `_site.b` is idle, from empty, and only on exit 0 is
 `_site` repointed (an atomic rename). Eleventy writes files in place, so a visitor served
@@ -112,8 +118,13 @@ retail per catalogue category, with a general fallback. `src/api/b2b.js` holds a
 
 - **The static pages keep the retail price.** `web/cart.js` rewrites prices for a
   signed-in account from `GET /api/b2b/me`; `POST /api/reservations` re-prices server-side
-  from the session cookie. The browser's figures are display only. `b2bPriceCents` exists
-  in both files and must stay identical to the cent.
+  from the session cookie. The browser's figures are display only. `b2bPriceCents` and
+  `vatCents` exist in both files and must stay identical to the cent.
+- **Trade prices exclude VAT.** `price_cents` has the sync's single 21% rate baked in;
+  `b2bPriceCents` takes the discount off and divides it back out, rounding once. A B2B
+  reservation stores net unit prices and total with `vat_included = 0` and the VAT in
+  `vat_cents`; every other row keeps `vat_included = 1`. If the sync ever applies
+  per-product VAT rates, `B2B_VAT_RATE` has to become per-product too.
 - **The B2B session is never signed with `jwt_secret`** — it uses a key derived from it.
   `requireAuth` and the inline checks in `products.js` / `blog.js` accept *any* token
   signed with `jwt_secret` as a panel admin, so a B2B token signed with it would be a

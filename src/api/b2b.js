@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import db, { getConfig, setConfig } from "../db/database.js";
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
+import { DEFAULT_VAT_RATE } from "../sync/liderpapel/mapping.js";
 
 // B2B area: business accounts that see trade prices once signed in.
 //
@@ -150,13 +151,29 @@ export function getCategoryDiscounts() {
   return map;
 }
 
+// B2B prices are quoted WITHOUT VAT, the way a business buys. products.price
+// _cents is the public price with VAT baked in by the sync, always at this one
+// rate (src/sync/liderpapel/parse.js), so dividing by it recovers the
+// pre-VAT price exactly. If the sync ever applies per-product rates, this has
+// to become per-product too — a single rate here would then be wrong.
+export const B2B_VAT_RATE = DEFAULT_VAT_RATE;
+
+// Trade price in cents, EXCLUDING VAT: the public (VAT-included) price, less
+// the discount, less the VAT. One rounding, at the end.
+//
 // Same arithmetic as b2bPriceCents in web/cart.js — the two must agree to the
 // cent, or the cart shows one total and the reservation records another. The
-// guard is the last line of defence: an unusable discount means retail, never
-// a NaN or negative price.
-export function b2bPriceCents(priceCents, discountPct) {
-  if (!isValidPct(discountPct)) return priceCents;
-  return Math.round((priceCents * (100 - discountPct)) / 100);
+// guard is the last line of defence: an unusable discount means no discount,
+// never a NaN or negative price.
+export function b2bPriceCents(priceCents, discountPct, vatRate = B2B_VAT_RATE) {
+  const pct = isValidPct(discountPct) ? discountPct : 0;
+  return Math.round((priceCents * (100 - pct)) / 100 / (1 + vatRate));
+}
+
+// VAT owed on a pre-VAT total, rounded once on the total (not per line) — the
+// same in web/cart.js, so the cart and the reservation agree.
+export function vatCents(netCents, vatRate = B2B_VAT_RATE) {
+  return Math.round(netCents * vatRate);
 }
 
 export function discountFor(category, discounts, defaultPct) {
@@ -251,6 +268,7 @@ router.get("/me", (req, res) => {
     },
     default_pct: getDefaultDiscountPct(),
     discounts: getCategoryDiscounts(),
+    vat_rate: B2B_VAT_RATE,
   });
 });
 

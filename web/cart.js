@@ -58,17 +58,24 @@ function b2bDiscountFor(category) {
     : b2b.default_pct;
 }
 
-// Same arithmetic as b2bPriceCents in src/api/b2b.js, which is what the
-// reservation is actually charged at — keep the two identical.
-function b2bPriceCents(priceCents, discountPct) {
-  if (typeof discountPct !== "number" || !Number.isFinite(discountPct) || discountPct < 0 || discountPct >= 100) {
-    return priceCents;
-  }
-  return Math.round((priceCents * (100 - discountPct)) / 100);
+// Trade prices are WITHOUT VAT: the public (VAT-included) price, less the
+// discount, less the VAT, rounded once. Same arithmetic as b2bPriceCents and
+// vatCents in src/api/b2b.js, which is what the reservation is actually
+// charged at — keep them identical. The rate comes from /api/b2b/me.
+function b2bPriceCents(priceCents, discountPct, vatRate) {
+  var pct =
+    typeof discountPct === "number" && Number.isFinite(discountPct) && discountPct >= 0 && discountPct < 100
+      ? discountPct
+      : 0;
+  return Math.round((priceCents * (100 - pct)) / 100 / (1 + vatRate));
+}
+
+function vatCents(netCents, vatRate) {
+  return Math.round(netCents * vatRate);
 }
 
 function effectivePriceCents(priceCents, category) {
-  return b2b ? b2bPriceCents(priceCents, b2bDiscountFor(category)) : priceCents;
+  return b2b ? b2bPriceCents(priceCents, b2bDiscountFor(category), b2b.vat_rate) : priceCents;
 }
 
 function formatPct(pct) {
@@ -89,19 +96,21 @@ function applyB2bPrices(root) {
     if (!Number.isFinite(retail) || !amount) return;
     el.dataset.b2bApplied = "1";
 
+    // Both figures without VAT: striking through the VAT-included public
+    // price next to a net one would overstate the discount by the VAT.
     var pct = b2bDiscountFor(el.dataset.category);
     if (pct > 0) {
       var was = document.createElement("s");
       was.className = "product-price-was";
-      was.textContent = formatEur(retail);
+      was.textContent = formatEur(b2bPriceCents(retail, 0, b2b.vat_rate));
       el.insertBefore(was, amount);
-      amount.textContent = formatEur(b2bPriceCents(retail, pct));
     }
+    amount.textContent = formatEur(b2bPriceCents(retail, pct, b2b.vat_rate));
     var note = el.querySelector(".price-vat-note");
     if (note) {
       note.textContent =
         (pct > 0 ? "Precio profesional (−" + formatPct(pct) + ")" : "Precio profesional") +
-        " · IVA incluido";
+        " · IVA no incluido";
     }
   });
 }
@@ -475,9 +484,19 @@ function renderCartPage() {
     tr.appendChild(actionCell);
     itemsBody.appendChild(tr);
   });
-  totalCell.textContent = formatEur(cartTotalCents(cart));
+  var total = cartTotalCents(cart);
+  totalCell.textContent = formatEur(total);
   var vatNote = table.querySelector("tfoot .price-vat-note");
-  if (vatNote) vatNote.textContent = b2b ? "Precios profesionales · IVA incluido" : "IVA incluido";
+  if (vatNote) {
+    if (b2b) {
+      var vat = vatCents(total, b2b.vat_rate);
+      vatNote.textContent =
+        "Precios profesionales sin IVA · IVA (" + formatPct(b2b.vat_rate * 100) + "): " +
+        formatEur(vat) + " · Total con IVA: " + formatEur(total + vat);
+    } else {
+      vatNote.textContent = "IVA incluido";
+    }
+  }
 }
 
 // A signed-in account has already told us who it is; don't make it type it
@@ -560,9 +579,13 @@ function initCartPage() {
         form.hidden = true;
         successBox.hidden = false;
         // The server's total, not ours: it is what the reservation records.
+        var d = result.data;
         successBox.textContent =
-          "Reserva confirmada (nº " + result.data.id + ", total " + formatEur(result.data.total_cents) +
-          (result.data.b2b ? " con precios profesionales" : "") +
+          "Reserva confirmada (nº " + d.id + ", total " +
+          (d.vat_included
+            ? formatEur(d.total_cents)
+            : formatEur(d.total_cents) + " sin IVA, " + formatEur(d.total_cents + d.vat_cents) + " con IVA") +
+          (d.b2b ? ", con precios profesionales" : "") +
           "). Te avisaremos para confirmar la entrega.";
         successBox.style.color = "var(--text-primary)";
       })
