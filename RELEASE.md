@@ -353,9 +353,34 @@ staging-first arriba. Pasos, en orden:
    ficheros (`app.db`, `app.db-wal`, `app.db-shm`). Si mueves/copias la DB, muévelos
    los tres juntos, o los datos recientes (que viven en el `-wal`) se pierden.
 
+### Sin SSH: los mismos pasos desde el panel de Plesk
+
+Shoroban se opera **sin acceso SSH**: todo lo de arriba se hace desde el panel.
+Validado en el rollout de v1.8.11 (2026-09-25), que incluía un cambio de
+binario nativo (`sharp`/libvips) y salió en verde a la primera.
+
+| Paso del runbook | En el panel de Plesk (dominio → …) |
+| ---------------- | ---------------------------------- |
+| 3. `git pull --ff-only` | *Git* → **Pull Updates** (o *Deploy* si el modo es manual) |
+| 4. Versión de Node | *Node.js* → clic en el número de versión → 22.12 o superior. *Application Mode* en **production** (fija `NODE_ENV`, y así el `npm install` omite `devDependencies`) |
+| 5. `npm ci --omit=dev` | *Node.js* → **NPM Install**. Ejecuta `npm install`, no `npm ci`: con `package-lock.json` en el repo instala las mismas versiones, pero **no vacía `node_modules`**. Ver el aviso de abajo |
+| 7. `touch tmp/restart.txt` | *Node.js* → **Restart App** |
+| 8–9. Smoke test y comprobación de DB | Desde tu máquina, como dice el runbook: son chequeos HTTP externos |
+
+**Aviso sobre NPM Install vs `npm ci`.** Si tras *Restart App* el sitio da 500
+y la release cambió un módulo nativo (`better-sqlite3`, `sharp`), lo más
+probable es un binario viejo que `npm install` no reemplazó. Para ver el error
+real: *Node.js* → **Run script** → nombre `start`. Passenger oculta los errores
+de arranque, pero ese comando arranca la app en primer plano y los imprime
+(un `EADDRINUSE :::3000` ahí **no** es un error: significa que Passenger ya la
+tiene corriendo). Si es un ABI mismatch o un fallo de `sharp`, hay que hacer un
+`npm ci` de verdad: *Run script* solo ejecuta scripts de `package.json`, así que
+habría que añadir uno (p. ej. `"deps:clean": "npm ci --omit=dev"`) en una
+release y lanzarlo desde ahí. No existe hoy porque no ha hecho falta.
+
 **Ver errores de arranque en Passenger**: en modo producción Passenger oculta
 los errores de arranque (muestra una página genérica). Para verlos: ejecuta
-`npm start` desde el *Node command runner* de Plesk, o pon temporalmente la app
+`npm start` desde *Node.js* → **Run script** (nombre `start`) en Plesk, o pon temporalmente la app
 en modo *development*. Ahí verás el ABI mismatch, un `DB_PATH` mal puesto, etc.
 Nota: si `npm start` da `EADDRINUSE: :::3000`, **no es un error de la app** —
 significa que Passenger ya la está corriendo en ese puerto; de hecho confirma
