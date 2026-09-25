@@ -65,6 +65,20 @@ partir de cero.
 
 ---
 
+**1d. Venta a empresas (opcional, solo si tu web tiene catálogo)**
+
+Tu web puede tener un **área de profesionales**: las empresas a las que tú des de
+alta entran con su email y contraseña y ven en todo el catálogo sus propios
+precios, **sin IVA**, con el descuento que tú decidas para cada categoría de
+productos. Puedes activarla ahora o más adelante desde tu panel.
+
+- ¿Quieres activar el área de profesionales? Sí / No / Más adelante
+- Descuento general para empresas (%), el que se aplica a todas las categorías salvo las que indiques abajo:
+- Descuentos distintos para categorías concretas (opcional; por ejemplo «Papel: 15 %», «Tinta y tóner: 5 %»):
+- Empresas que quieres dar de alta ya (opcional): nombre, CIF y email de acceso de cada una
+
+---
+
 **2. Páginas de tu web**
 
 Para cada página, escribe un título y una descripción breve.

@@ -3,7 +3,8 @@ import nodemailer from "nodemailer";
 import db, { getConfig } from "../db/database.js";
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
-import { resolveB2bAccount, b2bPricing, b2bUnitPriceCents } from "./b2b.js";
+import { resolveB2bAccount, b2bPricing, b2bUnitPriceCents, vatCents, B2B_VAT_RATE } from "./b2b.js";
+import { asyncHandler } from "../middleware/async-handler.js";
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.get("/:id", requireAuth, (req, res) => {
 });
 
 // POST /api/reservations — public checkout submission
-router.post("/", reservationLimiter, async (req, res) => {
+router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
   const customer_name = typeof req.body.customer_name === "string" ? req.body.customer_name.trim() : "";
   const customer_email = typeof req.body.customer_email === "string" ? req.body.customer_email.trim() : "";
   const customer_phone = typeof req.body.customer_phone === "string" ? req.body.customer_phone.trim() : "";
@@ -47,6 +48,8 @@ router.post("/", reservationLimiter, async (req, res) => {
   // Recompute totals server-side from the current catalog — never trust
   // client-sent prices. A signed-in B2B account is priced at its trade price
   // here, from its session cookie; the cart's own figures are display only.
+  // Trade prices exclude VAT: unit prices and total_cents are then net, and
+  // the VAT is recorded on its own in vat_cents.
   const b2bAccount = resolveB2bAccount(req);
   const pricing = b2bAccount ? b2bPricing() : null;
   const resolvedItems = [];
@@ -67,11 +70,13 @@ router.post("/", reservationLimiter, async (req, res) => {
     });
   }
   const total_cents = resolvedItems.reduce((sum, i) => sum + i.unit_price_cents * i.quantity, 0);
+  const vat_included = b2bAccount ? 0 : 1;
+  const vat_cents = b2bAccount ? vatCents(total_cents) : null;
 
   const insertReservation = db.transaction(() => {
     const result = db
       .prepare(
-        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, total_cents, b2b_account_id, b2b_company) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, total_cents, b2b_account_id, b2b_company, vat_included, vat_cents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .run(
         customer_name,
@@ -81,6 +86,8 @@ router.post("/", reservationLimiter, async (req, res) => {
         total_cents,
         b2bAccount ? b2bAccount.id : null,
         b2bAccount ? b2bAccount.company_name : null,
+        vat_included,
+        vat_cents,
       );
     const insertItem = db.prepare(
       "INSERT INTO reservation_items (reservation_id, sku, product_name, unit_price_cents, quantity) VALUES (?, ?, ?, ?, ?)",
@@ -107,9 +114,13 @@ router.post("/", reservationLimiter, async (req, res) => {
         secure: smtpPort === 465,
         auth: { user: smtpUser, pass: smtpPass },
       });
+      const eur = (cents) => `${(cents / 100).toFixed(2)} €`;
       const itemsList = resolvedItems
-        .map((i) => `- ${i.quantity} x ${i.product_name} (${(i.unit_price_cents / 100).toFixed(2)} €)`)
+        .map((i) => `- ${i.quantity} x ${i.product_name} (${eur(i.unit_price_cents)}${vat_included ? "" : " sin IVA"})`)
         .join("\n");
+      const totals = vat_included
+        ? `Total: ${eur(total_cents)}`
+        : `Total sin IVA: ${eur(total_cents)}\nIVA (${Math.round(B2B_VAT_RATE * 100)} %): ${eur(vat_cents)}\nTotal con IVA: ${eur(total_cents + vat_cents)}`;
       const b2bLine = b2bAccount
         ? `Cuenta de empresa: ${b2bAccount.company_name}${b2bAccount.tax_id ? ` (${b2bAccount.tax_id})` : ""} — precios profesionales aplicados\n`
         : "";
@@ -117,15 +128,22 @@ router.post("/", reservationLimiter, async (req, res) => {
         from: `"${customer_name}" <${smtpUser}>`,
         to: notifyEmail,
         subject: `Nueva reserva #${reservationId}${b2bAccount ? ` (empresa: ${b2bAccount.company_name})` : ""}`,
-        text: `${b2bLine}Cliente: ${customer_name}\nEmail: ${customer_email}\nTeléfono: ${customer_phone}\n\nProductos:\n${itemsList}\n\nTotal: ${(total_cents / 100).toFixed(2)} €\n\nNotas: ${notes}`,
+        text: `${b2bLine}Cliente: ${customer_name}\nEmail: ${customer_email}\nTeléfono: ${customer_phone}\n\nProductos:\n${itemsList}\n\n${totals}\n\nNotas: ${notes}`,
       });
     } catch (err) {
       console.error("Error enviando email de notificación de reserva:", err.message);
     }
   }
 
-  res.status(201).json({ success: true, id: reservationId, total_cents, b2b: Boolean(b2bAccount) });
-});
+  res.status(201).json({
+    success: true,
+    id: reservationId,
+    total_cents,
+    vat_included: Boolean(vat_included),
+    vat_cents,
+    b2b: Boolean(b2bAccount),
+  });
+}));
 
 // PUT /api/reservations/:id — status update
 router.put("/:id", requireAuth, (req, res) => {

@@ -20,6 +20,7 @@ import knowledgeRouter from "./api/knowledge.js";
 import conversationsRouter from "./api/conversations.js";
 import { startLiderpapelScheduler } from "./sync/liderpapel/scheduler.js";
 import { startUploadsCleanupScheduler } from "./media/cleanup-uploads.js";
+import { apiErrorHandler } from "./middleware/async-handler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -139,6 +140,11 @@ app.use((req, res) => {
     if (err) res.status(404).json({ error: "Not found" });
   });
 });
+
+// Last, so it sees every error a route passes on — a sync throw, or a
+// rejection forwarded by asyncHandler. Without it Express answers with an
+// HTML page the panel and cart cannot read.
+app.use(apiErrorHandler);
 
 // A stop signal must take the build child with it (see stopBuild). Without
 // a handler Node exits on SIGTERM without running anything — and as PID 1 in

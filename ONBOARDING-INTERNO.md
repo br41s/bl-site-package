@@ -83,6 +83,17 @@ Dos cosas que **hay que avisarle al cliente en la entrega**, o las reportará co
 - **«Lo más vendido» no aparecerá al principio.** Solo cuenta reservas que él haya confirmado desde la pestaña Pedidos; los carritos sin confirmar no cuentan, a propósito (`POST /api/reservations` es público y anónimo). Aparece solo en cuanto confirme pedidos.
 - **«Novedades» no significa nada hasta la segunda sincronización**, porque la carga inicial da de alta todo el catálogo a la vez.
 
+### 5d. Área de profesionales (solo si hay catálogo y el cliente vende a empresas)
+
+Viene **desactivada**. Solo se activa si el cliente lo ha pedido en el formulario (apartado 1d).
+
+- [ ] Panel → Productos → **Profesionales** → marcar *Activar el área de profesionales* y **Guardar**
+- [ ] Poner el **descuento general** y los **descuentos por categoría** que haya pedido el cliente (vacío = usa el general; 0 = sin descuento en esa categoría)
+- [ ] Si nos ha pasado empresas para dar de alta: crear cada cuenta (empresa, CIF, email y contraseña con **Generar**). Las credenciales se las envía **el cliente** a sus empresas: la web no manda ningún email
+- [ ] Verificar en la web pública que el pie muestra *Área de profesionales* y que, entrando con una cuenta de prueba, el catálogo enseña los precios **sin IVA**. Borrar la cuenta de prueba después
+
+Avisa al cliente en la entrega de que **las empresas ven los precios sin IVA** y de que sus reservas llegan sin IVA, con el IVA y el total con IVA desglosados en Pedidos y en el email de aviso.
+
 ### 6. Dominio (si procede)
 
 - [ ] Zeabur → Networking → Add Domain → introducir dominio del cliente
@@ -101,6 +112,7 @@ Dos cosas que **hay que avisarle al cliente en la entrega**, o las reportará co
 - [ ] Mostrar cómo usar el agente de chat
 - [ ] Mostrar dónde ver los mensajes de contacto
 - [ ] Si hay catálogo: mostrar Productos → Portada y explicar los dos avisos del paso 5c (lo más vendido necesita pedidos confirmados; novedades necesita una segunda sincronización)
+- [ ] Si se activó el área de profesionales: mostrar Productos → Profesionales (descuentos y alta de empresas) y recordar que las empresas ven y reservan **sin IVA**
 - [ ] Entregar `INSTRUCCIONES-CLIENTE.md` (exportado a PDF)
 - [ ] Acordar canal de soporte (WhatsApp, email, etc.)
 

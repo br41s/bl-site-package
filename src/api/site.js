@@ -22,6 +22,7 @@ import {
   getLastVisitorEmail,
 } from "../mail/mailer.js";
 import { isTurnstileConfigured } from "../turnstile.js";
+import { asyncHandler } from "../middleware/async-handler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -184,29 +185,33 @@ router.post("/texts", requireAuth, (req, res) => {
 // POST /api/site/logo — upload logo. The multer error callback turns a
 // rejected upload (wrong type, too large) into a clean 400 instead of the
 // default 500 HTML error page.
-router.post("/logo", requireAuth, (req, res) => {
-  upload.single("logo")(req, res, async (err) => {
-    if (err)
-      return res.status(400).json({
-        error:
-          (err instanceof multer.MulterError && MULTER_ERRORS_ES[err.code]) ||
-          err.message ||
-          "No se pudo subir el archivo",
-      });
-    if (!req.file)
-      return res.status(400).json({ error: "No se recibió ningún archivo" });
-    const ext = LOGO_MIME_EXT[req.file.mimetype];
-    try {
-      await writeLogo(req.file.buffer, ext);
-    } catch (writeErr) {
-      console.error("logo: no se pudo guardar:", writeErr.message);
-      return res.status(500).json({ error: "No se pudo guardar el logo" });
-    }
-    // Only after the file is in place, so logo_ext never names a missing file.
-    setConfig("logo_ext", ext);
-    res.json({ success: true, path: "/uploads/logo." + ext });
-  });
+router.post("/logo", requireAuth, (req, res, next) => {
+  // multer calls this back itself, outside Express's reach, so asyncHandler
+  // cannot wrap it: a rejection here has to be passed on by hand.
+  upload.single("logo")(req, res, (err) => handleLogoUpload(err, req, res).catch(next));
 });
+
+async function handleLogoUpload(err, req, res) {
+  if (err)
+    return res.status(400).json({
+      error:
+        (err instanceof multer.MulterError && MULTER_ERRORS_ES[err.code]) ||
+        err.message ||
+        "No se pudo subir el archivo",
+    });
+  if (!req.file)
+    return res.status(400).json({ error: "No se recibió ningún archivo" });
+  const ext = LOGO_MIME_EXT[req.file.mimetype];
+  try {
+    await writeLogo(req.file.buffer, ext);
+  } catch (writeErr) {
+    console.error("logo: no se pudo guardar:", writeErr.message);
+    return res.status(500).json({ error: "No se pudo guardar el logo" });
+  }
+  // Only after the file is in place, so logo_ext never names a missing file.
+  setConfig("logo_ext", ext);
+  res.json({ success: true, path: "/uploads/logo." + ext });
+}
 
 // POST /api/site/upload-image — store a generated/uploaded image.
 // Body: { image_base64 } (bare base64 or a data: URI). The bytes are decoded,
@@ -215,7 +220,7 @@ router.post("/logo", requireAuth, (req, res) => {
 // data/uploads with a content-hash filename so identical images dedupe and the
 // name is never client-controlled. Returns the public /uploads URL. The large
 // base64 body is parsed by a route-scoped express.json limit (see server.js).
-router.post("/upload-image", requireAuth, async (req, res) => {
+router.post("/upload-image", requireAuth, asyncHandler(async (req, res) => {
   try {
     const { buffer, filename } = await optimizeToWebp(req.body?.image_base64);
     await writeFile(join(uploadsDir, filename), buffer);
@@ -223,7 +228,7 @@ router.post("/upload-image", requireAuth, async (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message || "No se pudo procesar la imagen" });
   }
-});
+}));
 
 // GET /api/site/status — operational health for the maintenance agent.
 //
@@ -288,7 +293,7 @@ const MAX_BODY = 50000;
 // configured notify_email. The recipient is never taken from the request:
 // this endpoint reaches the site owner and nobody else, so a stolen panel
 // token cannot aim it at a third party.
-router.post("/notify", requireAuth, notifyLimiter, async (req, res) => {
+router.post("/notify", requireAuth, notifyLimiter, asyncHandler(async (req, res) => {
   const subject =
     typeof req.body?.subject === "string" ? req.body.subject.trim() : "";
   const bodyMarkdown =
@@ -341,12 +346,12 @@ router.post("/notify", requireAuth, notifyLimiter, async (req, res) => {
       message: "No se pudo enviar el email de notificación",
     });
   }
-});
+}));
 
 const MODELS_TIMEOUT_MS = 15_000;
 
 // GET /api/site/models?q=term — proxy OpenRouter model list
-router.get("/models", requireAuth, async (req, res) => {
+router.get("/models", requireAuth, asyncHandler(async (req, res) => {
   const q = (req.query.q || "").toLowerCase().trim();
   const apiKey =
     process.env.OPENROUTER_API_KEY?.trim() ||
@@ -378,6 +383,6 @@ router.get("/models", requireAuth, async (req, res) => {
       .status(500)
       .json({ error: "No se pudo obtener la lista de modelos", models: [] });
   }
-});
+}));
 
 export default router;

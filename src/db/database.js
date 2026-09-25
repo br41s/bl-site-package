@@ -504,6 +504,13 @@ if (contentNeedingSearchText.length > 0) {
 // say who it was priced for.
 ensureColumn("reservations", "b2b_account_id", "INTEGER");
 ensureColumn("reservations", "b2b_company", "TEXT");
+// Whether total_cents / unit_price_cents include VAT. Public reservations do
+// (1); B2B ones are priced without it (0) and carry the VAT separately in
+// vat_cents. A flag rather than "b2b_account_id is set" because B2B
+// reservations placed before trade prices went ex-VAT did include it — the
+// default of 1 keeps every existing row reading correctly.
+ensureColumn("reservations", "vat_included", "INTEGER NOT NULL DEFAULT 1");
+ensureColumn("reservations", "vat_cents", "INTEGER");
 ensureColumn("products", "gtin", "TEXT");
 ensureColumn("products", "mpn", "TEXT");
 ensureColumn("products", "brand", "TEXT");

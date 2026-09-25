@@ -2,7 +2,7 @@
 layout: base.njk
 navActive: profesionales
 title: "Área de profesionales"
-description: "Acceso para empresas: consulta tus precios profesionales en todo el catálogo."
+description: "Acceso para empresas: consulta tus precios profesionales, sin IVA, en todo el catálogo."
 eleventyExcludeFromCollections: true
 ---
 {#-
@@ -18,7 +18,7 @@ eleventyExcludeFromCollections: true
   <div id="b2b-page">
     <form id="b2b-login-form" class="site-contact-form" hidden>
       <h2>Accede a tu cuenta</h2>
-      <p class="site-page-desc">Con tu cuenta de empresa verás tus precios profesionales en todo el catálogo y tus reservas se harán a esos precios.</p>
+      <p class="site-page-desc">Con tu cuenta de empresa verás tus precios profesionales, sin IVA, en todo el catálogo y tus reservas se harán a esos precios.</p>
       <input type="email" name="email" placeholder="Email" autocomplete="username" required>
       <input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required>
       <button type="submit" class="site-btn">Entrar</button>
@@ -28,7 +28,7 @@ eleventyExcludeFromCollections: true
 
     <div id="b2b-account" class="b2b-account" hidden>
       <h2>Hola, <span id="b2b-account-company"></span></h2>
-      <p class="site-page-desc">Has iniciado sesión. En todo el catálogo ya ves tus precios profesionales, y tus reservas se harán a esos precios.</p>
+      <p class="site-page-desc">Has iniciado sesión. En todo el catálogo ya ves tus precios profesionales, sin IVA, y tus reservas se harán a esos precios.</p>
       <p><a href="/productos" class="site-btn">Ir al catálogo</a></p>
       <p><button type="button" id="b2b-logout-btn" class="b2b-logout-btn">Cerrar sesión</button></p>
     </div>

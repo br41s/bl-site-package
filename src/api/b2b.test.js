@@ -18,7 +18,7 @@ const db = (await import("../db/database.js")).default;
 const { getConfig } = await import("../db/database.js");
 const { requireAuth } = await import("../middleware/auth.js");
 const b2bRouter = (await import("./b2b.js")).default;
-const { b2bPriceCents, hashPassword, verifyPassword } = await import("./b2b.js");
+const { b2bPriceCents, vatCents, hashPassword, verifyPassword } = await import("./b2b.js");
 const reservationsRouter = (await import("./reservations.js")).default;
 
 const ADMIN = { Authorization: `Bearer ${jwt.sign({ role: "admin" }, process.env.JWT_SECRET)}` };
@@ -99,15 +99,27 @@ beforeEach(() => {
 });
 
 describe("B2B pricing arithmetic", () => {
-  test("rounds to the cent the same way web/cart.js does", () => {
-    assert.equal(b2bPriceCents(1000, 15), 850);
-    assert.equal(b2bPriceCents(999, 12.5), 874); // 874.125
-    assert.equal(b2bPriceCents(1999, 0), 1999);
+  // Trade prices exclude VAT. 12,10 € is 10,00 € + 21 %, so it makes the
+  // arithmetic readable: −20 % on it is 8,00 € before VAT.
+  test("takes the discount off the public price and quotes it without VAT", () => {
+    assert.equal(b2bPriceCents(1210, 20), 800);
+    assert.equal(b2bPriceCents(1210, 0), 1000);
   });
 
-  test("an unusable discount prices at retail, never NaN or below zero", () => {
+  test("rounds once, at the end, the same way web/cart.js does", () => {
+    assert.equal(b2bPriceCents(1000, 15), 702); // 702.479…
+    assert.equal(b2bPriceCents(999, 12.5), 722); // 722.417…
+    assert.equal(b2bPriceCents(1999, 0), 1652); // 1652.066…
+  });
+
+  test("VAT is rounded once on the total, half up", () => {
+    assert.equal(vatCents(1000), 210);
+    assert.equal(vatCents(4050), 851); // 850.5
+  });
+
+  test("an unusable discount means no discount, never NaN or below zero", () => {
     for (const bad of [NaN, Infinity, -5, 100, 150, "20", null, undefined]) {
-      assert.equal(b2bPriceCents(1000, bad), 1000, String(bad));
+      assert.equal(b2bPriceCents(1210, bad), 1000, String(bad));
     }
   });
 
@@ -219,9 +231,10 @@ describe("B2B session", () => {
 
 describe("reservations are priced for whoever places them", () => {
   beforeEach(() => {
-    seedProduct("A1", "Cuadernos", 1000);
-    seedProduct("B2", "Bolígrafos", 2000);
-    seedProduct("C3", "", 500);
+    // Public prices with VAT: 10,00 / 20,00 / 5,00 € before it.
+    seedProduct("A1", "Cuadernos", 1210);
+    seedProduct("B2", "Bolígrafos", 2420);
+    seedProduct("C3", "", 605);
     db.prepare("INSERT INTO b2b_category_discounts (category, discount_pct) VALUES ('Cuadernos', 20)").run();
     // An explicit 0 overrides the general discount.
     db.prepare("INSERT INTO b2b_category_discounts (category, discount_pct) VALUES ('Bolígrafos', 0)").run();
@@ -238,25 +251,32 @@ describe("reservations are priced for whoever places them", () => {
     const res = await reserve(items);
     const data = await res.json();
     assert.equal(res.status, 201);
-    assert.equal(data.total_cents, 2 * 1000 + 2000 + 500);
+    assert.equal(data.total_cents, 2 * 1210 + 2420 + 605);
     assert.equal(data.b2b, false);
+    assert.equal(data.vat_included, true);
     const row = db.prepare("SELECT * FROM reservations WHERE id = ?").get(data.id);
     assert.equal(row.b2b_account_id, null);
+    assert.equal(row.vat_included, 1);
+    assert.equal(row.vat_cents, null);
   });
 
-  test("a signed-in account pays the category price, the general one elsewhere", async () => {
+  test("a signed-in account pays the category price without VAT, the general one elsewhere", async () => {
     const id = seedAccount();
     const { cookie } = await login();
     const res = await reserve(items, { Cookie: cookie });
     const data = await res.json();
     assert.equal(res.status, 201);
-    // 2 × 800 (−20 %) + 2000 (explicit 0 %) + 450 (general −10 %)
+    // Before VAT: 2 × 800 (−20 %) + 2000 (explicit 0 %) + 450 (general −10 %)
     assert.equal(data.total_cents, 1600 + 2000 + 450);
+    assert.equal(data.vat_included, false);
+    assert.equal(data.vat_cents, 851); // 21 % of 40,50 €
     assert.equal(data.b2b, true);
 
     const row = db.prepare("SELECT * FROM reservations WHERE id = ?").get(data.id);
     assert.equal(row.b2b_account_id, id);
     assert.equal(row.b2b_company, "ACME S.L.");
+    assert.equal(row.vat_included, 0);
+    assert.equal(row.vat_cents, 851);
     const lines = db
       .prepare("SELECT sku, unit_price_cents FROM reservation_items WHERE reservation_id = ? ORDER BY sku")
       .all(data.id);
@@ -283,7 +303,7 @@ describe("reservations are priced for whoever places them", () => {
     const res = await reserve(items, { Cookie: cookie });
     assert.equal(res.status, 201);
     const data = await res.json();
-    // General −10 % on all three: 2 × 900 + 1800 + 450
+    // General −10 % on all three, before VAT: 2 × 900 + 1800 + 450
     assert.equal(data.total_cents, 1800 + 1800 + 450);
     const lines = db
       .prepare("SELECT unit_price_cents FROM reservation_items WHERE reservation_id = ?")
@@ -300,7 +320,7 @@ describe("reservations are priced for whoever places them", () => {
     const { cookie } = await login();
     db.prepare("UPDATE b2b_accounts SET active = 0 WHERE id = ?").run(id);
     const data = await (await reserve(items, { Cookie: cookie })).json();
-    assert.equal(data.total_cents, 4500);
+    assert.equal(data.total_cents, 5445);
     assert.equal(data.b2b, false);
   });
 
@@ -308,7 +328,7 @@ describe("reservations are priced for whoever places them", () => {
     seedAccount();
     const forged = jwt.sign({ sub: "1", typ: "b2b" }, "not-the-key");
     const data = await (await reserve(items, { Cookie: `bl_b2b=${forged}` })).json();
-    assert.equal(data.total_cents, 4500);
+    assert.equal(data.total_cents, 5445);
   });
 });
 
