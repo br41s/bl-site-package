@@ -108,6 +108,9 @@
           <a href="/contacto">Contacto</a>
           <a href="/blog">Blog</a>
           <a href="/productos">Catálogo</a>
+          {%- if site.b2b_enabled == "1" %}
+          <a href="/profesionales">Área de profesionales</a>
+          {%- endif %}
           <a href="/privacidad">Privacidad</a>
           <a href="/condiciones">Aviso legal</a>
           <a href="/uso-de-ia">Uso de IA</a>

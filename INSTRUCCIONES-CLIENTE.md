@@ -104,11 +104,12 @@ Ejemplos de lo que puedes pedirle:
 
 > Esta sección solo aparece si tu web tiene catálogo conectado con tu proveedor.
 
-Tu catálogo se sincroniza solo con tu proveedor: los precios, el stock y las altas y bajas de artículos llegan sin que tengas que tocar nada. Tiene cinco pestañas:
+Tu catálogo se sincroniza solo con tu proveedor: los precios, el stock y las altas y bajas de artículos llegan sin que tengas que tocar nada. Tiene seis pestañas:
 
 - **Catálogo** — todos tus productos. Puedes ocultar cualquiera de la web con el interruptor *Visible en la tienda*, y ese ajuste no se pierde en la siguiente sincronización. La estrella ★ de cada producto sirve para destacarlo en la portada de la tienda (ver más abajo). Como el catálogo es muy grande, se muestran los primeros 100 productos: usa el buscador de arriba para encontrar uno concreto.
 - **Portada** — ver más abajo.
-- **Pedidos** — las reservas que te dejan los clientes desde la web.
+- **Pedidos** — las reservas que te dejan los clientes desde la web. Las que hace una empresa con su cuenta de profesional aparecen marcadas con su nombre.
+- **Profesionales** — cuentas de empresa y precios especiales para ellas (ver más abajo).
 - **Fichas** — ver más abajo.
 - **Sincronización** — cuándo se actualizó el catálogo por última vez y los datos de conexión con tu proveedor.
 
@@ -146,6 +147,31 @@ Cuando terminas, pulsa **Guardar portada**. Los cambios aparecen en tu web en un
 > **«Lo más vendido» no me aparece.** Es normal al principio. Ese bloque cuenta solo los pedidos que has **confirmado** desde la pestaña Pedidos; los carritos que un visitante deja sin más no cuentan, para que nadie pueda colocarse en tu portada llenando una cesta. En cuanto confirmes tus primeros pedidos, el bloque aparece solo.
 
 > **«Novedades» me muestra productos que no son nuevos.** También es normal los primeros días: cuando se carga el catálogo por primera vez, todos los artículos entran a la vez, así que ninguno es más nuevo que otro. A partir de la segunda sincronización el bloque ya tiene sentido.
+
+#### La pestaña Profesionales
+
+Sirve para que tus clientes de empresa (colegios, oficinas, comercios…) vean en tu web **sus propios precios**, con el descuento que tú decidas para cada categoría de productos.
+
+**Cómo funciona para la empresa.** Tú le das de alta una cuenta con un email y una contraseña. La empresa entra desde **Área de profesionales**, en el pie de tu web (la dirección es `tudominio.com/profesionales`), y a partir de ahí ve en todo el catálogo el precio de venta al público tachado y, al lado, su precio profesional. Sus reservas se hacen a ese precio, y en la pestaña Pedidos verás qué empresa la ha hecho. Los visitantes normales siguen viendo los precios de siempre.
+
+**1. Activa el área.** Marca *Activar el área de profesionales* y pulsa **Guardar**. En unos segundos aparece el enlace en tu web. Si la desactivas, la página de acceso desaparece y nadie ve precios profesionales.
+
+**2. Pon los descuentos.**
+
+- **Descuento general** — el que se aplica a todas las categorías a las que no pongas uno propio. Déjalo en 0 si solo quieres descontar algunas.
+- **Descuento por categoría** — busca la categoría, escribe el porcentaje y pulsa **Guardar descuentos**. Deja la casilla vacía para que use el descuento general, o pon **0** si quieres que esa categoría no tenga descuento aunque el general sí lo tenga.
+
+El descuento se calcula sobre el precio de venta al público, con IVA incluido. Si tu proveedor cambia un precio, el precio profesional cambia con él: siempre conserva el mismo porcentaje de descuento. Los cambios de descuento se aplican al momento, sin esperar a ninguna actualización.
+
+**3. Da de alta a las empresas.** Rellena el nombre de la empresa, el email con el que entrará y una contraseña (el botón **Generar** te propone una), y pulsa **Crear cuenta**. Después **envíale tú** el email y la contraseña: la web no se los manda.
+
+En la lista de cuentas puedes:
+
+- **Desactivar** una cuenta con la casilla *Activa*: deja de ver los precios profesionales en ese mismo momento.
+- **Nueva contraseña** — si la empresa la ha olvidado. Envíale la nueva.
+- **Eliminar** la cuenta. Sus reservas anteriores se conservan.
+
+> **Una empresa quiere darse de alta.** Las empresas no pueden registrarse solas: en la página de acceso se les invita a contactar contigo, y eres tú quien decide a quién das de alta.
 
 #### La pestaña Fichas
 

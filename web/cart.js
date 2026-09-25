@@ -1,8 +1,193 @@
 /* Client-side cart for the reserve-without-payment catalog. Cart state lives in
    localStorage (no server session) — checkout POSTs it to /api/reservations,
-   which recomputes prices server-side from the current catalog. */
+   which recomputes prices server-side from the current catalog.
+
+   Also shows trade prices to a signed-in B2B account (see the B2B section
+   below). Cart items keep the RETAIL price and their category; the price a
+   B2B customer sees is derived from those at render time, so logging in or
+   out after filling the cart re-prices it instead of leaving stale figures. */
 
 var CART_KEY = "bl_cart_v1";
+
+/* ── B2B pricing ────────────────────────────────────────────────────────────
+   The session is an httpOnly cookie this script cannot read, so a localStorage
+   flag remembers that there probably is one. Without it every visitor on every
+   page would call /api/b2b/me just to be told no. */
+
+var B2B_FLAG_KEY = "bl_b2b_v1";
+var b2b = null; // { account, default_pct, discounts } once /api/b2b/me answers
+
+function setB2bFlag(on) {
+  try {
+    if (on) localStorage.setItem(B2B_FLAG_KEY, "1");
+    else localStorage.removeItem(B2B_FLAG_KEY);
+  } catch (e) {}
+}
+
+function hasB2bFlag() {
+  try {
+    return localStorage.getItem(B2B_FLAG_KEY) === "1";
+  } catch (e) {
+    return false;
+  }
+}
+
+function loadB2b() {
+  return fetch("/api/b2b/me", { credentials: "same-origin" })
+    .then(function (r) {
+      if (!r.ok) throw new Error("no b2b session");
+      return r.json();
+    })
+    .then(function (data) {
+      b2b = data;
+      setB2bFlag(true);
+      return b2b;
+    })
+    .catch(function () {
+      b2b = null;
+      setB2bFlag(false);
+      return null;
+    });
+}
+
+function b2bDiscountFor(category) {
+  if (!b2b) return 0;
+  var key = category || "";
+  return Object.prototype.hasOwnProperty.call(b2b.discounts, key)
+    ? b2b.discounts[key]
+    : b2b.default_pct;
+}
+
+// Same arithmetic as b2bPriceCents in src/api/b2b.js, which is what the
+// reservation is actually charged at — keep the two identical.
+function b2bPriceCents(priceCents, discountPct) {
+  if (typeof discountPct !== "number" || !Number.isFinite(discountPct) || discountPct < 0 || discountPct >= 100) {
+    return priceCents;
+  }
+  return Math.round((priceCents * (100 - discountPct)) / 100);
+}
+
+function effectivePriceCents(priceCents, category) {
+  return b2b ? b2bPriceCents(priceCents, b2bDiscountFor(category)) : priceCents;
+}
+
+function formatPct(pct) {
+  return pct.toLocaleString("es-ES", { maximumFractionDigits: 2 }) + " %";
+}
+
+// Rewrites every product price under `root` to the trade price. Prices carry
+// the retail figure and the category in data-* attributes (product-card.njk,
+// producto.njk, buildProductCardEl); data-b2b-applied keeps a second pass
+// from discounting an already discounted price.
+function applyB2bPrices(root) {
+  if (!b2b) return;
+  var prices = root.querySelectorAll(".product-price[data-price-cents]");
+  Array.prototype.forEach.call(prices, function (el) {
+    if (el.dataset.b2bApplied) return;
+    var retail = parseInt(el.dataset.priceCents, 10);
+    var amount = el.querySelector(".product-price-amount");
+    if (!Number.isFinite(retail) || !amount) return;
+    el.dataset.b2bApplied = "1";
+
+    var pct = b2bDiscountFor(el.dataset.category);
+    if (pct > 0) {
+      var was = document.createElement("s");
+      was.className = "product-price-was";
+      was.textContent = formatEur(retail);
+      el.insertBefore(was, amount);
+      amount.textContent = formatEur(b2bPriceCents(retail, pct));
+    }
+    var note = el.querySelector(".price-vat-note");
+    if (note) {
+      note.textContent =
+        (pct > 0 ? "Precio profesional (−" + formatPct(pct) + ")" : "Precio profesional") +
+        " · IVA incluido";
+    }
+  });
+}
+
+// The catalogue's "¿Eres una empresa?" banner turns into a signed-in notice.
+function updateB2bBanner() {
+  var banner = document.getElementById("b2b-banner");
+  if (!banner || !b2b) return;
+  banner.textContent = "";
+  var p = document.createElement("p");
+  p.appendChild(document.createTextNode("Has iniciado sesión como "));
+  var strong = document.createElement("strong");
+  strong.textContent = b2b.account.company_name;
+  p.appendChild(strong);
+  p.appendChild(document.createTextNode(": estás viendo tus precios profesionales. "));
+  var link = document.createElement("a");
+  link.href = "/profesionales";
+  link.textContent = "Tu cuenta";
+  p.appendChild(link);
+  banner.appendChild(p);
+}
+
+function initB2bPage(ready) {
+  var page = document.getElementById("b2b-page");
+  if (!page) return;
+  var form = document.getElementById("b2b-login-form");
+  var accountBox = document.getElementById("b2b-account");
+  var errorEl = document.getElementById("b2b-login-error");
+
+  function render() {
+    if (b2b) {
+      document.getElementById("b2b-account-company").textContent = b2b.account.company_name;
+      form.hidden = true;
+      accountBox.hidden = false;
+    } else {
+      accountBox.hidden = true;
+      form.hidden = false;
+    }
+  }
+
+  ready.then(render);
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    errorEl.hidden = true;
+    fetch("/api/b2b/login", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: form.email.value.trim(), password: form.password.value }),
+    })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          return { ok: r.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "No se pudo iniciar sesión.");
+        form.password.value = "";
+        return loadB2b();
+      })
+      .then(function () {
+        render();
+        updateCartBadge();
+      })
+      .catch(function (err) {
+        errorEl.textContent = err.message || "No se pudo iniciar sesión.";
+        errorEl.hidden = false;
+      })
+      .finally(function () {
+        submitBtn.disabled = false;
+      });
+  });
+
+  document.getElementById("b2b-logout-btn").addEventListener("click", function () {
+    fetch("/api/b2b/logout", { method: "POST", credentials: "same-origin" })
+      .catch(function () {})
+      .then(function () {
+        b2b = null;
+        setB2bFlag(false);
+        render();
+      });
+  });
+}
 
 function getCart() {
   try {
@@ -18,15 +203,16 @@ function saveCart(cart) {
   updateCartBadge();
 }
 
-function addToCart(sku, name, priceCents, qty) {
+function addToCart(sku, name, priceCents, qty, category) {
   var cart = getCart();
   var existing = cart.find(function (i) {
     return i.sku === sku;
   });
   if (existing) {
     existing.quantity += qty;
+    existing.category = category;
   } else {
-    cart.push({ sku: sku, name: name, priceCents: priceCents, quantity: qty });
+    cart.push({ sku: sku, name: name, priceCents: priceCents, quantity: qty, category: category });
   }
   saveCart(cart);
 }
@@ -57,7 +243,7 @@ function cartCount(cart) {
 
 function cartTotalCents(cart) {
   return cart.reduce(function (sum, i) {
-    return sum + i.priceCents * i.quantity;
+    return sum + effectivePriceCents(i.priceCents, i.category) * i.quantity;
   }, 0);
 }
 
@@ -88,7 +274,7 @@ function initAddToCartButtons() {
       if (qtyInput) qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
     }
 
-    addToCart(sku, name, priceCents, qty);
+    addToCart(sku, name, priceCents, qty, btn.dataset.category || "");
     var original = btn.textContent;
     btn.textContent = "Añadido ✓";
     setTimeout(function () {
@@ -126,7 +312,16 @@ function buildProductCardEl(p) {
 
   var price = document.createElement("span");
   price.className = "product-price";
-  price.textContent = formatEur(p.price_cents);
+  price.dataset.priceCents = String(p.price_cents);
+  price.dataset.category = p.category || "";
+  var amount = document.createElement("span");
+  amount.className = "product-price-amount";
+  amount.textContent = formatEur(p.price_cents);
+  price.appendChild(amount);
+  var vatNote = document.createElement("span");
+  vatNote.className = "price-vat-note";
+  vatNote.textContent = "IVA incluido";
+  price.appendChild(vatNote);
   body.appendChild(price);
 
   var inStock = p.stock_qty > 0;
@@ -144,12 +339,14 @@ function buildProductCardEl(p) {
   btn.dataset.sku = p.sku;
   btn.dataset.name = p.name;
   btn.dataset.priceCents = String(p.price_cents);
+  btn.dataset.category = p.category || "";
   btn.disabled = !inStock;
   btn.textContent = "Añadir";
   body.appendChild(btn);
 
   article.appendChild(imgLink);
   article.appendChild(body);
+  applyB2bPrices(article);
   return article;
 }
 
@@ -262,7 +459,7 @@ function renderCartPage() {
     qtyCell.appendChild(qtyInput);
 
     var priceCell = document.createElement("td");
-    priceCell.textContent = formatEur(item.priceCents * item.quantity);
+    priceCell.textContent = formatEur(effectivePriceCents(item.priceCents, item.category) * item.quantity);
 
     var actionCell = document.createElement("td");
     var removeBtn = document.createElement("button");
@@ -279,6 +476,25 @@ function renderCartPage() {
     itemsBody.appendChild(tr);
   });
   totalCell.textContent = formatEur(cartTotalCents(cart));
+  var vatNote = table.querySelector("tfoot .price-vat-note");
+  if (vatNote) vatNote.textContent = b2b ? "Precios profesionales · IVA incluido" : "IVA incluido";
+}
+
+// A signed-in account has already told us who it is; don't make it type it
+// again. Only fills empty fields, so nothing the customer typed is replaced.
+function prefillCheckoutFromB2b() {
+  var form = document.getElementById("checkout-form");
+  if (!form || !b2b) return;
+  var a = b2b.account;
+  // Each field is optional: a template that drops one must not throw here,
+  // or the rest of the B2B init after this call never runs.
+  function fill(name, value) {
+    var field = form.elements.namedItem(name);
+    if (field && !field.value && value) field.value = value;
+  }
+  fill("customer_name", a.contact_name || a.company_name);
+  fill("customer_email", a.email);
+  fill("customer_phone", a.phone);
 }
 
 function initCartPage() {
@@ -314,6 +530,7 @@ function initCartPage() {
 
     fetch("/api/reservations", {
       method: "POST",
+      credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         customer_name: form.customer_name.value.trim(),
@@ -342,8 +559,11 @@ function initCartPage() {
         table.hidden = true;
         form.hidden = true;
         successBox.hidden = false;
+        // The server's total, not ours: it is what the reservation records.
         successBox.textContent =
-          "Reserva confirmada (nº " + result.data.id + "). Te avisaremos para confirmar la entrega.";
+          "Reserva confirmada (nº " + result.data.id + ", total " + formatEur(result.data.total_cents) +
+          (result.data.b2b ? " con precios profesionales" : "") +
+          "). Te avisaremos para confirmar la entrega.";
         successBox.style.color = "var(--text-primary)";
       })
       .catch(function () {
@@ -362,4 +582,17 @@ document.addEventListener("DOMContentLoaded", function () {
   initAddToCartButtons();
   initProductSearch();
   initCartPage();
+
+  // The sign-in page asks unconditionally, flag or not: it is the page someone
+  // opens precisely when they are unsure whether they are signed in.
+  var askB2b = hasB2bFlag() || Boolean(document.getElementById("b2b-page"));
+  var b2bReady = askB2b ? loadB2b() : Promise.resolve(null);
+  initB2bPage(b2bReady);
+  b2bReady.then(function () {
+    if (!b2b) return;
+    applyB2bPrices(document);
+    updateB2bBanner();
+    renderCartPage();
+    prefillCheckoutFromB2b();
+  });
 });

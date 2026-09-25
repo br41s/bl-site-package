@@ -1952,7 +1952,10 @@ document.addEventListener("DOMContentLoaded", function () {
           info.className = "reservation-card-info";
           var name = document.createElement("span");
           name.className = "reservation-card-name";
-          name.textContent = res.customer_name + " — " + formatEurCents(res.total_cents);
+          name.textContent =
+            res.customer_name +
+            (res.b2b_company ? " (empresa: " + res.b2b_company + ", precios profesionales)" : "") +
+            " — " + formatEurCents(res.total_cents);
           var meta = document.createElement("span");
           meta.className = "reservation-card-meta";
           meta.textContent =
@@ -2565,6 +2568,334 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // ── PROFESIONALES (B2B) ─────────────────────────────────────────
+  // Categories come from GET /api/b2b/discounts: every category the live
+  // catalogue has, plus any that still carry a discount after leaving it. Edits
+  // are held in b2bDirty and sent together by "Guardar descuentos", as only
+  // the changed categories — the endpoint is partial, so a category nobody
+  // touched is never rewritten.
+  var b2bCategories = [];
+  var b2bDirty = {};
+
+  function flashMsg(el, ok, text) {
+    el.hidden = false;
+    el.textContent = text;
+    el.style.color = ok ? "var(--accent)" : "var(--error)";
+  }
+
+  function jsonOrError(r) {
+    return r.json().then(function (data) {
+      if (!r.ok) throw new Error(data.error || "Error");
+      return data;
+    });
+  }
+
+  function loadB2bSettings() {
+    fetch("/api/b2b/settings", { headers: authHeaders() })
+      .then(jsonOrError)
+      .then(function (data) {
+        document.getElementById("b2b-enabled-input").checked = Boolean(data.enabled);
+        document.getElementById("b2b-default-pct-input").value = String(data.default_pct);
+      })
+      .catch(function () {});
+  }
+
+  function formatB2bPct(value) {
+    return value === null || value === undefined ? "" : String(value);
+  }
+
+  function renderB2bDiscounts() {
+    var list = document.getElementById("b2b-discounts-list");
+    var query = document.getElementById("b2b-category-search").value.trim().toLowerCase();
+    list.textContent = "";
+    var shown = b2bCategories.filter(function (c) {
+      return !query || c.category.toLowerCase().indexOf(query) !== -1;
+    });
+    if (!shown.length) {
+      var empty = document.createElement("p");
+      empty.className = "misite-hint";
+      empty.style.padding = "1rem";
+      empty.style.margin = "0";
+      empty.textContent = b2bCategories.length
+        ? "Ninguna categoría coincide con la búsqueda."
+        : "Todavía no hay productos sincronizados.";
+      list.appendChild(empty);
+      return;
+    }
+    shown.forEach(function (c) {
+      var row = document.createElement("label");
+      row.className = "b2b-discount-row";
+
+      var name = document.createElement("span");
+      name.className = "b2b-discount-name";
+      name.textContent = c.category;
+
+      var count = document.createElement("span");
+      count.className = "b2b-discount-count";
+      count.textContent = c.total
+        ? c.total + " producto" + (c.total === 1 ? "" : "s")
+        : "ya no está en el catálogo";
+
+      var input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.max = "99.99";
+      input.step = "0.01";
+      input.placeholder = "general";
+      input.setAttribute("aria-label", "Descuento para " + c.category + " (%)");
+      var original = formatB2bPct(c.discount_pct);
+      var hasDirty = Object.prototype.hasOwnProperty.call(b2bDirty, c.category);
+      input.value = hasDirty ? b2bDirty[c.category] : original;
+      input.classList.toggle("is-dirty", hasDirty);
+      input.addEventListener("input", function () {
+        if (input.value === original) delete b2bDirty[c.category];
+        else b2bDirty[c.category] = input.value;
+        input.classList.toggle("is-dirty", input.value !== original);
+      });
+
+      var pct = document.createElement("span");
+      pct.className = "b2b-discount-count";
+      pct.textContent = "%";
+
+      row.appendChild(name);
+      row.appendChild(count);
+      row.appendChild(input);
+      row.appendChild(pct);
+      list.appendChild(row);
+    });
+  }
+
+  function loadB2bDiscounts() {
+    fetch("/api/b2b/discounts", { headers: authHeaders() })
+      .then(jsonOrError)
+      .then(function (data) {
+        b2bCategories = data.categories || [];
+        b2bDirty = {};
+        renderB2bDiscounts();
+      })
+      .catch(function () {});
+  }
+
+  function b2bAccountRow(a) {
+    var row = document.createElement("div");
+    row.className = "product-row" + (a.active ? "" : " b2b-account-inactive");
+
+    var info = document.createElement("div");
+    info.className = "product-row-info";
+    var name = document.createElement("span");
+    name.className = "product-row-name";
+    name.textContent = a.company_name + (a.tax_id ? " · " + a.tax_id : "");
+    var meta = document.createElement("span");
+    meta.className = "product-row-meta";
+    meta.textContent = [
+      a.email,
+      a.contact_name,
+      a.phone,
+      a.last_login_at
+        ? "último acceso " + new Date(a.last_login_at.replace(" ", "T") + "Z").toLocaleString("es-ES")
+        : "nunca ha entrado",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    info.appendChild(name);
+    info.appendChild(meta);
+
+    var actions = document.createElement("div");
+    actions.className = "product-row-actions";
+
+    var label = document.createElement("label");
+    label.style.display = "flex";
+    label.style.alignItems = "center";
+    label.style.gap = "0.5rem";
+    var checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = Boolean(a.active);
+    checkbox.addEventListener("change", function () {
+      updateB2bAccount(a.id, { active: checkbox.checked });
+    });
+    var labelText = document.createElement("span");
+    labelText.textContent = "Activa";
+    label.appendChild(checkbox);
+    label.appendChild(labelText);
+
+    var passBtn = document.createElement("button");
+    passBtn.type = "button";
+    passBtn.className = "btn-ghost-sm";
+    passBtn.textContent = "Nueva contraseña";
+    passBtn.addEventListener("click", function () {
+      var password = prompt(
+        "Nueva contraseña para " + a.company_name + " (mínimo 8 caracteres):",
+        generateB2bPassword(),
+      );
+      // An empty password is ignored by the server (partial update), so it
+      // must not be reported as a change here either.
+      if (password === null || !password.trim()) return;
+      updateB2bAccount(a.id, { password: password }, "Contraseña cambiada. Envíasela a la empresa.");
+    });
+
+    var delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "btn-danger-sm";
+    delBtn.textContent = "Eliminar";
+    delBtn.addEventListener("click", function () {
+      if (!confirm("¿Eliminar la cuenta de " + a.company_name + "? Sus reservas anteriores se conservan.")) return;
+      fetch("/api/b2b/accounts/" + a.id, { method: "DELETE", headers: authHeaders() })
+        .then(jsonOrError)
+        .then(loadB2bAccounts)
+        .catch(function (err) {
+          alert(err.message);
+        });
+    });
+
+    actions.appendChild(label);
+    actions.appendChild(passBtn);
+    actions.appendChild(delBtn);
+    row.appendChild(info);
+    row.appendChild(actions);
+    return row;
+  }
+
+  function updateB2bAccount(id, payload, okMessage) {
+    fetch("/api/b2b/accounts/" + id, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify(payload),
+    })
+      .then(jsonOrError)
+      .then(function () {
+        if (okMessage) alert(okMessage);
+        loadB2bAccounts();
+      })
+      .catch(function (err) {
+        alert(err.message);
+        loadB2bAccounts();
+      });
+  }
+
+  function loadB2bAccounts() {
+    fetch("/api/b2b/accounts", { headers: authHeaders() })
+      .then(jsonOrError)
+      .then(function (data) {
+        var list = document.getElementById("b2b-accounts-list");
+        var accounts = data.accounts || [];
+        list.textContent = "";
+        if (!accounts.length) {
+          var empty = document.createElement("p");
+          empty.className = "misite-hint";
+          empty.textContent = "Todavía no has dado de alta ninguna empresa.";
+          list.appendChild(empty);
+          return;
+        }
+        accounts.forEach(function (a) {
+          list.appendChild(b2bAccountRow(a));
+        });
+      })
+      .catch(function () {});
+  }
+
+  // No 0/O/1/l/I: the admin reads this to a customer over the phone.
+  function generateB2bPassword() {
+    var alphabet = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    var bytes = new Uint32Array(12);
+    crypto.getRandomValues(bytes);
+    return Array.prototype.map
+      .call(bytes, function (n) {
+        return alphabet[n % alphabet.length];
+      })
+      .join("");
+  }
+
+  function initB2bActions() {
+    document.getElementById("b2b-settings-save").addEventListener("click", function () {
+      var msg = document.getElementById("b2b-settings-msg");
+      fetch("/api/b2b/settings", {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          enabled: document.getElementById("b2b-enabled-input").checked,
+          default_pct: document.getElementById("b2b-default-pct-input").value.trim(),
+        }),
+      })
+        .then(jsonOrError)
+        .then(function (data) {
+          flashMsg(
+            msg,
+            true,
+            data.enabled
+              ? "✓ Guardado. El área de profesionales aparecerá en tu web en unos segundos."
+              : "✓ Guardado. El área de profesionales está desactivada.",
+          );
+        })
+        .catch(function (err) {
+          flashMsg(msg, false, err.message);
+        });
+    });
+
+    document.getElementById("b2b-category-search").addEventListener("input", renderB2bDiscounts);
+
+    document.getElementById("b2b-discounts-save").addEventListener("click", function () {
+      var msg = document.getElementById("b2b-discounts-msg");
+      var discounts = {};
+      Object.keys(b2bDirty).forEach(function (category) {
+        var value = b2bDirty[category].trim();
+        discounts[category] = value === "" ? null : value;
+      });
+      if (!Object.keys(discounts).length) {
+        flashMsg(msg, true, "No hay cambios que guardar.");
+        return;
+      }
+      fetch("/api/b2b/discounts", {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify({ discounts: discounts }),
+      })
+        .then(jsonOrError)
+        .then(function () {
+          flashMsg(msg, true, "✓ Descuentos guardados");
+          loadB2bDiscounts();
+        })
+        .catch(function (err) {
+          flashMsg(msg, false, err.message);
+        });
+    });
+
+    document.getElementById("b2b-generate-password").addEventListener("click", function () {
+      document.getElementById("b2b-new-password").value = generateB2bPassword();
+    });
+
+    document.getElementById("b2b-account-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var form = e.target;
+      var msg = document.getElementById("b2b-account-msg");
+      fetch("/api/b2b/accounts", {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          company_name: document.getElementById("b2b-new-company").value,
+          tax_id: document.getElementById("b2b-new-taxid").value,
+          contact_name: document.getElementById("b2b-new-contact").value,
+          phone: document.getElementById("b2b-new-phone").value,
+          email: document.getElementById("b2b-new-email").value,
+          password: document.getElementById("b2b-new-password").value,
+        }),
+      })
+        .then(jsonOrError)
+        .then(function (data) {
+          flashMsg(
+            msg,
+            true,
+            "✓ Cuenta creada. Envía a " + data.account.company_name +
+              " su email y su contraseña para entrar en /profesionales.",
+          );
+          form.reset();
+          loadB2bAccounts();
+        })
+        .catch(function (err) {
+          flashMsg(msg, false, err.message);
+        });
+    });
+  }
+
   function initProductos() {
     // loadShopFront() loads the config and facets first, then paints the
     // catalogue list — the stars need to know what is already pinned before the
@@ -2574,9 +2905,13 @@ document.addEventListener("DOMContentLoaded", function () {
     loadSyncStatus();
     loadFichas();
     loadFichasLog(false);
+    loadB2bSettings();
+    loadB2bDiscounts();
+    loadB2bAccounts();
 
     if (productosInitialized) return;
     productosInitialized = true;
+    initB2bActions();
     initFichasActions();
     initFichasLog();
     initShopFrontActions();

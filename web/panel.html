@@ -1393,6 +1393,7 @@
               <button class="productos-tab active" data-productos-tab="catalogo">Catálogo</button>
               <button class="productos-tab" data-productos-tab="portada">Portada</button>
               <button class="productos-tab" data-productos-tab="pedidos">Pedidos</button>
+              <button class="productos-tab" data-productos-tab="b2b">Profesionales</button>
               <button class="productos-tab" data-productos-tab="fichas">Fichas</button>
               <button class="productos-tab" data-productos-tab="sync">Sincronización</button>
             </div>
@@ -1443,6 +1444,94 @@
             <!-- TAB: PEDIDOS -->
             <div class="productos-tab-panel" id="productos-pedidos">
               <div id="productos-reservations-list"></div>
+            </div>
+
+            <!-- TAB: PROFESIONALES (B2B) -->
+            <div class="productos-tab-panel" id="productos-b2b">
+              <div class="misite-block">
+                <h3>Área de profesionales</h3>
+                <p class="misite-hint">
+                  Las empresas a las que des de alta entran en tu web desde
+                  <strong>/profesionales</strong> y, mientras tienen la sesión
+                  iniciada, ven en todo el catálogo sus precios con el descuento
+                  de cada categoría. Sus reservas se registran a esos precios.
+                  Desactivado, la página de acceso desaparece de tu web.
+                </p>
+                <label class="shop-block-toggle">
+                  <input type="checkbox" id="b2b-enabled-input" />
+                  <span>Activar el área de profesionales</span>
+                </label>
+                <div class="form-group">
+                  <label for="b2b-default-pct-input">Descuento general (%)</label>
+                  <input type="number" id="b2b-default-pct-input" min="0" max="99.99" step="0.01" placeholder="0" />
+                  <p class="misite-hint">
+                    Se aplica a las categorías a las que no pongas un descuento
+                    propio. Déjalo en 0 si solo quieres descontar categorías concretas.
+                  </p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center">
+                  <button class="btn-primary-sm" id="b2b-settings-save">Guardar</button>
+                  <span id="b2b-settings-msg" style="font-size: 0.8125rem" hidden></span>
+                </div>
+              </div>
+
+              <div class="misite-block b2b-wide-block">
+                <h3>Descuentos por categoría</h3>
+                <p class="misite-hint">
+                  El porcentaje se descuenta del precio de venta al público (IVA
+                  incluido). Deja la casilla vacía para que la categoría use el
+                  descuento general, o pon 0 para que no tenga ninguno.
+                </p>
+                <div class="productos-catalog-toolbar">
+                  <input type="search" id="b2b-category-search" placeholder="Buscar categoría…" aria-label="Buscar categoría" />
+                  <button class="btn-primary-sm" id="b2b-discounts-save">Guardar descuentos</button>
+                  <span id="b2b-discounts-msg" style="font-size: 0.8125rem" hidden></span>
+                </div>
+                <div id="b2b-discounts-list" class="b2b-discounts-list"></div>
+              </div>
+
+              <div class="misite-block b2b-wide-block">
+                <h3>Cuentas de empresa</h3>
+                <p class="misite-hint">
+                  Da de alta a cada empresa con un email y una contraseña, y
+                  envíaselos tú. Si desactivas una cuenta, deja de ver los precios
+                  profesionales en ese mismo momento.
+                </p>
+                <form id="b2b-account-form" class="b2b-account-form">
+                  <div class="form-group">
+                    <label for="b2b-new-company">Empresa *</label>
+                    <input type="text" id="b2b-new-company" required />
+                  </div>
+                  <div class="form-group">
+                    <label for="b2b-new-taxid">CIF / NIF</label>
+                    <input type="text" id="b2b-new-taxid" />
+                  </div>
+                  <div class="form-group">
+                    <label for="b2b-new-contact">Persona de contacto</label>
+                    <input type="text" id="b2b-new-contact" />
+                  </div>
+                  <div class="form-group">
+                    <label for="b2b-new-phone">Teléfono</label>
+                    <input type="tel" id="b2b-new-phone" />
+                  </div>
+                  <div class="form-group">
+                    <label for="b2b-new-email">Email de acceso *</label>
+                    <input type="email" id="b2b-new-email" required autocomplete="off" />
+                  </div>
+                  <div class="form-group">
+                    <label for="b2b-new-password">Contraseña * (mínimo 8 caracteres)</label>
+                    <div style="display: flex; gap: 0.5rem">
+                      <input type="text" id="b2b-new-password" required minlength="8" autocomplete="new-password" />
+                      <button type="button" class="btn-ghost-sm" id="b2b-generate-password">Generar</button>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 1rem; align-items: center; grid-column: 1 / -1">
+                    <button type="submit" class="btn-primary-sm">Crear cuenta</button>
+                    <span id="b2b-account-msg" style="font-size: 0.8125rem" hidden></span>
+                  </div>
+                </form>
+                <div id="b2b-accounts-list" style="margin-top: 1.5rem"></div>
+              </div>
             </div>
 
             <!-- TAB: FICHAS -->
@@ -2283,6 +2372,70 @@
         align-items: center;
         gap: 0.5rem;
         font-size: 0.875rem;
+      }
+      /* PROFESIONALES (B2B) */
+      .b2b-wide-block {
+        max-width: 760px;
+        margin-top: 2rem;
+      }
+      .b2b-discounts-list {
+        max-height: 28rem;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+      }
+      .b2b-discount-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.875rem;
+      }
+      .b2b-discount-row:last-child {
+        border-bottom: 0;
+      }
+      .b2b-discount-name {
+        flex: 1;
+        min-width: 0;
+        color: var(--text-primary);
+      }
+      .b2b-discount-count {
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
+      .b2b-discount-row input {
+        width: 6rem;
+        padding: 0.375rem 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--bg-base);
+        color: var(--text-primary);
+        text-align: right;
+      }
+      .b2b-discount-row input.is-dirty {
+        border-color: var(--accent);
+      }
+      .b2b-account-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+        gap: 0 1rem;
+      }
+      .b2b-account-form .form-group input {
+        font-size: 0.9375rem;
+        padding: 0.5rem 0.75rem;
+      }
+      .b2b-account-form .form-group label {
+        display: block;
+        margin-bottom: 0.25rem;
+        font-size: 0.8125rem;
+      }
+      .b2b-account-form .form-group {
+        margin-bottom: 1rem;
+      }
+      .b2b-account-inactive {
+        opacity: 0.6;
       }
     </style>
 

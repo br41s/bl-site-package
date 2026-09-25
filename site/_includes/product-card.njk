@@ -4,7 +4,7 @@
   </a>
   <div class="product-card-body">
     <h2><a href="/productos/{{ product.slug }}">{{ product.name }}</a></h2>
-    <span class="product-price">{{ product.priceDisplay }}<span class="price-vat-note">IVA incluido</span></span>
+    <span class="product-price" data-price-cents="{{ product.price_cents }}" data-category="{{ product.category }}"><span class="product-price-amount">{{ product.priceDisplay }}</span><span class="price-vat-note">IVA incluido</span></span>
     {%- if not product.inStock %}
     <span class="product-stock-badge out">Agotado</span>
     {%- endif %}
@@ -15,6 +15,7 @@
       data-sku="{{ product.sku }}"
       data-name="{{ product.name }}"
       data-price-cents="{{ product.price_cents }}"
+      data-category="{{ product.category }}"
       {%- if not product.inStock %} disabled{% endif %}
     >Añadir</button>
   </div>
