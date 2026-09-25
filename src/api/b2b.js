@@ -125,22 +125,37 @@ export function resolveB2bAccount(req) {
 
 // ── Pricing ──────────────────────────────────────────────────────────────────
 
-export function getDefaultDiscountPct() {
-  const value = Number(getConfig("b2b_default_discount_pct"));
-  return Number.isFinite(value) && value >= 0 && value < 100 ? value : 0;
+// A percentage we are willing to price with. Every stored value is checked
+// against this on READ, not only when the API writes it: parsePct guards the
+// endpoint, but a row can arrive some other way (a migration, a hand edit),
+// the REAL column happily stores text, and a NaN unit price does not produce
+// a wrong total — it fails the NOT NULL insert inside an async handler and the
+// customer's checkout hangs with no response at all.
+function isValidPct(value) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value < 100;
 }
 
+export function getDefaultDiscountPct() {
+  const value = Number(getConfig("b2b_default_discount_pct"));
+  return isValidPct(value) ? value : 0;
+}
+
+// A malformed row is skipped, so its category falls back to the general
+// discount — the same as having no row at all.
 export function getCategoryDiscounts() {
   const map = {};
   for (const row of db.prepare("SELECT category, discount_pct FROM b2b_category_discounts").all()) {
-    map[row.category] = row.discount_pct;
+    if (isValidPct(row.discount_pct)) map[row.category] = row.discount_pct;
   }
   return map;
 }
 
 // Same arithmetic as b2bPriceCents in web/cart.js — the two must agree to the
-// cent, or the cart shows one total and the reservation records another.
+// cent, or the cart shows one total and the reservation records another. The
+// guard is the last line of defence: an unusable discount means retail, never
+// a NaN or negative price.
 export function b2bPriceCents(priceCents, discountPct) {
+  if (!isValidPct(discountPct)) return priceCents;
   return Math.round((priceCents * (100 - discountPct)) / 100);
 }
 

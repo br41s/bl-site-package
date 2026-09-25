@@ -105,6 +105,12 @@ describe("B2B pricing arithmetic", () => {
     assert.equal(b2bPriceCents(1999, 0), 1999);
   });
 
+  test("an unusable discount prices at retail, never NaN or below zero", () => {
+    for (const bad of [NaN, Infinity, -5, 100, 150, "20", null, undefined]) {
+      assert.equal(b2bPriceCents(1000, bad), 1000, String(bad));
+    }
+  });
+
   test("passwords are hashed, and verify only against themselves", () => {
     const stored = hashPassword("secreto-123");
     assert.ok(stored.startsWith("scrypt:"));
@@ -259,6 +265,34 @@ describe("reservations are priced for whoever places them", () => {
       ["B2", 2000],
       ["C3", 450],
     ]);
+  });
+
+  // parsePct guards the API, but nothing stops a row being written some other
+  // way (a migration, a hand edit, a future import). The REAL column does not
+  // reject text, and a value outside 0–100 is a negative or inflated price.
+  // Pricing must never trust the table: a bad row is ignored and the category
+  // falls back to the general discount.
+  test("a malformed stored discount falls back to the general one, never a NaN total", async () => {
+    db.exec("DELETE FROM b2b_category_discounts");
+    for (const [category, bad] of [["Cuadernos", "abc"], ["Bolígrafos", 150]]) {
+      db.prepare("INSERT INTO b2b_category_discounts (category, discount_pct) VALUES (?, ?)").run(category, bad);
+    }
+    seedAccount();
+    const { cookie } = await login();
+
+    const res = await reserve(items, { Cookie: cookie });
+    assert.equal(res.status, 201);
+    const data = await res.json();
+    // General −10 % on all three: 2 × 900 + 1800 + 450
+    assert.equal(data.total_cents, 1800 + 1800 + 450);
+    const lines = db
+      .prepare("SELECT unit_price_cents FROM reservation_items WHERE reservation_id = ?")
+      .all(data.id);
+    assert.ok(lines.every((l) => Number.isInteger(l.unit_price_cents) && l.unit_price_cents > 0));
+
+    // The same rows must not reach the storefront either.
+    const me = await (await api("/api/b2b/me", { headers: { Cookie: cookie } })).json();
+    assert.deepEqual(me.discounts, {});
   });
 
   test("a deactivated account pays retail even with a live cookie", async () => {

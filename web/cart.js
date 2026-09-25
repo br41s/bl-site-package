@@ -61,6 +61,9 @@ function b2bDiscountFor(category) {
 // Same arithmetic as b2bPriceCents in src/api/b2b.js, which is what the
 // reservation is actually charged at — keep the two identical.
 function b2bPriceCents(priceCents, discountPct) {
+  if (typeof discountPct !== "number" || !Number.isFinite(discountPct) || discountPct < 0 || discountPct >= 100) {
+    return priceCents;
+  }
   return Math.round((priceCents * (100 - discountPct)) / 100);
 }
 
@@ -483,9 +486,15 @@ function prefillCheckoutFromB2b() {
   var form = document.getElementById("checkout-form");
   if (!form || !b2b) return;
   var a = b2b.account;
-  if (!form.customer_name.value) form.customer_name.value = a.contact_name || a.company_name;
-  if (!form.customer_email.value) form.customer_email.value = a.email;
-  if (!form.customer_phone.value && a.phone) form.customer_phone.value = a.phone;
+  // Each field is optional: a template that drops one must not throw here,
+  // or the rest of the B2B init after this call never runs.
+  function fill(name, value) {
+    var field = form.elements.namedItem(name);
+    if (field && !field.value && value) field.value = value;
+  }
+  fill("customer_name", a.contact_name || a.company_name);
+  fill("customer_email", a.email);
+  fill("customer_phone", a.phone);
 }
 
 function initCartPage() {
