@@ -23,6 +23,7 @@ El agente usa por defecto `openai/gpt-oss-20b:free`, un modelo gratuito de OpenR
 - Blog
 - Catálogo y ficha de producto (solo con catálogo conectado)
 - Carrito y reserva de recogida (solo con catálogo conectado)
+- Área de profesionales (`/profesionales`): acceso de empresas con precios propios sin IVA (opcional, solo con catálogo conectado)
 - Legales: privacidad, condiciones y uso de IA
 
 ## Contenido de las páginas (Markdown)
@@ -55,6 +56,7 @@ Modelo de campos por página:
 - Bandeja de mensajes enviados desde el formulario de contacto.
 - Catálogo: visibilidad por producto, reservas, fichas propias y estado de la sincronización.
 - Portada de la tienda: bloques de merchandising sobre el catálogo, automáticos o curados a mano.
+- Profesionales (B2B): cuentas de empresa y descuento por categoría, con un descuento general de respaldo.
 - Reseteo completo desde Ajustes para volver al onboarding.
 
 ## Catálogo (opcional)
@@ -75,6 +77,25 @@ reordenan solos cada día sin ninguna tarea añadida, y un bloque sin contenido 
 renderiza. Desde el panel el cliente los activa, retitula, reordena y, en tres de ellos,
 puede pasar a elegir a mano. Ver `src/content/shop-blocks.js` (registro de bloques y claves
 de config) y `site/_data/shopBlocks.js` (las consultas).
+
+## Área de profesionales (B2B, opcional)
+
+Desactivada de fábrica (`b2b_enabled`); se activa en Productos → Profesionales. El cliente da
+de alta a cada empresa (no hay registro público) y define un descuento por categoría del
+catálogo, más un descuento general para las categorías sin uno propio. La empresa entra en
+`/profesionales` y ve en todo el catálogo su precio **sin IVA**: el precio público menos el
+descuento, menos el IVA.
+
+- **Las páginas estáticas no cambian.** Llevan el precio público; `web/cart.js` lo reescribe
+  para una empresa con sesión a partir de `GET /api/b2b/me`. El precio que se cobra lo
+  recalcula el servidor en `POST /api/reservations`, nunca lo toma del navegador.
+- **Reservas sin IVA.** Una reserva de empresa guarda precios y total sin IVA
+  (`vat_included = 0`) y el IVA aparte en `vat_cents`; las demás siguen con IVA incluido.
+- **El IVA es el tipo único del 21 %** que aplica la sincronización. Si algún día el feed se
+  sincroniza con tipos distintos por producto, el cálculo B2B tiene que pasar a ser por
+  producto también (ver `B2B_VAT_RATE` en `src/api/b2b.js`).
+- **La sesión de empresa nunca sirve para entrar al panel**: va en una cookie httpOnly firmada
+  con una clave derivada, no con `jwt_secret`.
 
 ## Variables de entorno
 
@@ -105,20 +126,20 @@ bl-site-package/
 ├── site/                   # Fuente de las páginas (Nunjucks) → build a _site/
 │   ├── index.njk  quienes-somos.njk  servicios.njk  contacto.njk
 │   ├── blog.njk  blog-post.njk
-│   ├── productos.njk  producto.njk  carrito.njk
+│   ├── productos.njk  producto.njk  carrito.njk  profesionales.njk
 │   ├── privacidad.njk  condiciones.njk  uso-de-ia.njk
 │   ├── sitemap.njk  robots.njk
 │   └── _data/              # Datos de build leídos de SQLite (NO poner tests aquí)
 ├── src/
 │   ├── server.js           # Entry point Express
-│   ├── api/                # auth, blog, chat, contact, setup, site,
+│   ├── api/                # auth, blog, chat, contact, setup, site, b2b,
 │   │                       # products, product-content, reservations, sync, knowledge
 │   ├── build/              # Reconstrucción Eleventy en segundo plano
 │   ├── content/            # Formato y saneado de contenido
 │   ├── db/database.js      # SQLite: esquema + migraciones aditivas
 │   ├── mail/mailer.js      # Única vía de envío SMTP
 │   ├── media/              # Optimización de imágenes y limpieza de uploads
-│   ├── middleware/         # JWT y rate limiting
+│   ├── middleware/         # JWT, rate limiting y errores de rutas async (asyncHandler)
 │   └── sync/liderpapel/    # Adaptador del feed del distribuidor
 ├── web/                    # Servido tal cual: panel, wizard, CSS y JS del sitio
 │   ├── panel.html  panel.js  style-panel.css

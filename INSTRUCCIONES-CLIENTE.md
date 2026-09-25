@@ -150,9 +150,9 @@ Cuando terminas, pulsa **Guardar portada**. Los cambios aparecen en tu web en un
 
 #### La pestaña Profesionales
 
-Sirve para que tus clientes de empresa (colegios, oficinas, comercios…) vean en tu web **sus propios precios**, con el descuento que tú decidas para cada categoría de productos.
+Sirve para que tus clientes de empresa (colegios, oficinas, comercios…) vean en tu web **sus propios precios, sin IVA**, con el descuento que tú decidas para cada categoría de productos.
 
-**Cómo funciona para la empresa.** Tú le das de alta una cuenta con un email y una contraseña. La empresa entra desde **Área de profesionales**, en el pie de tu web (la dirección es `tudominio.com/profesionales`), y a partir de ahí ve en todo el catálogo su precio profesional **sin IVA**, junto al precio normal sin IVA tachado. Sus reservas se hacen a ese precio: en la pestaña Pedidos verás qué empresa la ha hecho y el total sin IVA y con IVA. Los visitantes normales siguen viendo los precios de siempre.
+**Cómo funciona para la empresa.** Tú le das de alta una cuenta con un email y una contraseña. La empresa entra desde **Área de profesionales**, en el pie de tu web (la dirección es `tudominio.com/profesionales`), y a partir de ahí ve en todo el catálogo su precio profesional **sin IVA** y, si tiene descuento, el precio normal sin IVA tachado al lado. Sus reservas se hacen a ese precio: en la pestaña Pedidos, y en el email de aviso si lo tienes configurado, verás qué empresa la ha hecho y el total sin IVA y con IVA. Los visitantes normales siguen viendo los precios de siempre.
 
 **1. Activa el área.** Marca *Activar el área de profesionales* y pulsa **Guardar**. En unos segundos aparece el enlace en tu web. Si la desactivas, la página de acceso desaparece y nadie ve precios profesionales.
 
