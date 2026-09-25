@@ -1,0 +1,38 @@
+---
+layout: base.njk
+navActive: profesionales
+title: "Área de profesionales"
+description: "Acceso para empresas: consulta tus precios profesionales en todo el catálogo."
+eleventyExcludeFromCollections: true
+---
+{#-
+  B2B sign-in. Everything on this page is driven by web/cart.js (initB2bPage):
+  the static HTML ships both states hidden and the script shows the one that
+  applies once it knows whether a session exists. The session itself is an
+  httpOnly cookie set by POST /api/b2b/login — no token is ever visible here.
+-#}
+<main class="site-page"><div class="site-page-inner">
+  <h1 class="reveal">Área de profesionales</h1>
+  <p class="site-page-subtitle reveal">Precios especiales para empresas y profesionales.</p>
+
+  <div id="b2b-page">
+    <form id="b2b-login-form" class="site-contact-form" hidden>
+      <h2>Accede a tu cuenta</h2>
+      <p class="site-page-desc">Con tu cuenta de empresa verás tus precios profesionales en todo el catálogo y tus reservas se harán a esos precios.</p>
+      <input type="email" name="email" placeholder="Email" autocomplete="username" required>
+      <input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required>
+      <button type="submit" class="site-btn">Entrar</button>
+      <p id="b2b-login-error" class="b2b-login-error" role="alert" hidden></p>
+      <p class="site-page-desc">¿Todavía no tienes cuenta? <a href="/contacto">Contacta con nosotros</a> y te damos de alta.</p>
+    </form>
+
+    <div id="b2b-account" class="b2b-account" hidden>
+      <h2>Hola, <span id="b2b-account-company"></span></h2>
+      <p class="site-page-desc">Has iniciado sesión. En todo el catálogo ya ves tus precios profesionales, y tus reservas se harán a esos precios.</p>
+      <p><a href="/productos" class="site-btn">Ir al catálogo</a></p>
+      <p><button type="button" id="b2b-logout-btn" class="b2b-logout-btn">Cerrar sesión</button></p>
+    </div>
+
+    <noscript><p class="site-page-desc">Necesitas JavaScript activado para acceder a tu cuenta de empresa.</p></noscript>
+  </div>
+</div></main>

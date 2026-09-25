@@ -36,7 +36,7 @@ eleventyComputed:
       {%- if product.category %}
       <span class="product-detail-category">{{ product.category }}</span>
       {%- endif %}
-      <span class="product-price product-detail-price">{{ product.priceDisplay }}<span class="price-vat-note">IVA incluido</span></span>
+      <span class="product-price product-detail-price" data-price-cents="{{ product.price_cents }}" data-category="{{ product.category }}"><span class="product-price-amount">{{ product.priceDisplay }}</span><span class="price-vat-note">IVA incluido</span></span>
       {%- if not product.inStock %}
       <span class="product-stock-badge out">Agotado</span>
       {%- endif %}
@@ -88,6 +88,7 @@ eleventyComputed:
           data-sku="{{ product.sku }}"
           data-name="{{ product.name }}"
           data-price-cents="{{ product.price_cents }}"
+          data-category="{{ product.category }}"
           data-qty-input="product-qty"
           {%- if not product.inStock %} disabled{% endif %}
         >Añadir al carrito</button>

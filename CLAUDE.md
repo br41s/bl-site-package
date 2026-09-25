@@ -104,6 +104,23 @@ Three consequences worth holding on to:
 - **Writes are partial.** An absent field means leave alone; present-but-empty means clear.
   Sending a field the caller never meant to change used to erase it.
 
+## B2B area (trade prices)
+
+Opt-in per deploy (`b2b_enabled`, default off; panel → Productos → Profesionales). The
+admin creates business accounts; they sign in at `/profesionales` and see a percentage off
+retail per catalogue category, with a general fallback. `src/api/b2b.js` holds all of it.
+
+- **The static pages keep the retail price.** `web/cart.js` rewrites prices for a
+  signed-in account from `GET /api/b2b/me`; `POST /api/reservations` re-prices server-side
+  from the session cookie. The browser's figures are display only. `b2bPriceCents` exists
+  in both files and must stay identical to the cent.
+- **The B2B session is never signed with `jwt_secret`** — it uses a key derived from it.
+  `requireAuth` and the inline checks in `products.js` / `blog.js` accept *any* token
+  signed with `jwt_secret` as a panel admin, so a B2B token signed with it would be a
+  panel login for every trade customer. `src/api/b2b.test.js` asserts this.
+- Discounts and the general % are written without `setConfig`: they are in no built page,
+  and a rebuild of ~14,500 pages for a discount change would be pure cost.
+
 ## Customer configuration
 
 Per-customer setup runs through `/setup` and the panel, not through code. Company name,

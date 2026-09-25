@@ -887,6 +887,35 @@ body.infographic-lightbox-open {
   font-weight: 400;
   color: var(--text-muted);
 }
+/* The retail price a signed-in B2B account sees struck through next to its
+   trade price. Inserted by web/cart.js (applyB2bPrices), never in the build. */
+.product-price-was {
+  margin-right: 0.5rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* ÁREA DE PROFESIONALES (/profesionales) */
+.b2b-login-error {
+  color: var(--accent);
+  font-size: 0.9375rem;
+}
+.b2b-account {
+  margin-top: 1.5rem;
+}
+.b2b-account p {
+  margin-top: 1rem;
+}
+.b2b-logout-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
 .product-stock-badge.out {
   font-size: 0.875rem;
   color: var(--text-muted);

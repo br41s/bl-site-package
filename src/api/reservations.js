@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import db, { getConfig } from "../db/database.js";
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
+import { resolveB2bAccount, b2bPricing, b2bUnitPriceCents } from "./b2b.js";
 
 const router = Router();
 
@@ -44,7 +45,10 @@ router.post("/", reservationLimiter, async (req, res) => {
   }
 
   // Recompute totals server-side from the current catalog — never trust
-  // client-sent prices.
+  // client-sent prices. A signed-in B2B account is priced at its trade price
+  // here, from its session cookie; the cart's own figures are display only.
+  const b2bAccount = resolveB2bAccount(req);
+  const pricing = b2bAccount ? b2bPricing() : null;
   const resolvedItems = [];
   for (const item of items) {
     const product = db.prepare("SELECT * FROM products WHERE sku = ? AND active = 1").get(item.sku);
@@ -58,7 +62,7 @@ router.post("/", reservationLimiter, async (req, res) => {
     resolvedItems.push({
       sku: product.sku,
       product_name: product.name,
-      unit_price_cents: product.price_cents,
+      unit_price_cents: pricing ? b2bUnitPriceCents(product, pricing) : product.price_cents,
       quantity,
     });
   }
@@ -67,9 +71,17 @@ router.post("/", reservationLimiter, async (req, res) => {
   const insertReservation = db.transaction(() => {
     const result = db
       .prepare(
-        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, total_cents) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, total_cents, b2b_account_id, b2b_company) VALUES (?, ?, ?, ?, ?, ?, ?)",
       )
-      .run(customer_name, customer_email, customer_phone, notes, total_cents);
+      .run(
+        customer_name,
+        customer_email,
+        customer_phone,
+        notes,
+        total_cents,
+        b2bAccount ? b2bAccount.id : null,
+        b2bAccount ? b2bAccount.company_name : null,
+      );
     const insertItem = db.prepare(
       "INSERT INTO reservation_items (reservation_id, sku, product_name, unit_price_cents, quantity) VALUES (?, ?, ?, ?, ?)",
     );
@@ -98,18 +110,21 @@ router.post("/", reservationLimiter, async (req, res) => {
       const itemsList = resolvedItems
         .map((i) => `- ${i.quantity} x ${i.product_name} (${(i.unit_price_cents / 100).toFixed(2)} €)`)
         .join("\n");
+      const b2bLine = b2bAccount
+        ? `Cuenta de empresa: ${b2bAccount.company_name}${b2bAccount.tax_id ? ` (${b2bAccount.tax_id})` : ""} — precios profesionales aplicados\n`
+        : "";
       await transporter.sendMail({
         from: `"${customer_name}" <${smtpUser}>`,
         to: notifyEmail,
-        subject: `Nueva reserva #${reservationId}`,
-        text: `Cliente: ${customer_name}\nEmail: ${customer_email}\nTeléfono: ${customer_phone}\n\nProductos:\n${itemsList}\n\nTotal: ${(total_cents / 100).toFixed(2)} €\n\nNotas: ${notes}`,
+        subject: `Nueva reserva #${reservationId}${b2bAccount ? ` (empresa: ${b2bAccount.company_name})` : ""}`,
+        text: `${b2bLine}Cliente: ${customer_name}\nEmail: ${customer_email}\nTeléfono: ${customer_phone}\n\nProductos:\n${itemsList}\n\nTotal: ${(total_cents / 100).toFixed(2)} €\n\nNotas: ${notes}`,
       });
     } catch (err) {
       console.error("Error enviando email de notificación de reserva:", err.message);
     }
   }
 
-  res.status(201).json({ success: true, id: reservationId, total_cents });
+  res.status(201).json({ success: true, id: reservationId, total_cents, b2b: Boolean(b2bAccount) });
 });
 
 // PUT /api/reservations/:id — status update

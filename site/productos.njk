@@ -37,8 +37,12 @@ eleventyComputed:
     <div class="product-grid" id="product-search-results" hidden></div>
     <p class="site-empty" id="product-search-empty" hidden>No se encontraron productos.</p>
 
-    <div class="b2b-banner reveal">
+    <div class="b2b-banner reveal" id="b2b-banner">
+      {%- if site.b2b_enabled == "1" %}
+      <p>¿Eres una empresa? <a href="/profesionales">Accede con tu cuenta</a> para ver tus precios profesionales, o <a href="/contacto">contacta con nosotros</a> para darte de alta.</p>
+      {%- else %}
       <p>¿Eres una empresa? <a href="/contacto">Contacta con nosotros</a> para darte de alta y acceder a precios B2B.</p>
+      {%- endif %}
     </div>
 
     {#-

@@ -69,6 +69,11 @@ export const PUBLIC_CONFIG_KEYS = [
   // embedded in the page. The paired secret key (turnstile_secret_key) is
   // deliberately NOT in this list; see src/turnstile.js.
   "turnstile_site_key",
+  // B2B area on/off ("1"/"0", default off). Public because the build needs it
+  // to decide whether /profesionales exists and whether the catalogue banner
+  // links to it. The discounts themselves are NOT public: they are served only
+  // to a signed-in B2B account (GET /api/b2b/me, src/api/b2b.js).
+  "b2b_enabled",
   // Shop landing blocks (the merchandising strip at the top of /productos/).
   // One flat key per setting, matching the page_* convention — the config
   // table has no list semantics and nothing else in it holds JSON.
@@ -366,6 +371,38 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_article_edits_status
     ON article_edits(status, article_id);
+
+  -- Business customers who see trade prices once signed in (src/api/b2b.js).
+  -- Created by the admin from the panel; there is no self-registration.
+  -- password_hash is scrypt ("scrypt:<salt>:<hash>", see hashPassword) — unlike
+  -- the panel password these belong to third parties and are never stored in
+  -- the clear.
+  CREATE TABLE IF NOT EXISTS b2b_accounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_name TEXT NOT NULL,
+    tax_id TEXT,
+    contact_name TEXT,
+    email TEXT UNIQUE NOT NULL,
+    phone TEXT,
+    password_hash TEXT NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1,
+    notes TEXT,
+    last_login_at TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Trade discount per catalogue category, as a percentage off the public
+  -- (VAT-included) price. Keyed by products.category verbatim — the feed's
+  -- category label — because that is the only category the catalogue has. A
+  -- category with no row falls back to the general discount (config key
+  -- b2b_default_discount_pct); a row with 0 means "no discount here", even if
+  -- the general one is higher.
+  CREATE TABLE IF NOT EXISTS b2b_category_discounts (
+    category TEXT PRIMARY KEY,
+    discount_pct REAL NOT NULL,
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // Additive migration for columns added after a client's DB was first
@@ -462,6 +499,11 @@ if (contentNeedingSearchText.length > 0) {
   });
   backfill(contentNeedingSearchText);
 }
+// Which B2B account placed a reservation, if any. company is a snapshot, not a
+// join: the account can be renamed or deleted later and the order must still
+// say who it was priced for.
+ensureColumn("reservations", "b2b_account_id", "INTEGER");
+ensureColumn("reservations", "b2b_company", "TEXT");
 ensureColumn("products", "gtin", "TEXT");
 ensureColumn("products", "mpn", "TEXT");
 ensureColumn("products", "brand", "TEXT");
@@ -512,6 +554,10 @@ seedConfigDefault("liderpapel_supplier_code", "");
 // src/sync/liderpapel/parse.js); a whole-number percentage, e.g. "40" = 40%.
 seedConfigDefault("liderpapel_margin_pct", "40");
 seedConfigDefault("whatsapp_bot_enabled", "0");
+// B2B area ships off: most clients have no trade customers, and on those the
+// /profesionales page and its links should simply not exist.
+seedConfigDefault("b2b_enabled", "0");
+seedConfigDefault("b2b_default_discount_pct", "0");
 
 // Shop landing blocks — seeded so a fresh deployment has a presentable
 // catalogue front page before anyone opens the panel. Titles are Spanish
