@@ -22,7 +22,8 @@
       "host": "plesk-passenger",
       "driver": "manual",
       "hermes_profile": "shoroban",
-      "password_env": "FLEET_PASSWORD_SHOROBAN_PROD"
+      "password_env": "FLEET_PASSWORD_SHOROBAN_PROD",
+      "automation_key_env": "FLEET_AUTOMATION_KEY_SHOROBAN_PROD"
     }
   ]
 }
