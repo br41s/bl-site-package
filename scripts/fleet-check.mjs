@@ -9,6 +9,14 @@
 // this repo. Without the env var the deployment is only checked for
 // availability.
 //
+// A deployment with Turnstile on (src/turnstile.js) refuses a login that has
+// not solved the challenge, which a script never can: that is a 400 from
+// /api/auth/login, not a wrong password. The server lets first-party
+// automation skip that one check — and only that one — when it sends
+// X-Automation-Key matching the deployment's RENTAL_AUTOMATION_KEY (see
+// src/api/auth.js). A deployment that needs it names the env var holding
+// that key in the optional `automation_key_env` field.
+//
 // "Latest" is the version in main's package.json (fetched from GitHub so a
 // stale local checkout cannot report a stale truth; falls back to the local
 // package.json offline). CI enforces the version bump on every PR to main,
@@ -19,6 +27,7 @@
 //
 // Usage:
 //   FLEET_PASSWORD_SHOROBAN_PROD=... node scripts/fleet-check.mjs
+//   (plus FLEET_AUTOMATION_KEY_SHOROBAN_PROD=... where Turnstile is on)
 
 import { readFileSync, appendFileSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -51,6 +60,12 @@ export function validateManifest(manifest) {
     }
     if (d?.role && !VALID_ROLES.includes(d.role)) {
       errors.push(`${where}: role "${d.role}" is not one of ${VALID_ROLES.join(", ")}`);
+    }
+    if (
+      d?.automation_key_env !== undefined &&
+      (typeof d.automation_key_env !== "string" || !d.automation_key_env.trim())
+    ) {
+      errors.push(`${where}: "automation_key_env", if present, must be a non-empty string`);
     }
     if (typeof d?.url === "string" && d.url.endsWith("/")) {
       errors.push(`${where}: url must not end in "/"`);
@@ -93,13 +108,48 @@ export function classify({ up, version, latest, hasCredentials }) {
 
 // --- HTTP -------------------------------------------------------------------
 
-async function fetchJson(url, options = {}) {
+// The error names the step and carries the server's own `error` text: a bare
+// "HTTP 400" once hid that a login was being refused by Turnstile, not by a
+// wrong password.
+async function fetchJson(url, options = {}, step = "") {
   const res = await fetch(url, {
     ...options,
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    let reason = "";
+    try {
+      reason = (await res.json())?.error || "";
+    } catch {}
+    const err = new Error(`${step ? step + " " : ""}HTTP ${res.status}${reason ? ` — ${reason}` : ""}`);
+    err.status = res.status;
+    err.step = step;
+    throw err;
+  }
   return res.json();
+}
+
+// Headers for the panel login. Pure, so it is testable without a network.
+export function loginHeaders(d, env = process.env) {
+  const headers = { "Content-Type": "application/json" };
+  const key = d.automation_key_env ? env[d.automation_key_env] || "" : "";
+  if (key) headers["X-Automation-Key"] = key;
+  return headers;
+}
+
+// What to tell the operator when reading the status failed. A 400 from the
+// login with no automation key sent is the Turnstile case, and the fix is an
+// env var, not a password — say so.
+export function unreadableDetail(err, d, env = process.env) {
+  const base = `status ilegible: ${err.message}`;
+  const keySent = Boolean(d.automation_key_env && env[d.automation_key_env]);
+  if (err.step === "login" && err.status === 400 && !keySent) {
+    const hint = d.automation_key_env
+      ? `define ${d.automation_key_env}`
+      : `añade "automation_key_env" a su entrada en fleet/manifest.json`;
+    return `${base.replace(/\.+$/, "")}. ¿Turnstile activo? El login necesita X-Automation-Key: ${hint}`;
+  }
+  return base;
 }
 
 export async function latestVersion(manifest) {
@@ -141,20 +191,26 @@ async function checkDeployment(d, latest) {
 
   if (result.up && password) {
     try {
-      const { token } = await fetchJson(d.url + "/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      const status = await fetchJson(d.url + "/api/site/status", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const { token } = await fetchJson(
+        d.url + "/api/auth/login",
+        {
+          method: "POST",
+          headers: loginHeaders(d),
+          body: JSON.stringify({ password }),
+        },
+        "login",
+      );
+      const status = await fetchJson(
+        d.url + "/api/site/status",
+        { headers: { Authorization: `Bearer ${token}` } },
+        "status",
+      );
       result.version = status.version ?? null;
       if (status.last_build_ok === false) {
         result.detail = "el último rebuild falló";
       }
     } catch (err) {
-      result.detail = `status ilegible: ${err.message}`;
+      result.detail = unreadableDetail(err, d);
     }
   }
 

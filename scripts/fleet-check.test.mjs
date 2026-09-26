@@ -9,6 +9,8 @@ import {
   classify,
   rolloutKey,
   newRolloutEntries,
+  loginHeaders,
+  unreadableDetail,
 } from "./fleet-check.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -61,6 +63,47 @@ test("missing fields and unknown role are named", () => {
   });
   assert.ok(errors.some((e) => e.includes('missing field "password_env"')));
   assert.ok(errors.some((e) => e.includes('role "prod"')));
+});
+
+test("automation_key_env is optional, but must be a non-empty string when present", () => {
+  assert.deepEqual(validateManifest({ deployments: [ref, entry()] }), []);
+  assert.deepEqual(
+    validateManifest({ deployments: [ref, entry({ automation_key_env: "FLEET_AUTOMATION_KEY_X" })] }),
+    [],
+  );
+  for (const bad of ["", "  ", 42]) {
+    const errors = validateManifest({ deployments: [ref, entry({ automation_key_env: bad })] });
+    assert.equal(errors.length, 1, String(bad));
+    assert.match(errors[0], /automation_key_env/);
+  }
+});
+
+// Turnstile-protected panels refuse a login that has not solved the
+// challenge; X-Automation-Key is how first-party automation skips that one
+// check (src/api/auth.js). Only sent when the deployment names the env var
+// AND it is set — never an empty header.
+test("loginHeaders: X-Automation-Key only when the named env var is set", () => {
+  const d = entry({ automation_key_env: "FLEET_AUTOMATION_KEY_X" });
+  assert.equal(loginHeaders(d, { FLEET_AUTOMATION_KEY_X: "k3y" })["X-Automation-Key"], "k3y");
+  assert.equal(loginHeaders(d, {})["X-Automation-Key"], undefined);
+  assert.equal(loginHeaders(entry(), { FLEET_AUTOMATION_KEY_X: "k3y" })["X-Automation-Key"], undefined);
+  assert.equal(loginHeaders(d, {})["Content-Type"], "application/json");
+});
+
+test("unreadableDetail: a login 400 without a key points at Turnstile and the fix", () => {
+  const err = Object.assign(new Error("login HTTP 400 — No se pudo verificar que no eres un robot."), {
+    step: "login",
+    status: 400,
+  });
+  const named = entry({ automation_key_env: "FLEET_AUTOMATION_KEY_X" });
+  assert.match(unreadableDetail(err, named, {}), /Turnstile.*define FLEET_AUTOMATION_KEY_X/);
+  assert.match(unreadableDetail(err, entry(), {}), /automation_key_env/);
+  assert.doesNotMatch(unreadableDetail(err, named, {}), /\.\./);
+  // With a key sent, a 400 is something else: no misleading hint.
+  assert.doesNotMatch(unreadableDetail(err, named, { FLEET_AUTOMATION_KEY_X: "k" }), /Turnstile/);
+  // Other failures keep the plain message.
+  const other = Object.assign(new Error("login HTTP 401 — Contraseña incorrecta"), { step: "login", status: 401 });
+  assert.equal(unreadableDetail(other, named, {}), "status ilegible: login HTTP 401 — Contraseña incorrecta");
 });
 
 test("exactly one reference deployment is required", () => {
