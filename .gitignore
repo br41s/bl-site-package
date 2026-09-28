@@ -25,3 +25,8 @@ fixtures/liderpapel/
 # not repo content — a client catalogue and a blank staging have nothing to
 # say to each other.
 .smoke-baselines/
+
+# Output of scripts/generate-client-pdf.mjs. Generated on demand for a
+# client delivery from whatever markdown source is current — never a repo
+# artifact, and would go stale the moment the source doc changes again.
+*.pdf

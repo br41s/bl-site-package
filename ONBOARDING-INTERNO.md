@@ -126,7 +126,7 @@ panel y el contacto (Cloudflare Turnstile)* de [`DEPLOY.md`](DEPLOY.md).
 - [ ] Si hay catálogo: mostrar Productos → Portada y explicar los dos avisos del paso 5c (lo más vendido necesita pedidos confirmados; novedades necesita una segunda sincronización)
 - [ ] Si se activó el área de profesionales: mostrar Productos → Profesionales (descuentos y alta de empresas) y recordar que las empresas ven y reservan **sin IVA**
 - [ ] Confirmar que el widget de Turnstile del paso 7 aparece en `/panel` y en `/contacto`
-- [ ] Entregar `INSTRUCCIONES-CLIENTE.md` (exportado a PDF)
+- [ ] Entregar `INSTRUCCIONES-CLIENTE.md` exportado a PDF: `npm run pdf -- INSTRUCCIONES-CLIENTE.md` (necesita Chrome/Chromium instalado; ver la cabecera del script para las variables si no lo encuentra solo)
 - [ ] Acordar canal de soporte (WhatsApp, email, etc.)
 
 ---
