@@ -1,12 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync, chmodSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import {
   BRAND,
   renderBodyHtml,
   renderHeaderTemplate,
   renderFooterTemplate,
   findChromium,
+  isExecutableBinary,
   needsNoSandbox,
+  parseArgs,
 } from './generate-client-pdf.mjs';
 
 // The pure HTML-rendering half of the pipeline runs everywhere node --test
@@ -49,6 +54,59 @@ test('renderFooterTemplate carries the date and Chrome\'s live page-number place
 test('findChromium returns null or an existing, executable path', () => {
   const found = findChromium();
   assert.ok(found === null || typeof found === 'string');
+});
+
+test('isExecutableBinary rejects a file that exists but does not run', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'bl-pdf-not-a-binary-'));
+  const fakeBinary = path.join(dir, 'not-really-chrome');
+  writeFileSync(fakeBinary, 'not a real binary');
+  chmodSync(fakeBinary, 0o644); // not executable
+  assert.equal(isExecutableBinary(fakeBinary), false);
+});
+
+test('findChromium skips a Playwright candidate that is not actually executable', () => {
+  const pwDir = mkdtempSync(path.join(tmpdir(), 'bl-pdf-pw-browsers-'));
+  const chromeDir = path.join(pwDir, 'chromium-999', 'chrome-linux');
+  mkdirSync(chromeDir, { recursive: true });
+  writeFileSync(path.join(chromeDir, 'chrome'), 'not a real binary');
+
+  const savedPdfChrome = process.env.PDF_CHROME_PATH;
+  const savedPwDir = process.env.PLAYWRIGHT_BROWSERS_PATH;
+  delete process.env.PDF_CHROME_PATH;
+  process.env.PLAYWRIGHT_BROWSERS_PATH = pwDir;
+  try {
+    // No real browser is reachable from this fixture dir or PATH in CI, so a
+    // fixed-but-fake candidate must be skipped rather than returned.
+    assert.notEqual(findChromium(), path.join(chromeDir, 'chrome'));
+  } finally {
+    if (savedPdfChrome === undefined) delete process.env.PDF_CHROME_PATH;
+    else process.env.PDF_CHROME_PATH = savedPdfChrome;
+    if (savedPwDir === undefined) delete process.env.PLAYWRIGHT_BROWSERS_PATH;
+    else process.env.PLAYWRIGHT_BROWSERS_PATH = savedPwDir;
+  }
+});
+
+test('parseArgs reads --out and --logo when both have values', () => {
+  const opts = parseArgs(['doc.md', '--out', 'salida.pdf', '--logo', 'logo.png']);
+  assert.equal(opts.input, 'doc.md');
+  assert.equal(opts.out, 'salida.pdf');
+  assert.equal(opts.logo, 'logo.png');
+  assert.equal(opts.error, undefined);
+});
+
+test('parseArgs errors instead of silently defaulting when --out has no value', () => {
+  const opts = parseArgs(['doc.md', '--out']);
+  assert.match(opts.error, /Falta el valor de --out/);
+});
+
+test('parseArgs errors when --out is immediately followed by another flag', () => {
+  const opts = parseArgs(['doc.md', '--out', '--logo', 'logo.png']);
+  assert.match(opts.error, /Falta el valor de --out/);
+});
+
+test('parseArgs errors when --logo has no value', () => {
+  const opts = parseArgs(['doc.md', '--logo']);
+  assert.match(opts.error, /Falta el valor de --logo/);
 });
 
 test('needsNoSandbox is forced on by PDF_NO_SANDBOX=1 regardless of uid', () => {

@@ -147,16 +147,29 @@ export function renderFooterTemplate({ dateText } = {}) {
 </div>`;
 }
 
+// `existsSync` alone isn't an executability check — a half-extracted
+// Playwright install (or a directory) would pass it and only fail later as
+// an opaque `spawn EACCES`, after we've already claimed to have found a
+// browser. Actually running --version is the only way to know it works.
+export function isExecutableBinary(candidate) {
+  try {
+    execFileSync(candidate, ['--version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function findChromium() {
   const envPath = process.env.PDF_CHROME_PATH;
-  if (envPath && existsSync(envPath)) return envPath;
+  if (envPath && isExecutableBinary(envPath)) return envPath;
 
   const pwDir = process.env.PLAYWRIGHT_BROWSERS_PATH;
   if (pwDir && existsSync(pwDir)) {
     for (const entry of readdirSync(pwDir)) {
       if (!entry.startsWith('chromium-')) continue;
       const candidate = path.join(pwDir, entry, 'chrome-linux', 'chrome');
-      if (existsSync(candidate)) return candidate;
+      if (isExecutableBinary(candidate)) return candidate;
     }
   }
 
@@ -168,12 +181,7 @@ export function findChromium() {
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   ];
   for (const bin of common) {
-    try {
-      execFileSync(bin, ['--version'], { stdio: 'ignore' });
-      return bin;
-    } catch {
-      // Not on PATH (or not this platform) — try the next candidate.
-    }
+    if (isExecutableBinary(bin)) return bin;
   }
   return null;
 }
@@ -310,22 +318,42 @@ async function printToPdf(chrome, htmlPath, { headerTemplate, footerTemplate }) 
   }
 }
 
-function parseArgs(argv) {
+const USAGE = 'Uso: node scripts/generate-client-pdf.mjs <doc.md> [--out salida.pdf] [--logo logo.png]';
+
+// A flag with no following value (or one that swallows the next flag, e.g.
+// `--out --logo x.png`) used to silently fall through to the default output
+// path instead of failing — `npm run pdf -- doc.md --out` would write to a
+// path the caller never asked for, with no error. Missing/invalid values are
+// reported as an error the caller has to see, not a guessed default.
+export function parseArgs(argv) {
   const [input, ...rest] = argv;
   const opts = { input, out: null, logo: null };
   for (let i = 0; i < rest.length; i++) {
-    if (rest[i] === '--out') opts.out = rest[++i];
-    else if (rest[i] === '--logo') opts.logo = rest[++i];
+    if (rest[i] === '--out' || rest[i] === '--logo') {
+      const key = rest[i] === '--out' ? 'out' : 'logo';
+      const value = rest[i + 1];
+      if (value === undefined || value.startsWith('--')) {
+        return { error: `Falta el valor de ${rest[i]}. ${USAGE}` };
+      }
+      opts[key] = value;
+      i++;
+    } else {
+      return { error: `Opción desconocida: ${rest[i]}. ${USAGE}` };
+    }
   }
   return opts;
 }
 
 async function main() {
-  const { input, out, logo } = parseArgs(process.argv.slice(2));
+  const parsed = parseArgs(process.argv.slice(2));
+  if (parsed.error) {
+    console.error(parsed.error);
+    process.exitCode = 1;
+    return;
+  }
+  const { input, out, logo } = parsed;
   if (!input) {
-    console.error(
-      'Uso: node scripts/generate-client-pdf.mjs <doc.md> [--out salida.pdf] [--logo logo.png]',
-    );
+    console.error(USAGE);
     process.exitCode = 1;
     return;
   }
