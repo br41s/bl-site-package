@@ -101,6 +101,18 @@ Avisa al cliente en la entrega de que **las empresas ven los precios sin IVA** y
 - [ ] Verificar que el dominio resuelve correctamente (esperar hasta 1h)
 - [ ] Verificar que HTTPS está activo
 
+### 7. Protección anti-spam (Turnstile) — obligatorio
+
+Ya no es algo que se activa solo si el cliente empieza a recibir spam: se configura en toda
+alta nueva, antes de la entrega. Pasos completos en la sección *Protección anti-spam del
+panel y el contacto (Cloudflare Turnstile)* de [`DEPLOY.md`](DEPLOY.md).
+
+- [ ] Widget creado en Cloudflare Turnstile para el dominio del cliente
+- [ ] Site key y secret key guardadas en el panel (o en variables de entorno)
+- [ ] `RENTAL_AUTOMATION_KEY` configurada y compartida con quien gestione Hermes
+- [ ] Entrada del despliegue en `fleet/manifest.json` actualizada con `automation_key_env`
+- [ ] Verificado: el widget aparece en `/panel` y en `/contacto`
+
 ---
 
 ## Entrega al cliente (30 minutos)
@@ -113,6 +125,7 @@ Avisa al cliente en la entrega de que **las empresas ven los precios sin IVA** y
 - [ ] Mostrar dónde ver los mensajes de contacto
 - [ ] Si hay catálogo: mostrar Productos → Portada y explicar los dos avisos del paso 5c (lo más vendido necesita pedidos confirmados; novedades necesita una segunda sincronización)
 - [ ] Si se activó el área de profesionales: mostrar Productos → Profesionales (descuentos y alta de empresas) y recordar que las empresas ven y reservan **sin IVA**
+- [ ] Confirmar que el widget de Turnstile del paso 7 aparece en `/panel` y en `/contacto`
 - [ ] Entregar `INSTRUCCIONES-CLIENTE.md` (exportado a PDF)
 - [ ] Acordar canal de soporte (WhatsApp, email, etc.)
 

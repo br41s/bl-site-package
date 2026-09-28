@@ -18,7 +18,7 @@ fichero, así que un manifest roto no llega a `main`.
 | `driver` | Cómo se despliega una actualización: `manual` (runbook), `zeabur` (API). Hoy solo se usa para saber qué instrucciones generar. |
 | `hermes_profile` | Slug del perfil de hermes dedicado a este despliegue (el que crea `provision_bl_client.py`). |
 | `password_env` | Variable de entorno de la que `scripts/fleet-check.mjs` lee la contraseña del panel. Nunca se guardan credenciales en este repo. |
-| `automation_key_env` | *Opcional.* Variable de entorno con la clave de automatización del despliegue (el valor de su `RENTAL_AUTOMATION_KEY`). Solo hace falta si el login del panel tiene **Turnstile** activo: sin ella el login responde 400 y el despliegue sale como «estado ilegible». La clave solo evita el captcha, nunca la contraseña. |
+| `automation_key_env` | Variable de entorno con la clave de automatización del despliegue (el valor de su `RENTAL_AUTOMATION_KEY`). Hace falta si el login del panel tiene **Turnstile** activo: sin ella el login responde 400 y el despliegue sale como «estado ilegible». La clave solo evita el captcha, nunca la contraseña. Turnstile es obligatorio en toda alta nueva desde el setup (ver `DEPLOY.md`), así que a partir de ahora este campo se rellena para todo despliegue nuevo; los despliegues anteriores a ese cambio pueden seguir sin él si nunca activaron Turnstile. |
 
 ## Comprobar la flota
 
@@ -26,8 +26,9 @@ fichero, así que un manifest roto no llega a `main`.
 FLEET_PASSWORD_SHOROBAN_PROD=... FLEET_AUTOMATION_KEY_SHOROBAN_PROD=... node scripts/fleet-check.mjs
 ```
 
-La clave de automatización solo es necesaria en despliegues con Turnstile en el login
-(Shoroban lo tiene). Es el mismo valor que su variable `RENTAL_AUTOMATION_KEY` en el
+La clave de automatización solo es necesaria en despliegues con Turnstile en el login —
+a partir de ahora, cualquier alta nueva (ver `DEPLOY.md`); antes de ese cambio, solo
+Shoroban lo tenía. Es el mismo valor que su variable `RENTAL_AUTOMATION_KEY` en el
 servidor, la que ya usan los agentes de hermes para publicar.
 
 Para cada despliegue del manifest comprueba que responde y, si hay credenciales
