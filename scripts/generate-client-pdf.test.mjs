@@ -6,6 +6,7 @@ import {
   renderHeaderTemplate,
   renderFooterTemplate,
   findChromium,
+  needsNoSandbox,
 } from './generate-client-pdf.mjs';
 
 // The pure HTML-rendering half of the pipeline runs everywhere node --test
@@ -18,6 +19,13 @@ test('renderBodyHtml pulls the title from the first heading and renders the body
   assert.match(html, /<title>Título de prueba<\/title>/);
   assert.match(html, /<h1>Título de prueba<\/h1>/);
   assert.match(html, /<strong>negrita<\/strong>/);
+});
+
+test('renderBodyHtml escapes a title that could break out of <title>', () => {
+  const html = renderBodyHtml('# </title><script>alert(1)</script>\n\nCuerpo.');
+  const head = html.slice(0, html.indexOf('</head>'));
+  assert.doesNotMatch(head, /<script>alert\(1\)<\/script>/);
+  assert.match(head, /<title>&lt;\/title&gt;&lt;script&gt;alert\(1\)&lt;\/script&gt;<\/title>/);
 });
 
 test('renderHeaderTemplate falls back to a text wordmark without a logo', () => {
@@ -41,4 +49,26 @@ test('renderFooterTemplate carries the date and Chrome\'s live page-number place
 test('findChromium returns null or an existing, executable path', () => {
   const found = findChromium();
   assert.ok(found === null || typeof found === 'string');
+});
+
+test('needsNoSandbox is forced on by PDF_NO_SANDBOX=1 regardless of uid', () => {
+  const before = process.env.PDF_NO_SANDBOX;
+  process.env.PDF_NO_SANDBOX = '1';
+  try {
+    assert.equal(needsNoSandbox(), true);
+  } finally {
+    if (before === undefined) delete process.env.PDF_NO_SANDBOX;
+    else process.env.PDF_NO_SANDBOX = before;
+  }
+});
+
+test('needsNoSandbox without the override just reflects root, not forced true', () => {
+  const before = process.env.PDF_NO_SANDBOX;
+  delete process.env.PDF_NO_SANDBOX;
+  try {
+    const expected = typeof process.getuid === 'function' && process.getuid() === 0;
+    assert.equal(needsNoSandbox(), expected);
+  } finally {
+    if (before !== undefined) process.env.PDF_NO_SANDBOX = before;
+  }
 });

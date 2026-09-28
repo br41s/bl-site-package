@@ -56,6 +56,19 @@ function docTitleOf(markdownSource, title) {
   return title || (markdownSource.match(/^#\s+(.+)$/m)?.[1] ?? 'Documento');
 }
 
+// The title comes from the doc's own first heading (or --title), interpolated
+// straight into <title> — a heading containing `</title><script>` or similar
+// would otherwise break out of the head and inject into the page Chrome
+// prints. Chrome's own header/footer .title placeholder is safe on its own
+// (it reads document.title as text), but this raw spot in the HTML is not.
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 export function renderBodyHtml(markdownSource, { title } = {}) {
   const body = marked.parse(markdownSource);
   const docTitle = docTitleOf(markdownSource, title);
@@ -64,7 +77,7 @@ export function renderBodyHtml(markdownSource, { title } = {}) {
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>${docTitle}</title>
+<title>${escapeHtml(docTitle)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
@@ -165,13 +178,23 @@ export function findChromium() {
   return null;
 }
 
+// Chrome refuses to start as root without --no-sandbox (the common case in a
+// container/CI runner), but the flag drops OS-level sandbox protection —
+// unwanted on the ordinary desktop machine this script is meant to run on
+// (see the file header: whoever is prepping a client delivery). Root is
+// detected automatically; PDF_NO_SANDBOX=1 forces it for any other
+// containerised environment where root detection doesn't apply.
+export function needsNoSandbox() {
+  return process.env.PDF_NO_SANDBOX === '1' || (typeof process.getuid === 'function' && process.getuid() === 0);
+}
+
 function launchChrome(chromePath, userDataDir) {
   const proc = spawn(
     chromePath,
     [
       '--headless=new',
       '--disable-gpu',
-      '--no-sandbox',
+      ...(needsNoSandbox() ? ['--no-sandbox'] : []),
       '--remote-debugging-port=0',
       `--user-data-dir=${userDataDir}`,
       'about:blank',
