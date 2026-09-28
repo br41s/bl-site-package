@@ -10,7 +10,8 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "build": "eleventy",
-    "test": "node --test"
+    "test": "node --test",
+    "pdf": "node scripts/generate-client-pdf.mjs"
   },
   "dependencies": {
     "@11ty/eleventy": "^3.1.6",

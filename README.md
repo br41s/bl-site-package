@@ -148,5 +148,6 @@ bl-site-package/
 └── scripts/
     ├── smoke-test.sh       # Comprobación post-deploy (ver RELEASE.md)
     ├── check-version-bump.mjs
-    └── fleet-check.mjs
+    ├── fleet-check.mjs
+    └── generate-client-pdf.mjs  # INSTRUCCIONES-CLIENTE.md → PDF con marca BigLobster
 ```
