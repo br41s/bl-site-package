@@ -182,6 +182,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     if (name === "misite") initMiSite();
     if (name === "productos") initProductos();
+    if (name === "profesionales") initProfesionales();
   }
 
   navItems.forEach(function (btn) {
@@ -2902,6 +2903,18 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  var profesionalesInitialized = false;
+
+  function initProfesionales() {
+    loadB2bSettings();
+    loadB2bDiscounts();
+    loadB2bAccounts();
+
+    if (profesionalesInitialized) return;
+    profesionalesInitialized = true;
+    initB2bActions();
+  }
+
   function initProductos() {
     // loadShopFront() loads the config and facets first, then paints the
     // catalogue list — the stars need to know what is already pinned before the
@@ -2911,13 +2924,9 @@ document.addEventListener("DOMContentLoaded", function () {
     loadSyncStatus();
     loadFichas();
     loadFichasLog(false);
-    loadB2bSettings();
-    loadB2bDiscounts();
-    loadB2bAccounts();
 
     if (productosInitialized) return;
     productosInitialized = true;
-    initB2bActions();
     initFichasActions();
     initFichasLog();
     initShopFrontActions();

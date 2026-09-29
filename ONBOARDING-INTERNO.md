@@ -87,7 +87,7 @@ Dos cosas que **hay que avisarle al cliente en la entrega**, o las reportará co
 
 Viene **desactivada**. Solo se activa si el cliente lo ha pedido en el formulario (apartado 1d).
 
-- [ ] Panel → Productos → **Profesionales** → marcar *Activar el área de profesionales* y **Guardar**
+- [ ] Panel → **Profesionales** → marcar *Activar el área de profesionales* y **Guardar**
 - [ ] Poner el **descuento general** y los **descuentos por categoría** que haya pedido el cliente (vacío = usa el general; 0 = sin descuento en esa categoría)
 - [ ] Si nos ha pasado empresas para dar de alta: crear cada cuenta (empresa, CIF, email y contraseña con **Generar**). Las credenciales se las envía **el cliente** a sus empresas: la web no manda ningún email
 - [ ] Verificar en la web pública que el pie muestra *Área de profesionales* y que, entrando con una cuenta de prueba, el catálogo enseña los precios **sin IVA**. Borrar la cuenta de prueba después
@@ -124,7 +124,7 @@ panel y el contacto (Cloudflare Turnstile)* de [`DEPLOY.md`](DEPLOY.md).
 - [ ] Mostrar cómo usar el agente de chat
 - [ ] Mostrar dónde ver los mensajes de contacto
 - [ ] Si hay catálogo: mostrar Productos → Portada y explicar los dos avisos del paso 5c (lo más vendido necesita pedidos confirmados; novedades necesita una segunda sincronización)
-- [ ] Si se activó el área de profesionales: mostrar Productos → Profesionales (descuentos y alta de empresas) y recordar que las empresas ven y reservan **sin IVA**
+- [ ] Si se activó el área de profesionales: mostrar la sección Profesionales (descuentos y alta de empresas) y recordar que las empresas ven y reservan **sin IVA**
 - [ ] Confirmar que el widget de Turnstile del paso 7 aparece en `/panel` y en `/contacto`
 - [ ] Entregar `INSTRUCCIONES-CLIENTE.md` exportado a PDF: `npm run pdf -- INSTRUCCIONES-CLIENTE.md` (necesita Chrome/Chromium instalado; ver la cabecera del script para las variables si no lo encuentra solo)
 - [ ] Acordar canal de soporte (WhatsApp, email, etc.)

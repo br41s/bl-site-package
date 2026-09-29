@@ -80,7 +80,7 @@ de config) y `site/_data/shopBlocks.js` (las consultas).
 
 ## Área de profesionales (B2B, opcional)
 
-Desactivada de fábrica (`b2b_enabled`); se activa en Productos → Profesionales. El cliente da
+Desactivada de fábrica (`b2b_enabled`); se activa en la sección Profesionales del panel. El cliente da
 de alta a cada empresa (no hay registro público) y define un descuento por categoría del
 catálogo, más un descuento general para las categorías sin uno propio. La empresa entra en
 `/profesionales` y ve en todo el catálogo su precio **sin IVA**: el precio público menos el
