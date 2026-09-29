@@ -225,6 +225,8 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .catch(function () {});
 
+    refreshProfesionalesNav();
+
     fetch("/api/blog/posts")
       .then(function (r) {
         return r.json();
@@ -2904,6 +2906,24 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   var profesionalesInitialized = false;
+
+  // Profesionales is hidden on a deploy with no catalogue: trade prices are a
+  // discount off it, so there is nothing to set up. It stays visible while the
+  // area is switched on, so an active area can always be reached and turned
+  // off. Productos is never hidden — its Sincronización tab is where a
+  // catalogue gets connected in the first place.
+  function refreshProfesionalesNav() {
+    fetch("/api/b2b/settings", { headers: authHeaders() })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (data) {
+        if (!data) return;
+        var item = document.querySelector('[data-section="profesionales"]');
+        item.closest("li").hidden = !data.has_catalog && !data.enabled;
+      })
+      .catch(function () {});
+  }
 
   function initProfesionales() {
     loadB2bSettings();

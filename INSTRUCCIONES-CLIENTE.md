@@ -102,7 +102,7 @@ Ejemplos de lo que puedes pedirle:
 
 ### Productos
 
-> Esta sección solo aparece si tu web tiene catálogo conectado con tu proveedor.
+> Esta sección solo se usa si tu web tiene catálogo conectado con tu proveedor.
 
 Tu catálogo se sincroniza solo con tu proveedor: los precios, el stock y las altas y bajas de artículos llegan sin que tengas que tocar nada. Tiene cinco pestañas:
 
@@ -162,7 +162,7 @@ Si no hay nada en la lista, no tienes que hacer nada.
 
 ### Profesionales
 
-> Esta sección solo tiene sentido si tu web tiene catálogo conectado con tu proveedor.
+> Esta sección solo aparece si tu web tiene catálogo conectado con tu proveedor.
 
 
 Sirve para que tus clientes de empresa (colegios, oficinas, comercios…) vean en tu web **sus propios precios, sin IVA**, con el descuento que tú decidas para cada categoría de productos.

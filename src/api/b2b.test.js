@@ -396,6 +396,13 @@ describe("panel: settings", () => {
     assert.equal(bad.status, 400);
     assert.equal(getConfig("b2b_default_discount_pct"), "7.5");
   });
+
+  test("reports whether the deploy has a catalogue", async () => {
+    const read = async () => (await (await api("/api/b2b/settings", { headers: ADMIN })).json()).has_catalog;
+    assert.equal(await read(), false);
+    seedProduct("A1", "Cuadernos", 1210);
+    assert.equal(await read(), true);
+  });
 });
 
 describe("panel: accounts", () => {
