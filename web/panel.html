@@ -312,6 +312,22 @@
               </button>
             </li>
             <li>
+              <button class="sidebar-nav-item" data-section="profesionales">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="2" y="7" width="20" height="14" rx="2" />
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+                <span>Profesionales</span>
+              </button>
+            </li>
+            <li>
               <button class="sidebar-nav-item" data-section="servicio">
                 <svg
                   width="20"
@@ -1393,7 +1409,6 @@
               <button class="productos-tab active" data-productos-tab="catalogo">Catálogo</button>
               <button class="productos-tab" data-productos-tab="portada">Portada</button>
               <button class="productos-tab" data-productos-tab="pedidos">Pedidos</button>
-              <button class="productos-tab" data-productos-tab="b2b">Profesionales</button>
               <button class="productos-tab" data-productos-tab="fichas">Fichas</button>
               <button class="productos-tab" data-productos-tab="sync">Sincronización</button>
             </div>
@@ -1444,95 +1459,6 @@
             <!-- TAB: PEDIDOS -->
             <div class="productos-tab-panel" id="productos-pedidos">
               <div id="productos-reservations-list"></div>
-            </div>
-
-            <!-- TAB: PROFESIONALES (B2B) -->
-            <div class="productos-tab-panel" id="productos-b2b">
-              <div class="misite-block">
-                <h3>Área de profesionales</h3>
-                <p class="misite-hint">
-                  Las empresas a las que des de alta entran en tu web desde
-                  <strong>/profesionales</strong> y, mientras tienen la sesión
-                  iniciada, ven en todo el catálogo sus precios con el descuento
-                  de cada categoría. Sus reservas se registran a esos precios.
-                  Desactivado, la página de acceso desaparece de tu web.
-                </p>
-                <label class="shop-block-toggle">
-                  <input type="checkbox" id="b2b-enabled-input" />
-                  <span>Activar el área de profesionales</span>
-                </label>
-                <div class="form-group">
-                  <label for="b2b-default-pct-input">Descuento general (%)</label>
-                  <input type="number" id="b2b-default-pct-input" min="0" max="99.99" step="0.01" placeholder="0" />
-                  <p class="misite-hint">
-                    Se aplica a las categorías a las que no pongas un descuento
-                    propio. Déjalo en 0 si solo quieres descontar categorías concretas.
-                  </p>
-                </div>
-                <div style="display: flex; gap: 1rem; align-items: center">
-                  <button class="btn-primary-sm" id="b2b-settings-save">Guardar</button>
-                  <span id="b2b-settings-msg" style="font-size: 0.8125rem" hidden></span>
-                </div>
-              </div>
-
-              <div class="misite-block b2b-wide-block">
-                <h3>Descuentos por categoría</h3>
-                <p class="misite-hint">
-                  El porcentaje se descuenta del precio de venta al público, y
-                  las empresas ven el resultado <strong>sin IVA</strong>. Deja la
-                  casilla vacía para que la categoría use el descuento general, o
-                  pon 0 para que no tenga ninguno.
-                </p>
-                <div class="productos-catalog-toolbar">
-                  <input type="search" id="b2b-category-search" placeholder="Buscar categoría…" aria-label="Buscar categoría" />
-                  <button class="btn-primary-sm" id="b2b-discounts-save">Guardar descuentos</button>
-                  <span id="b2b-discounts-msg" style="font-size: 0.8125rem" hidden></span>
-                </div>
-                <div id="b2b-discounts-list" class="b2b-discounts-list"></div>
-              </div>
-
-              <div class="misite-block b2b-wide-block">
-                <h3>Cuentas de empresa</h3>
-                <p class="misite-hint">
-                  Da de alta a cada empresa con un email y una contraseña, y
-                  envíaselos tú. Si desactivas una cuenta, deja de ver los precios
-                  profesionales en ese mismo momento.
-                </p>
-                <form id="b2b-account-form" class="b2b-account-form">
-                  <div class="form-group">
-                    <label for="b2b-new-company">Empresa *</label>
-                    <input type="text" id="b2b-new-company" required />
-                  </div>
-                  <div class="form-group">
-                    <label for="b2b-new-taxid">CIF / NIF</label>
-                    <input type="text" id="b2b-new-taxid" />
-                  </div>
-                  <div class="form-group">
-                    <label for="b2b-new-contact">Persona de contacto</label>
-                    <input type="text" id="b2b-new-contact" />
-                  </div>
-                  <div class="form-group">
-                    <label for="b2b-new-phone">Teléfono</label>
-                    <input type="tel" id="b2b-new-phone" />
-                  </div>
-                  <div class="form-group">
-                    <label for="b2b-new-email">Email de acceso *</label>
-                    <input type="email" id="b2b-new-email" required autocomplete="off" />
-                  </div>
-                  <div class="form-group">
-                    <label for="b2b-new-password">Contraseña * (mínimo 8 caracteres)</label>
-                    <div style="display: flex; gap: 0.5rem">
-                      <input type="text" id="b2b-new-password" required minlength="8" autocomplete="new-password" />
-                      <button type="button" class="btn-ghost-sm" id="b2b-generate-password">Generar</button>
-                    </div>
-                  </div>
-                  <div style="display: flex; gap: 1rem; align-items: center; grid-column: 1 / -1">
-                    <button type="submit" class="btn-primary-sm">Crear cuenta</button>
-                    <span id="b2b-account-msg" style="font-size: 0.8125rem" hidden></span>
-                  </div>
-                </form>
-                <div id="b2b-accounts-list" style="margin-top: 1.5rem"></div>
-              </div>
             </div>
 
             <!-- TAB: FICHAS -->
@@ -1613,6 +1539,100 @@
                   </div>
                 </form>
               </div>
+            </div>
+          </section>
+
+          <!-- PROFESIONALES -->
+          <section data-panel="profesionales" class="panel-section" hidden>
+            <div class="section-header">
+              <h2>Profesionales</h2>
+              <p>Área de acceso para empresas: sus cuentas y los precios con descuento que ven en el catálogo.</p>
+            </div>
+
+            <div class="misite-block">
+              <h3>Área de profesionales</h3>
+              <p class="misite-hint">
+                Las empresas a las que des de alta entran en tu web desde
+                <strong>/profesionales</strong> y, mientras tienen la sesión
+                iniciada, ven en todo el catálogo sus precios con el descuento
+                de cada categoría. Sus reservas se registran a esos precios.
+                Desactivado, la página de acceso desaparece de tu web.
+              </p>
+              <label class="shop-block-toggle">
+                <input type="checkbox" id="b2b-enabled-input" />
+                <span>Activar el área de profesionales</span>
+              </label>
+              <div class="form-group">
+                <label for="b2b-default-pct-input">Descuento general (%)</label>
+                <input type="number" id="b2b-default-pct-input" min="0" max="99.99" step="0.01" placeholder="0" />
+                <p class="misite-hint">
+                  Se aplica a las categorías a las que no pongas un descuento
+                  propio. Déjalo en 0 si solo quieres descontar categorías concretas.
+                </p>
+              </div>
+              <div style="display: flex; gap: 1rem; align-items: center">
+                <button class="btn-primary-sm" id="b2b-settings-save">Guardar</button>
+                <span id="b2b-settings-msg" style="font-size: 0.8125rem" hidden></span>
+              </div>
+            </div>
+
+            <div class="misite-block b2b-wide-block">
+              <h3>Descuentos por categoría</h3>
+              <p class="misite-hint">
+                El porcentaje se descuenta del precio de venta al público, y
+                las empresas ven el resultado <strong>sin IVA</strong>. Deja la
+                casilla vacía para que la categoría use el descuento general, o
+                pon 0 para que no tenga ninguno.
+              </p>
+              <div class="productos-catalog-toolbar">
+                <input type="search" id="b2b-category-search" placeholder="Buscar categoría…" aria-label="Buscar categoría" />
+                <button class="btn-primary-sm" id="b2b-discounts-save">Guardar descuentos</button>
+                <span id="b2b-discounts-msg" style="font-size: 0.8125rem" hidden></span>
+              </div>
+              <div id="b2b-discounts-list" class="b2b-discounts-list"></div>
+            </div>
+
+            <div class="misite-block b2b-wide-block">
+              <h3>Cuentas de empresa</h3>
+              <p class="misite-hint">
+                Da de alta a cada empresa con un email y una contraseña, y
+                envíaselos tú. Si desactivas una cuenta, deja de ver los precios
+                profesionales en ese mismo momento.
+              </p>
+              <form id="b2b-account-form" class="b2b-account-form">
+                <div class="form-group">
+                  <label for="b2b-new-company">Empresa *</label>
+                  <input type="text" id="b2b-new-company" required />
+                </div>
+                <div class="form-group">
+                  <label for="b2b-new-taxid">CIF / NIF</label>
+                  <input type="text" id="b2b-new-taxid" />
+                </div>
+                <div class="form-group">
+                  <label for="b2b-new-contact">Persona de contacto</label>
+                  <input type="text" id="b2b-new-contact" />
+                </div>
+                <div class="form-group">
+                  <label for="b2b-new-phone">Teléfono</label>
+                  <input type="tel" id="b2b-new-phone" />
+                </div>
+                <div class="form-group">
+                  <label for="b2b-new-email">Email de acceso *</label>
+                  <input type="email" id="b2b-new-email" required autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label for="b2b-new-password">Contraseña * (mínimo 8 caracteres)</label>
+                  <div style="display: flex; gap: 0.5rem">
+                    <input type="text" id="b2b-new-password" required minlength="8" autocomplete="new-password" />
+                    <button type="button" class="btn-ghost-sm" id="b2b-generate-password">Generar</button>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center; grid-column: 1 / -1">
+                  <button type="submit" class="btn-primary-sm">Crear cuenta</button>
+                  <span id="b2b-account-msg" style="font-size: 0.8125rem" hidden></span>
+                </div>
+              </form>
+              <div id="b2b-accounts-list" style="margin-top: 1.5rem"></div>
             </div>
           </section>
 

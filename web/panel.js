@@ -182,6 +182,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     if (name === "misite") initMiSite();
     if (name === "productos") initProductos();
+    if (name === "profesionales") initProfesionales();
   }
 
   navItems.forEach(function (btn) {
@@ -223,6 +224,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       })
       .catch(function () {});
+
+    refreshProfesionalesNav();
 
     fetch("/api/blog/posts")
       .then(function (r) {
@@ -2902,6 +2905,36 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  var profesionalesInitialized = false;
+
+  // Profesionales is hidden on a deploy with no catalogue: trade prices are a
+  // discount off it, so there is nothing to set up. It stays visible while the
+  // area is switched on, so an active area can always be reached and turned
+  // off. Productos is never hidden — its Sincronización tab is where a
+  // catalogue gets connected in the first place.
+  function refreshProfesionalesNav() {
+    fetch("/api/b2b/settings", { headers: authHeaders() })
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .then(function (data) {
+        if (!data) return;
+        var item = document.querySelector('[data-section="profesionales"]');
+        item.closest("li").hidden = !data.has_catalog && !data.enabled;
+      })
+      .catch(function () {});
+  }
+
+  function initProfesionales() {
+    loadB2bSettings();
+    loadB2bDiscounts();
+    loadB2bAccounts();
+
+    if (profesionalesInitialized) return;
+    profesionalesInitialized = true;
+    initB2bActions();
+  }
+
   function initProductos() {
     // loadShopFront() loads the config and facets first, then paints the
     // catalogue list — the stars need to know what is already pinned before the
@@ -2911,13 +2944,9 @@ document.addEventListener("DOMContentLoaded", function () {
     loadSyncStatus();
     loadFichas();
     loadFichasLog(false);
-    loadB2bSettings();
-    loadB2bDiscounts();
-    loadB2bAccounts();
 
     if (productosInitialized) return;
     productosInitialized = true;
-    initB2bActions();
     initFichasActions();
     initFichasLog();
     initShopFrontActions();

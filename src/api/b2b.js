@@ -274,8 +274,16 @@ router.get("/me", (req, res) => {
 
 // ── Panel: settings ──────────────────────────────────────────────────────────
 
+// has_catalog tells the panel whether to show the Profesionales section at
+// all: trade prices are a discount off the catalogue, so a deploy that has
+// never synced a product has nothing to offer a business account.
 router.get("/settings", requireAuth, (req, res) => {
-  res.json({ enabled: isB2bEnabled(), default_pct: getDefaultDiscountPct() });
+  const hasCatalog = Boolean(db.prepare("SELECT 1 FROM products LIMIT 1").get());
+  res.json({
+    enabled: isB2bEnabled(),
+    default_pct: getDefaultDiscountPct(),
+    has_catalog: hasCatalog,
+  });
 });
 
 // PUT /api/b2b/settings — { enabled?, default_pct? }; absent = leave alone.

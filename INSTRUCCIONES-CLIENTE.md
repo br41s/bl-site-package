@@ -102,14 +102,13 @@ Ejemplos de lo que puedes pedirle:
 
 ### Productos
 
-> Esta sección solo aparece si tu web tiene catálogo conectado con tu proveedor.
+> Esta sección solo se usa si tu web tiene catálogo conectado con tu proveedor.
 
-Tu catálogo se sincroniza solo con tu proveedor: los precios, el stock y las altas y bajas de artículos llegan sin que tengas que tocar nada. Tiene seis pestañas:
+Tu catálogo se sincroniza solo con tu proveedor: los precios, el stock y las altas y bajas de artículos llegan sin que tengas que tocar nada. Tiene cinco pestañas:
 
 - **Catálogo** — todos tus productos. Puedes ocultar cualquiera de la web con el interruptor *Visible en la tienda*, y ese ajuste no se pierde en la siguiente sincronización. La estrella ★ de cada producto sirve para destacarlo en la portada de la tienda (ver más abajo). Como el catálogo es muy grande, se muestran los primeros 100 productos: usa el buscador de arriba para encontrar uno concreto.
 - **Portada** — ver más abajo.
 - **Pedidos** — las reservas que te dejan los clientes desde la web. Las que hace una empresa con su cuenta de profesional aparecen marcadas con su nombre.
-- **Profesionales** — cuentas de empresa y precios especiales para ellas (ver más abajo).
 - **Fichas** — ver más abajo.
 - **Sincronización** — cuándo se actualizó el catálogo por última vez y los datos de conexión con tu proveedor.
 
@@ -148,11 +147,27 @@ Cuando terminas, pulsa **Guardar portada**. Los cambios aparecen en tu web en un
 
 > **«Novedades» me muestra productos que no son nuevos.** También es normal los primeros días: cuando se carga el catálogo por primera vez, todos los artículos entran a la vez, así que ninguno es más nuevo que otro. A partir de la segunda sincronización el bloque ya tiene sentido.
 
-#### La pestaña Profesionales
+#### La pestaña Fichas
+
+Muchos productos llegan del proveedor sin descripción, o con una muy pobre. Cuando reescribimos una ficha, **pasa a ser tuya**: la sincronización diaria ya no la sobrescribe. El precio y el stock siguen actualizándose con normalidad.
+
+Arriba verás cuántas fichas son ya tuyas y cuántas necesitan que las mires.
+
+**Necesitan revisión** significa que tu proveedor ha cambiado los datos en los que se basaba una ficha que ya está publicada — por ejemplo, ha corregido una capacidad o una medida. Tu texto **sigue en la web**; solo te avisamos para que decidas:
+
+- **Sigue siendo correcta** — el texto sigue valiendo. La ficha sale de la lista y no se te vuelve a avisar por ese cambio.
+- **Volver al texto de Liderpapel** — la web vuelve a mostrar la descripción del proveedor. Tu versión no se borra, se guarda por si quieres recuperarla.
+
+Si no hay nada en la lista, no tienes que hacer nada.
+
+### Profesionales
+
+> Esta sección solo aparece si tu web tiene catálogo conectado con tu proveedor.
+
 
 Sirve para que tus clientes de empresa (colegios, oficinas, comercios…) vean en tu web **sus propios precios, sin IVA**, con el descuento que tú decidas para cada categoría de productos.
 
-**Cómo funciona para la empresa.** Tú le das de alta una cuenta con un email y una contraseña. La empresa entra desde **Área de profesionales**, en el pie de tu web (la dirección es `tudominio.com/profesionales`), y a partir de ahí ve en todo el catálogo su precio profesional **sin IVA** y, si tiene descuento, el precio normal sin IVA tachado al lado. Sus reservas se hacen a ese precio: en la pestaña Pedidos, y en el email de aviso si lo tienes configurado, verás qué empresa la ha hecho y el total sin IVA y con IVA. Los visitantes normales siguen viendo los precios de siempre.
+**Cómo funciona para la empresa.** Tú le das de alta una cuenta con un email y una contraseña. La empresa entra desde **Área de profesionales**, en el pie de tu web (la dirección es `tudominio.com/profesionales`), y a partir de ahí ve en todo el catálogo su precio profesional **sin IVA** y, si tiene descuento, el precio normal sin IVA tachado al lado. Sus reservas se hacen a ese precio: en Productos → Pedidos, y en el email de aviso si lo tienes configurado, verás qué empresa la ha hecho y el total sin IVA y con IVA. Los visitantes normales siguen viendo los precios de siempre.
 
 **1. Activa el área.** Marca *Activar el área de profesionales* y pulsa **Guardar**. En unos segundos aparece el enlace en tu web. Si la desactivas, la página de acceso desaparece y nadie ve precios profesionales.
 
@@ -172,19 +187,6 @@ En la lista de cuentas puedes:
 - **Eliminar** la cuenta. Sus reservas anteriores se conservan.
 
 > **Una empresa quiere darse de alta.** Las empresas no pueden registrarse solas: en la página de acceso se les invita a contactar contigo, y eres tú quien decide a quién das de alta.
-
-#### La pestaña Fichas
-
-Muchos productos llegan del proveedor sin descripción, o con una muy pobre. Cuando reescribimos una ficha, **pasa a ser tuya**: la sincronización diaria ya no la sobrescribe. El precio y el stock siguen actualizándose con normalidad.
-
-Arriba verás cuántas fichas son ya tuyas y cuántas necesitan que las mires.
-
-**Necesitan revisión** significa que tu proveedor ha cambiado los datos en los que se basaba una ficha que ya está publicada — por ejemplo, ha corregido una capacidad o una medida. Tu texto **sigue en la web**; solo te avisamos para que decidas:
-
-- **Sigue siendo correcta** — el texto sigue valiendo. La ficha sale de la lista y no se te vuelve a avisar por ese cambio.
-- **Volver al texto de Liderpapel** — la web vuelve a mostrar la descripción del proveedor. Tu versión no se borra, se guarda por si quieres recuperarla.
-
-Si no hay nada en la lista, no tienes que hacer nada.
 
 ### Mensajes
 

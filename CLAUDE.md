@@ -112,7 +112,7 @@ Three consequences worth holding on to:
 
 ## B2B area (trade prices)
 
-Opt-in per deploy (`b2b_enabled`, default off; panel → Productos → Profesionales). The
+Opt-in per deploy (`b2b_enabled`, default off; panel → Profesionales). The
 admin creates business accounts; they sign in at `/profesionales` and see a percentage off
 retail per catalogue category, with a general fallback. `src/api/b2b.js` holds all of it.
 
