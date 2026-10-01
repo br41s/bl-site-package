@@ -2700,9 +2700,11 @@ document.addEventListener("DOMContentLoaded", function () {
       a.email,
       a.contact_name,
       a.phone,
-      a.last_login_at
-        ? "último acceso " + new Date(a.last_login_at.replace(" ", "T") + "Z").toLocaleString("es-ES")
-        : "nunca ha entrado",
+      !a.has_password
+        ? "pendiente de elegir contraseña"
+        : a.last_login_at
+          ? "último acceso " + new Date(a.last_login_at.replace(" ", "T") + "Z").toLocaleString("es-ES")
+          : "nunca ha entrado",
     ]
       .filter(Boolean)
       .join(" · ");
@@ -2730,16 +2732,18 @@ document.addEventListener("DOMContentLoaded", function () {
     var passBtn = document.createElement("button");
     passBtn.type = "button";
     passBtn.className = "btn-ghost-sm";
-    passBtn.textContent = "Nueva contraseña";
+    passBtn.textContent = "Enviar enlace de acceso";
     passBtn.addEventListener("click", function () {
-      var password = prompt(
-        "Nueva contraseña para " + a.company_name + " (mínimo 8 caracteres):",
-        generateB2bPassword(),
-      );
-      // An empty password is ignored by the server (partial update), so it
-      // must not be reported as a change here either.
-      if (password === null || !password.trim()) return;
-      updateB2bAccount(a.id, { password: password }, "Contraseña cambiada. Envíasela a la empresa.");
+      if (!confirm("¿Enviar a " + a.email + " un enlace para elegir una contraseña nueva?")) return;
+      fetch("/api/b2b/accounts/" + a.id + "/password-link", { method: "POST", headers: authHeaders() })
+        .then(jsonOrError)
+        .then(function (data) {
+          if (data.password_link.sent) alert("✓ Enlace enviado a " + a.email + ".");
+          else showUnsentPasswordLink(data.password_link);
+        })
+        .catch(function (err) {
+          alert(err.message);
+        });
     });
 
     var delBtn = document.createElement("button");
@@ -2764,17 +2768,14 @@ document.addEventListener("DOMContentLoaded", function () {
     return row;
   }
 
-  function updateB2bAccount(id, payload, okMessage) {
+  function updateB2bAccount(id, payload) {
     fetch("/api/b2b/accounts/" + id, {
       method: "PUT",
       headers: authHeaders(),
       body: JSON.stringify(payload),
     })
       .then(jsonOrError)
-      .then(function () {
-        if (okMessage) alert(okMessage);
-        loadB2bAccounts();
-      })
+      .then(loadB2bAccounts)
       .catch(function (err) {
         alert(err.message);
         loadB2bAccounts();
@@ -2802,16 +2803,10 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch(function () {});
   }
 
-  // No 0/O/1/l/I: the admin reads this to a customer over the phone.
-  function generateB2bPassword() {
-    var alphabet = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    var bytes = new Uint32Array(12);
-    crypto.getRandomValues(bytes);
-    return Array.prototype.map
-      .call(bytes, function (n) {
-        return alphabet[n % alphabet.length];
-      })
-      .join("");
+  // The email did not go out (no SMTP, or it failed): hand the admin the link
+  // in a prompt, where it can be selected and copied, to pass on by hand.
+  function showUnsentPasswordLink(link) {
+    prompt(link.error + " Copia este enlace y envíaselo tú (caduca en 7 días):", link.url);
   }
 
   function initB2bActions() {
@@ -2868,10 +2863,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    document.getElementById("b2b-generate-password").addEventListener("click", function () {
-      document.getElementById("b2b-new-password").value = generateB2bPassword();
-    });
-
     document.getElementById("b2b-account-form").addEventListener("submit", function (e) {
       e.preventDefault();
       var form = e.target;
@@ -2885,17 +2876,21 @@ document.addEventListener("DOMContentLoaded", function () {
           contact_name: document.getElementById("b2b-new-contact").value,
           phone: document.getElementById("b2b-new-phone").value,
           email: document.getElementById("b2b-new-email").value,
-          password: document.getElementById("b2b-new-password").value,
         }),
       })
         .then(jsonOrError)
         .then(function (data) {
-          flashMsg(
-            msg,
-            true,
-            "✓ Cuenta creada. Envía a " + data.account.company_name +
-              " su email y su contraseña para entrar en /profesionales.",
-          );
+          if (data.password_link.sent) {
+            flashMsg(
+              msg,
+              true,
+              "✓ Cuenta creada. Hemos enviado a " + data.account.email +
+                " un enlace para que elija su contraseña.",
+            );
+          } else {
+            flashMsg(msg, false, "Cuenta creada, pero el email no se ha enviado.");
+            showUnsentPasswordLink(data.password_link);
+          }
           form.reset();
           loadB2bAccounts();
         })
