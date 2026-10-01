@@ -35,6 +35,10 @@ const REAL = [
   "WhatsApp: +34 600 123 456",
   "Mira este vídeo https://www.youtube.com/watch?v=dQwAbCdEfGhIjKlMnOp y dime",
   "Usamos SharePoint, QuickBooks y HubSpot en la oficina",
+  // Un identificador pegado: 22 letras y 4 cambios de caja, pero hecho de
+  // palabras reales, asi que sus vocales lo separan del ruido aleatorio.
+  "El error sale en getUserByIdAndTenantId al guardar",
+  "Tenemos QuickBooksOnlineAdvanced y queremos conectarlo",
 ];
 
 for (const text of SPAM) {
@@ -57,6 +61,10 @@ test("gibberish: real names pass", () => {
 
 test("spamReason: clean submission returns ''", () => {
   assert.equal(spamReason({ name: "Ana", message: REAL[0], raw: { website: "" } }), "");
+});
+
+test("spamReason: gibberish reason names the matched run, for the log", () => {
+  assert.equal(spamReason({ name: "Ana", message: `hola ${SPAM[0]}`, raw: {} }), `gibberish "${SPAM[0]}"`);
 });
 
 test("spamReason: honeypot wins before content checks", () => {

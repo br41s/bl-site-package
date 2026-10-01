@@ -82,7 +82,10 @@ router.post("/", contactLimiter, asyncHandler(async (req, res) => {
   if (reason) {
     // Same response as a real submission: an error would tell the bot what to
     // change. Not stored either, so the panel inbox stays clean.
-    console.log(`Contacto descartado como spam (${reason}), sin guardar ni enviar`);
+    // WARN with the sender: if the filter ever drops a real customer, this line
+    // is the only trace of them. JSON.stringify because email is unvalidated
+    // here and a newline in it could forge a log line.
+    console.warn(`Contacto descartado como spam (${reason}) de ${JSON.stringify(email)}, sin guardar ni enviar`);
     return res.json({ success: true });
   }
 

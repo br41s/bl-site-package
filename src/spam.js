@@ -13,19 +13,36 @@ export function isHoneypotFilled(body) {
   return typeof body[HONEYPOT_FIELD] === "string" && body[HONEYPOT_FIELD].trim() !== "";
 }
 
-// Two signals together, never one: a run of 12+ Latin letters (so Thai,
+// Returns the run of letters that looks like the random filler this campaign
+// sends ("OYKeUKxWqbn…"), or "" when there is none. Must never reject a real
+// customer: short messages, other languages, typos, a pasted identifier like
+// "getUserByIdAndTenantId".
+// Three signals together, never one: a run of 12+ Latin letters (so Thai,
 // Chinese and accented words never qualify) that switches lower→upper case 3+
-// times inside itself. Real words switch at most once ("WhatsApp"). URLs are
-// stripped first because shortlink and video IDs look exactly like this.
-export function looksLikeGibberish(text) {
+// times inside itself (real words switch at most once: "WhatsApp") and is
+// under 25% vowels (random letters run ~19%; camelCase identifiers, made of
+// real words, run 35%+). URLs are stripped first because shortlink and video
+// IDs look exactly like this.
+export function gibberishRun(text) {
   const withoutUrls = String(text || "").replace(/(?:https?:\/\/|www\.)\S+/gi, " ");
   const runs = withoutUrls.match(/[A-Za-z]{12,}/g) || [];
-  return runs.some((run) => (run.match(/[a-z][A-Z]/g) || []).length >= 3);
+  return runs.find((run) => {
+    const flips = (run.match(/[a-z][A-Z]/g) || []).length;
+    const vowels = (run.match(/[aeiou]/gi) || []).length;
+    return flips >= 3 && vowels / run.length < 0.25;
+  }) || "";
 }
 
-// Returns the reason a submission is spam, or "" when it should go through.
+export function looksLikeGibberish(text) {
+  return gibberishRun(text) !== "";
+}
+
+// Returns why a submission is spam, or "" when it should go through. The
+// gibberish reason carries the matched run so a false positive is visible in
+// the logs instead of silently lost.
 export function spamReason({ name, message, raw }) {
   if (isHoneypotFilled(raw)) return "honeypot";
-  if (looksLikeGibberish(message) || looksLikeGibberish(name)) return "gibberish";
+  const run = gibberishRun(message) || gibberishRun(name);
+  if (run) return `gibberish "${run}"`;
   return "";
 }
