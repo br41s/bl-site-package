@@ -121,6 +121,11 @@ retail per catalogue category, with a general fallback. `src/api/b2b.js` holds a
   signed-in account from `GET /api/b2b/me`; `POST /api/reservations` re-prices server-side
   from the session cookie. The browser's figures are display only. `b2bPriceCents` and
   `vatCents` exist in both files and must stay identical to the cent.
+- **A B2B reservation never shows the IBAN.** With `bank_iban` set, a retail reservation
+  answers (and emails) the bank details, amount and reference; a B2B one gets "your usual
+  payment terms" instead (`paymentInstructions` in `src/api/reservations.js`). The
+  bank keys are public config on purpose: every buyer is shown them, and the build words
+  the cart and the terms page from them.
 - **Trade prices exclude VAT.** `price_cents` has the sync's single 21% rate baked in;
   `b2bPriceCents` takes the discount off and divides it back out, rounding once. A B2B
   reservation stores net unit prices and total with `vat_included = 0` and the VAT in

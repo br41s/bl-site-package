@@ -108,7 +108,7 @@ Tu catálogo se sincroniza solo con tu proveedor: los precios, el stock y las al
 
 - **Catálogo** — todos tus productos. Puedes ocultar cualquiera de la web con el interruptor *Visible en la tienda*, y ese ajuste no se pierde en la siguiente sincronización. La estrella ★ de cada producto sirve para destacarlo en la portada de la tienda (ver más abajo). Como el catálogo es muy grande, se muestran los primeros 100 productos: usa el buscador de arriba para encontrar uno concreto.
 - **Portada** — ver más abajo.
-- **Pedidos** — las reservas que te dejan los clientes desde la web. Las que hace una empresa con su cuenta de profesional aparecen marcadas con su nombre.
+- **Pedidos** — las reservas que te dejan los clientes desde la web. Las que hace una empresa con su cuenta de profesional aparecen marcadas con su nombre. Arriba está **Pago por transferencia**: si rellenas tu titular e IBAN (el BIC es opcional) y pulsas **Guardar datos bancarios**, al reservar el cliente ve esos datos con el importe y el concepto («Reserva» y su número), y los recibe también por email si tienes el email configurado. Esas reservas entran como *Pendiente de pago*: cuando recibas la transferencia, cámbiala a *Confirmada* (hasta entonces no cuenta para «Lo más vendido»). Las empresas con cuenta de profesional no ven tu IBAN: se les indica que pagan según su forma de pago habitual. Si dejas el IBAN vacío, no se pide transferencia. Todos los clientes reciben por email la confirmación de su reserva.
 - **Fichas** — ver más abajo.
 - **Sincronización** — cuándo se actualizó el catálogo por última vez y los datos de conexión con tu proveedor.
 

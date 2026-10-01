@@ -74,6 +74,13 @@ export const PUBLIC_CONFIG_KEYS = [
   // links to it. The discounts themselves are NOT public: they are served only
   // to a signed-in B2B account (GET /api/b2b/me, src/api/b2b.js).
   "b2b_enabled",
+  // Pay-by-transfer details, shown to a retail customer once they place a
+  // reservation (src/api/reservations.js). Public on purpose: every buyer is
+  // shown them anyway, and the build needs to know whether they are set to
+  // word the cart and the terms page. Empty IBAN = transfer off.
+  "bank_holder",
+  "bank_iban",
+  "bank_bic",
   // Shop landing blocks (the merchandising strip at the top of /productos/).
   // One flat key per setting, matching the page_* convention — the config
   // table has no list semantics and nothing else in it holds JSON.

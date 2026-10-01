@@ -900,6 +900,24 @@ body.infographic-lightbox-open {
   color: var(--text-muted);
 }
 
+/* Bank details shown after a reservation (web/cart.js, renderPayment) */
+.checkout-transfer {
+  margin: 1rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+/* Scoped under .site-page-body to outrank its paragraph margins: the
+   success box carries that class. */
+.site-page-body .checkout-transfer p {
+  margin: 0;
+}
+.site-page-body .checkout-transfer p + p {
+  margin-top: 0.25rem;
+}
+
 /* ÁREA DE PROFESIONALES (/profesionales) */
 .b2b-login-error {
   color: var(--accent);

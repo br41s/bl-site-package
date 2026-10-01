@@ -79,6 +79,18 @@ productos. Puedes activarla ahora o más adelante desde tu panel.
 
 ---
 
+**1e. Pago por transferencia (opcional, solo si tu web tiene catálogo)**
+
+Si nos das tus datos bancarios, al reservar en tu web el cliente verá a qué cuenta
+transferir el importe y con qué concepto. Las empresas con cuenta de profesional no los
+ven: pagan como lo tengáis acordado.
+
+- Titular de la cuenta:
+- IBAN:
+- BIC / SWIFT (opcional):
+
+---
+
 **2. Páginas de tu web**
 
 Para cada página, escribe un título y una descripción breve.
