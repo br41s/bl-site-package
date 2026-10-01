@@ -184,6 +184,8 @@ En la lista de cuentas puedes:
 
 - **Desactivar** una cuenta con la casilla *Activa*: deja de ver los precios profesionales en ese mismo momento.
 - **Enviar enlace de acceso** — si la empresa no recibió el email, el enlace caducó o ha olvidado su contraseña. Le llega un enlace nuevo para elegir contraseña; el anterior deja de valer.
+
+Si una empresa olvida su contraseña también puede pedir el enlace ella misma, con **¿Has olvidado tu contraseña?** en la página de acceso. Para eso tu web necesita tener configurada su dirección (Mi sitio web → URL del sitio) y el email.
 - **Eliminar** la cuenta. Sus reservas anteriores se conservan.
 
 > **Una empresa quiere darse de alta.** Las empresas no pueden registrarse solas: en la página de acceso se les invita a contactar contigo, y eres tú quien decide a quién das de alta.

@@ -222,25 +222,27 @@ function hashToken(token) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-// Same resolution as site/_data/site.js. The request's own host is the
-// fallback; only an authenticated panel request ever reaches this.
+// Same resolution as site/_data/site.js; "" when the deploy has none.
+function configuredSiteUrl() {
+  return (process.env.SITE_URL || getConfig("site_url") || "").replace(/\/+$/, "");
+}
+
+// The request's own host is the fallback, which is safe only because the
+// panel is the caller: on a public endpoint the Host header is the visitor's
+// to choose, and a link built from it would mail the token to their domain.
 function siteBaseUrl(req) {
-  return (process.env.SITE_URL || getConfig("site_url") || `${req.protocol}://${req.get("host")}`).replace(
-    /\/+$/,
-    "",
-  );
+  return configuredSiteUrl() || `${req.protocol}://${req.get("host")}`;
 }
 
 // Replaces any earlier link, then emails the new one. Never throws: the
 // account exists either way, and when the email cannot go out the panel gets
 // the link back to pass on by hand.
-async function sendPasswordLink(account, req) {
+async function sendPasswordLink(account, base) {
   const token = randomBytes(32).toString("base64url");
   db.prepare(
     "UPDATE b2b_accounts SET password_token_hash = ?, password_token_expires_at = datetime('now', ?) WHERE id = ?",
   ).run(hashToken(token), `+${PASSWORD_LINK_DAYS} days`, account.id);
 
-  const base = siteBaseUrl(req);
   // In the fragment, not the query: a fragment never reaches a server, so the
   // token stays out of access logs and Referer headers.
   const url = `${base}/profesionales/contrasena/#token=${token}`;
@@ -313,6 +315,38 @@ function startSession(res, account, key) {
   });
   res.setHeader("Set-Cookie", sessionCookie(token, SESSION_DAYS * 24 * 60 * 60));
 }
+
+// POST /api/b2b/forgot-password — { email }, from the sign-in page. The same
+// answer whether or not the email has an account, given before the email goes
+// out, so neither the text nor the timing tells which addresses are customers.
+router.post("/forgot-password", loginLimiter, (req, res) => {
+  if (!isB2bEnabled()) {
+    return res.status(404).json({ error: "El área de profesionales no está disponible." });
+  }
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  if (!email) return res.status(400).json({ error: "Introduce tu email." });
+
+  // A link issued in the last few minutes is not replaced: rotating addresses
+  // past the rate limiter must not be a way to flood someone's inbox.
+  const account = db
+    .prepare(
+      `SELECT * FROM b2b_accounts WHERE email = ? AND active = 1
+         AND (password_token_expires_at IS NULL OR password_token_expires_at < datetime('now', ?, '-5 minutes'))`,
+    )
+    .get(email, `+${PASSWORD_LINK_DAYS} days`);
+  const base = configuredSiteUrl();
+  if (account && !base) {
+    console.error("B2B: no se envía el enlace de contraseña olvidada, falta site_url (o SITE_URL)");
+  } else if (account && isSmtpConfigured()) {
+    // Not awaited (sendPasswordLink never throws). Without SMTP nothing is
+    // issued at all: a new token would void a link the admin passed on by hand.
+    void sendPasswordLink(account, base);
+  }
+  res.json({
+    success: true,
+    message: "Si ese email tiene una cuenta de empresa, te hemos enviado un enlace para elegir una contraseña nueva.",
+  });
+});
 
 // POST /api/b2b/set-password — { token, password }, from the link emailed by
 // sendPasswordLink(). Single use: the token is cleared as the password is set,
@@ -564,7 +598,7 @@ router.post("/accounts", requireAuth, asyncHandler(async (req, res) => {
     )
     .run(values);
   const account = db.prepare("SELECT * FROM b2b_accounts WHERE id = ?").get(result.lastInsertRowid);
-  const password_link = await sendPasswordLink(account, req);
+  const password_link = await sendPasswordLink(account, siteBaseUrl(req));
   res.status(201).json({ success: true, account: publicAccount(account), password_link });
 }));
 
@@ -574,7 +608,7 @@ router.post("/accounts", requireAuth, asyncHandler(async (req, res) => {
 router.post("/accounts/:id/password-link", requireAuth, asyncHandler(async (req, res) => {
   const account = db.prepare("SELECT * FROM b2b_accounts WHERE id = ?").get(req.params.id);
   if (!account) return res.status(404).json({ error: "Cuenta no encontrada" });
-  res.json({ success: true, password_link: await sendPasswordLink(account, req) });
+  res.json({ success: true, password_link: await sendPasswordLink(account, siteBaseUrl(req)) });
 }));
 
 // PUT /api/b2b/accounts/:id — partial; a password only when one is sent.

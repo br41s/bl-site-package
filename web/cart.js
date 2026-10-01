@@ -187,6 +187,8 @@ function initB2bPage(ready) {
       });
   });
 
+  initB2bForgotPassword(form);
+
   document.getElementById("b2b-logout-btn").addEventListener("click", function () {
     fetch("/api/b2b/logout", { method: "POST", credentials: "same-origin" })
       .catch(function () {})
@@ -194,6 +196,59 @@ function initB2bPage(ready) {
         b2b = null;
         setB2bFlag(false);
         render();
+      });
+  });
+}
+
+// "¿Has olvidado tu contraseña?" on /profesionales: swaps the sign-in form for
+// one that asks POST /api/b2b/forgot-password to email a set-password link.
+// The answer is the same whether or not the email has an account.
+function initB2bForgotPassword(loginForm) {
+  var form = document.getElementById("b2b-forgot-form");
+  var toggle = document.getElementById("b2b-forgot-toggle");
+  if (!form || !toggle) return;
+  var msg = document.getElementById("b2b-forgot-msg");
+
+  function show(forgot) {
+    loginForm.hidden = forgot;
+    form.hidden = !forgot;
+    msg.hidden = true;
+    if (forgot && loginForm.email.value) form.email.value = loginForm.email.value;
+  }
+  toggle.addEventListener("click", function () {
+    show(true);
+  });
+  document.getElementById("b2b-forgot-back").addEventListener("click", function () {
+    show(false);
+  });
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    fetch("/api/b2b/forgot-password", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: form.email.value.trim() }),
+    })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          return { ok: r.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "No se pudo enviar el enlace.");
+        msg.textContent = result.data.message;
+        msg.style.color = "";
+      })
+      .catch(function (err) {
+        msg.textContent = err.message || "No se pudo enviar el enlace.";
+        msg.style.color = "var(--accent)";
+      })
+      .finally(function () {
+        msg.hidden = false;
+        submitBtn.disabled = false;
       });
   });
 }

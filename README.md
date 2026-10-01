@@ -84,7 +84,8 @@ Desactivada de fábrica (`b2b_enabled`); se activa en la sección Profesionales 
 de alta a cada empresa (no hay registro público) y define un descuento por categoría del
 catálogo, más un descuento general para las categorías sin uno propio. La empresa recibe por email
 un enlace de un solo uso (`/profesionales/contrasena/`, 7 días) para elegir su contraseña;
-el cliente nunca la conoce. Después entra en `/profesionales` y ve en todo el catálogo su precio **sin IVA**: el precio público menos el
+el cliente nunca la conoce. Si la olvida, pide otro desde `/profesionales` (solo con
+`site_url`/`SITE_URL` configurada: el enlace nunca se construye con el Host de la petición). Después entra en `/profesionales` y ve en todo el catálogo su precio **sin IVA**: el precio público menos el
 descuento, menos el IVA.
 
 - **Las páginas estáticas no cambian.** Llevan el precio público; `web/cart.js` lo reescribe

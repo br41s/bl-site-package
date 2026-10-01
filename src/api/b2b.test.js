@@ -583,6 +583,71 @@ describe("set-password links", () => {
     assert.equal((await setPassword(tokenFrom(password_link.url))).status, 403);
   });
 
+  describe("forgot password", () => {
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 20));
+    function forgot(email) {
+      loginIp += 1;
+      return api("/api/b2b/forgot-password", {
+        method: "POST",
+        body: { email },
+        headers: { "X-Forwarded-For": `10.2.${Math.floor(loginIp / 250)}.${loginIp % 250}` },
+      });
+    }
+
+    test("answers the same for any email, and mails a link only to a real account", async () => {
+      const mail = captureMail();
+      setFlag("site_url", "https://tienda.example.com/");
+      try {
+        seedAccount();
+        const known = await forgot("Compras@Acme.es");
+        const unknown = await forgot("nadie@acme.es");
+        assert.equal(known.status, 200);
+        assert.equal(unknown.status, 200);
+        const knownBody = await known.json();
+        assert.deepEqual(knownBody, await unknown.json());
+        assert.equal(JSON.stringify(knownBody).includes("token"), false);
+        await flush();
+        assert.equal(mail.sent.length, 1);
+        assert.equal(mail.sent[0].to, "compras@acme.es");
+        assert.match(mail.sent[0].text, /https:\/\/tienda\.example\.com\/profesionales\/contrasena\/#token=/);
+        assert.equal((await setPassword(tokenFrom(mail.sent[0].text), "nueva-clave-1")).status, 200);
+      } finally {
+        mail.restore();
+        db.prepare("DELETE FROM config WHERE key = 'site_url'").run();
+      }
+    });
+
+    test("never builds the link from the request's Host when the site URL is unset", async () => {
+      const mail = captureMail();
+      try {
+        seedAccount();
+        const res = await forgot("compras@acme.es");
+        assert.equal(res.status, 200);
+        await flush();
+        assert.equal(mail.sent.length, 0);
+      } finally {
+        mail.restore();
+      }
+    });
+
+    test("does not reissue a link sent minutes ago, nor mail a deactivated account", async () => {
+      const mail = captureMail();
+      setFlag("site_url", "https://tienda.example.com");
+      try {
+        seedAccount();
+        await forgot("compras@acme.es");
+        await forgot("compras@acme.es");
+        seedAccount("baja@acme.es", "secreto-123", 0);
+        await forgot("baja@acme.es");
+        await flush();
+        assert.equal(mail.sent.length, 1);
+      } finally {
+        mail.restore();
+        db.prepare("DELETE FROM config WHERE key = 'site_url'").run();
+      }
+    });
+  });
+
   test("sending a link needs the panel login", async () => {
     const id = seedAccount();
     const res = await api(`/api/b2b/accounts/${id}/password-link`, { method: "POST" });
