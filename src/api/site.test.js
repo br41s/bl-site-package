@@ -267,6 +267,36 @@ describe("POST /api/site/texts — appearance fields", () => {
   });
 });
 
+describe("POST /api/site/texts — bank details", () => {
+  const stored = (key) => db.prepare("SELECT value FROM config WHERE key = ?").get(key)?.value;
+
+  test("saves a valid IBAN and BIC, and an empty IBAN switches transfer off", async () => {
+    const ok = await call("POST", "/api/site/texts", {
+      token: TOKEN,
+      body: { bank_holder: "ACME S.L.", bank_iban: "ES4301824731840201605267", bank_bic: "BBVAESMMXXX" },
+    });
+    assert.equal(ok.status, 200);
+    assert.equal(stored("bank_iban"), "ES4301824731840201605267");
+    const off = await call("POST", "/api/site/texts", { token: TOKEN, body: { bank_iban: "" } });
+    assert.equal(off.status, 200);
+    assert.equal(stored("bank_iban"), "");
+  });
+
+  test("a bad IBAN or BIC is refused and nothing sent with it is written", async () => {
+    setRawConfig("bank_holder", "Antes S.L.");
+    setRawConfig("bank_iban", "ES4301824731840201605267");
+    for (const body of [
+      { bank_holder: "Después S.L.", bank_iban: "ES4301824731840201605268" },
+      { bank_holder: "Después S.L.", bank_iban: "ES9121000418450200051332", bank_bic: "BBVA" },
+    ]) {
+      const res = await call("POST", "/api/site/texts", { token: TOKEN, body });
+      assert.equal(res.status, 400, JSON.stringify(body));
+    }
+    assert.equal(stored("bank_holder"), "Antes S.L.");
+    assert.equal(stored("bank_iban"), "ES4301824731840201605267");
+  });
+});
+
 describe("GET /api/site/models — upstream deadline", () => {
   // Stub only OpenRouter; the test's own call to the local server has to go
   // through the real fetch.

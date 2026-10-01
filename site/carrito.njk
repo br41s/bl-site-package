@@ -23,7 +23,11 @@ title: "Carrito"
 
     <form id="checkout-form" class="site-contact-form" hidden>
       <h2>Datos de contacto</h2>
-      <p class="site-page-desc">Reserva tus productos y te contactaremos para confirmar la entrega. No se realiza ningún pago online.</p>
+      {%- if site.bank_iban %}
+      <p class="site-page-desc" id="checkout-intro">Al confirmar la reserva te daremos los datos para pagarla por transferencia bancaria. No se realiza ningún pago online.</p>
+      {%- else %}
+      <p class="site-page-desc" id="checkout-intro">Reserva tus productos y te contactaremos para confirmar la entrega. No se realiza ningún pago online.</p>
+      {%- endif %}
       <input type="text" name="customer_name" placeholder="Nombre y apellidos" required>
       <input type="email" name="customer_email" placeholder="Email" required>
       <input type="tel" name="customer_phone" placeholder="Teléfono">

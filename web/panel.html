@@ -1458,6 +1458,34 @@
 
             <!-- TAB: PEDIDOS -->
             <div class="productos-tab-panel" id="productos-pedidos">
+              <div class="misite-block">
+                <h3>Pago por transferencia</h3>
+                <p class="misite-hint">
+                  Si rellenas tu IBAN, al hacer una reserva el cliente ve estos
+                  datos, el importe y el concepto («Reserva» y su número), y los
+                  recibe también por email si tienes el email configurado. Las
+                  empresas con cuenta de profesional no los ven: pagan según su
+                  forma de pago habitual. Déjalo vacío para no pedir transferencia.
+                </p>
+                <div class="misite-page-form" style="max-width: 560px">
+                  <div>
+                    <label for="bank-holder-input">Titular de la cuenta</label>
+                    <input type="text" id="bank-holder-input" placeholder="Mi Empresa S.L." />
+                  </div>
+                  <div>
+                    <label for="bank-iban-input">IBAN</label>
+                    <input type="text" id="bank-iban-input" placeholder="ES00 0000 0000 0000 0000 0000" autocomplete="off" />
+                  </div>
+                  <div>
+                    <label for="bank-bic-input">BIC / SWIFT (opcional)</label>
+                    <input type="text" id="bank-bic-input" placeholder="XXXXESMMXXX" autocomplete="off" />
+                  </div>
+                </div>
+                <div style="margin-top: 1rem; display: flex; gap: 1rem; align-items: center">
+                  <button class="btn-primary-sm" id="save-bank-btn">Guardar datos bancarios</button>
+                  <span id="save-bank-msg" style="font-size: 0.8125rem; display: none"></span>
+                </div>
+              </div>
               <div id="productos-reservations-list"></div>
             </div>
 

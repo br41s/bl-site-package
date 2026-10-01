@@ -514,6 +514,45 @@ function prefillCheckoutFromB2b() {
   fill("customer_name", a.contact_name || a.company_name);
   fill("customer_email", a.email);
   fill("customer_phone", a.phone);
+  // The static intro may speak of paying by transfer; a business account
+  // pays the way it has agreed instead (see paymentInstructions server-side).
+  var intro = document.getElementById("checkout-intro");
+  if (intro) {
+    intro.textContent =
+      "Reserva tus productos a tus precios profesionales. El pago se hará según tu forma de pago habitual con nosotros.";
+  }
+}
+
+function appendParagraph(parent, text, strong) {
+  var p = document.createElement("p");
+  if (strong) {
+    var b = document.createElement("strong");
+    b.textContent = strong;
+    p.appendChild(b);
+    p.appendChild(document.createTextNode(" "));
+  }
+  p.appendChild(document.createTextNode(text));
+  parent.appendChild(p);
+}
+
+// Payment instructions from POST /api/reservations (paymentInstructions in
+// src/api/reservations.js). The same text goes out in the customer's email.
+function renderPayment(box, payment) {
+  if (!payment) return;
+  if (payment.method === "usual") {
+    appendParagraph(box, "El pago se hará según tu forma de pago habitual con nosotros. Te avisaremos para confirmar la entrega.");
+    return;
+  }
+  if (payment.method !== "transfer") return;
+  appendParagraph(box, "Para completarla, haz una transferencia de " + formatEur(payment.amount_cents) + " a:");
+  var details = document.createElement("div");
+  details.className = "checkout-transfer";
+  if (payment.holder) appendParagraph(details, payment.holder, "Titular:");
+  appendParagraph(details, payment.iban, "IBAN:");
+  if (payment.bic) appendParagraph(details, payment.bic, "BIC:");
+  appendParagraph(details, payment.reference, "Concepto:");
+  box.appendChild(details);
+  appendParagraph(box, "Prepararemos tu pedido en cuanto recibamos el pago.");
 }
 
 function initCartPage() {
@@ -580,13 +619,17 @@ function initCartPage() {
         successBox.hidden = false;
         // The server's total, not ours: it is what the reservation records.
         var d = result.data;
-        successBox.textContent =
+        successBox.textContent = "";
+        appendParagraph(
+          successBox,
           "Reserva confirmada (nº " + d.id + ", total " +
-          (d.vat_included
-            ? formatEur(d.total_cents)
-            : formatEur(d.total_cents) + " sin IVA, " + formatEur(d.total_cents + d.vat_cents) + " con IVA") +
-          (d.b2b ? ", con precios profesionales" : "") +
-          "). Te avisaremos para confirmar la entrega.";
+            (d.vat_included
+              ? formatEur(d.total_cents)
+              : formatEur(d.total_cents) + " sin IVA, " + formatEur(d.total_cents + d.vat_cents) + " con IVA") +
+            (d.b2b ? ", con precios profesionales" : "") +
+            ")." + (d.payment ? "" : " Te avisaremos para confirmar la entrega."),
+        );
+        renderPayment(successBox, d.payment);
         successBox.style.color = "var(--text-primary)";
       })
       .catch(function () {

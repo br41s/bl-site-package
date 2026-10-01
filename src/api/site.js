@@ -22,6 +22,7 @@ import {
   getLastVisitorEmail,
 } from "../mail/mailer.js";
 import { isTurnstileConfigured } from "../turnstile.js";
+import { isValidBic, isValidIban } from "../utils/iban.js";
 import { asyncHandler } from "../middleware/async-handler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -156,6 +157,9 @@ router.post("/texts", requireAuth, (req, res) => {
     "hero_density",
     "turnstile_site_key",
     "turnstile_secret_key",
+    "bank_holder",
+    "bank_iban",
+    "bank_bic",
     ...SHOP_BLOCK_KEYS,
   ];
   // Appearance fields are picked from a fixed <select> in the panel, but they
@@ -169,16 +173,20 @@ router.post("/texts", requireAuth, (req, res) => {
     radius_style: (v) => ["", "sharp", "default", "rounded"].includes(v),
     theme_default: (v) => ["", "light", "dark"].includes(v),
     hero_density: (v) => ["", "compact", "spacious"].includes(v),
+    bank_iban: (v) => v === "" || isValidIban(v),
+    bank_bic: (v) => v === "" || isValidBic(v),
     ...SHOP_BLOCK_VALIDATORS,
   };
-  for (const key of allowed) {
-    if (req.body[key] === undefined) continue;
+  // Every value is checked before any is written: a rejected BIC must not
+  // leave the IBAN sent alongside it saved on its own.
+  const keys = allowed.filter((key) => req.body[key] !== undefined);
+  for (const key of keys) {
     const validator = APPEARANCE_VALIDATORS[key];
     if (validator && !validator(req.body[key])) {
       return res.status(400).json({ error: `Valor no válido para ${key}` });
     }
-    setConfig(key, req.body[key]);
   }
+  for (const key of keys) setConfig(key, req.body[key]);
   res.json({ success: true });
 });
 

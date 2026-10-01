@@ -22,7 +22,7 @@ El agente usa por defecto `openai/gpt-oss-20b:free`, un modelo gratuito de OpenR
 - Contacto
 - Blog
 - Catálogo y ficha de producto (solo con catálogo conectado)
-- Carrito y reserva de recogida (solo con catálogo conectado)
+- Carrito y reserva de recogida (solo con catálogo conectado), con confirmación por email al cliente y pago por transferencia opcional (IBAN en Productos → Pedidos; las cuentas B2B no lo ven)
 - Área de profesionales (`/profesionales`): acceso de empresas con precios propios sin IVA (opcional, solo con catálogo conectado)
 - Legales: privacidad, condiciones y uso de IA
 

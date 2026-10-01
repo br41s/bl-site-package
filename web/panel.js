@@ -2935,12 +2935,68 @@ document.addEventListener("DOMContentLoaded", function () {
     initB2bActions();
   }
 
+  // Pay-by-transfer details (Pedidos tab). Public config, read back from
+  // GET /api/site/config; the server rejects an IBAN or BIC that does not
+  // check out (src/utils/iban.js).
+  function loadBankSettings() {
+    fetch("/api/site/config")
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (cfg) {
+        document.getElementById("bank-holder-input").value = cfg.bank_holder || "";
+        document.getElementById("bank-iban-input").value = cfg.bank_iban || "";
+        document.getElementById("bank-bic-input").value = cfg.bank_bic || "";
+      })
+      .catch(function () {});
+  }
+
+  function initBankSettings() {
+    document.getElementById("save-bank-btn").addEventListener("click", async function () {
+      var msg = document.getElementById("save-bank-msg");
+      var payload = {
+        bank_holder: document.getElementById("bank-holder-input").value.trim(),
+        bank_iban: document.getElementById("bank-iban-input").value.replace(/\s+/g, "").toUpperCase(),
+        bank_bic: document.getElementById("bank-bic-input").value.trim().toUpperCase(),
+      };
+      var errors = {
+        bank_iban: "El IBAN no es válido: revisa que esté completo y sin errores.",
+        bank_bic: "El BIC no es válido: son 8 u 11 letras y números.",
+      };
+      try {
+        var res = await fetch("/api/site/texts", {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(payload),
+        });
+        var data = await res.json();
+        var badKey = !data.success && Object.keys(errors).find(function (k) {
+          return (data.error || "").indexOf(k) !== -1;
+        });
+        msg.textContent = data.success
+          ? payload.bank_iban
+            ? "✓ Guardado. Tus clientes verán estos datos al reservar."
+            : "✓ Guardado. No se pedirá transferencia."
+          : badKey
+            ? errors[badKey]
+            : data.error || "Error";
+        msg.style.color = data.success ? "var(--accent)" : "var(--error)";
+        msg.style.display = "inline";
+      } catch {
+        msg.textContent = "Error de conexión";
+        msg.style.color = "var(--error)";
+        msg.style.display = "inline";
+      }
+    });
+  }
+
   function initProductos() {
     // loadShopFront() loads the config and facets first, then paints the
     // catalogue list — the stars need to know what is already pinned before the
     // rows are drawn.
     loadShopFront();
     loadReservationsList();
+    loadBankSettings();
     loadSyncStatus();
     loadFichas();
     loadFichasLog(false);
@@ -2950,6 +3006,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initFichasActions();
     initFichasLog();
     initShopFrontActions();
+    initBankSettings();
 
     document.querySelectorAll(".productos-tab").forEach(function (tab) {
       tab.addEventListener("click", function () {
