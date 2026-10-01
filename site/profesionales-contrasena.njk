@@ -1,0 +1,27 @@
+---
+layout: base.njk
+navActive: profesionales
+title: "Elige tu contraseña"
+description: "Elige la contraseña de tu cuenta de empresa."
+eleventyExcludeFromCollections: true
+---
+{#-
+  Landing page of the set-password link emailed when a B2B account is created
+  (src/api/b2b.js, sendPasswordLink). The token travels in the URL fragment,
+  which web/cart.js (initB2bSetPasswordPage) reads and posts to
+  POST /api/b2b/set-password. That call also signs the customer in.
+-#}
+<main class="site-page"><div class="site-page-inner">
+  <h1 class="reveal">Elige tu contraseña</h1>
+  <p class="site-page-subtitle reveal">Área de profesionales</p>
+
+  <form id="b2b-set-password-form" class="site-contact-form">
+    <p class="site-page-desc">Elige la contraseña con la que entrarás en tu cuenta de empresa. Mínimo 8 caracteres.</p>
+    <input type="password" name="password" placeholder="Nueva contraseña" autocomplete="new-password" minlength="8" required>
+    <input type="password" name="confirm" placeholder="Repite la contraseña" autocomplete="new-password" minlength="8" required>
+    <button type="submit" class="site-btn">Guardar y entrar</button>
+    <p id="b2b-set-password-error" class="b2b-login-error" role="alert" hidden></p>
+  </form>
+
+  <noscript><p class="site-page-desc">Necesitas JavaScript activado para elegir tu contraseña.</p></noscript>
+</div></main>

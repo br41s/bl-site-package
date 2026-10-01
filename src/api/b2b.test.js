@@ -1,4 +1,4 @@
-import { test, describe, before, beforeEach, after } from "node:test";
+import { test, describe, before, beforeEach, after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,6 +13,7 @@ process.env.JWT_SECRET = "test-secret-for-b2b";
 process.env.BL_SITE_DISABLE_REBUILD = "1";
 
 const express = (await import("express")).default;
+const nodemailer = (await import("nodemailer")).default;
 const jwt = (await import("jsonwebtoken")).default;
 const db = (await import("../db/database.js")).default;
 const { getConfig } = await import("../db/database.js");
@@ -93,6 +94,7 @@ beforeEach(() => {
   db.exec(`
     DELETE FROM products; DELETE FROM b2b_accounts; DELETE FROM b2b_category_discounts;
     DELETE FROM reservations; DELETE FROM reservation_items;
+    DELETE FROM config WHERE key LIKE 'smtp_%';
   `);
   setFlag("b2b_enabled", "1");
   setFlag("b2b_default_discount_pct", "0");
@@ -469,5 +471,186 @@ describe("panel: accounts", () => {
     assert.equal(res.status, 200);
     const row = db.prepare("SELECT b2b_company FROM reservations WHERE id = ?").get(reservationId);
     assert.equal(row.b2b_company, "ACME S.L.");
+  });
+});
+
+describe("set-password links", () => {
+  // Captures what src/mail/mailer.js would send, instead of opening SMTP.
+  function captureMail() {
+    const sent = [];
+    const m = mock.method(nodemailer, "createTransport", () => ({
+      sendMail: async (message) => {
+        sent.push(message);
+      },
+    }));
+    setFlag("smtp_host", "smtp.example.com");
+    setFlag("smtp_user", "web@example.com");
+    setFlag("smtp_pass", "secret");
+    return { sent, restore: () => m.mock.restore() };
+  }
+
+  const tokenFrom = (text) => text.match(/#token=([A-Za-z0-9_-]+)/)[1];
+
+  function createAccount() {
+    return api("/api/b2b/accounts", {
+      method: "POST",
+      headers: ADMIN,
+      body: { company_name: "ACME S.L.", contact_name: "Ana", email: "compras@acme.es" },
+    });
+  }
+
+  function setPassword(token, password = "elegida-123") {
+    loginIp += 1;
+    return api("/api/b2b/set-password", {
+      method: "POST",
+      body: { token, password },
+      headers: { "X-Forwarded-For": `10.1.${Math.floor(loginIp / 250)}.${loginIp % 250}` },
+    });
+  }
+
+  test("a new account gets no password and an emailed link that sets one and signs in", async () => {
+    const mail = captureMail();
+    try {
+      const res = await createAccount();
+      assert.equal(res.status, 201);
+      const body = await res.json();
+      assert.equal(body.account.has_password, false);
+      assert.equal(body.account.password_token_hash, undefined);
+      assert.deepEqual(body.password_link, { sent: true });
+      assert.equal(mail.sent.length, 1);
+      assert.equal(mail.sent[0].to, "compras@acme.es");
+      assert.match(mail.sent[0].text, /\/profesionales\/contrasena\/#token=/);
+
+      // No password yet: nothing signs in, not even an empty one.
+      assert.equal((await login("compras@acme.es", "")).res.status, 400);
+      assert.equal((await login("compras@acme.es", "cualquiera-1")).res.status, 401);
+
+      const set = await setPassword(tokenFrom(mail.sent[0].text));
+      assert.equal(set.status, 200);
+      const cookie = (set.headers.get("set-cookie") || "").split(";")[0];
+      assert.equal((await api("/api/b2b/me", { headers: { Cookie: cookie } })).status, 200);
+      assert.equal((await login("compras@acme.es", "elegida-123")).res.status, 200);
+
+      // Single use.
+      assert.equal((await setPassword(tokenFrom(mail.sent[0].text), "otra-clave-9")).status, 400);
+    } finally {
+      mail.restore();
+    }
+  });
+
+  test("without SMTP the account is still created and the panel gets the link", async () => {
+    const res = await createAccount();
+    assert.equal(res.status, 201);
+    const { password_link } = await res.json();
+    assert.equal(password_link.sent, false);
+    assert.match(password_link.url, /\/profesionales\/contrasena\/#token=/);
+    assert.equal((await setPassword(tokenFrom(password_link.url))).status, 200);
+  });
+
+  test("a fresh link replaces the old one and leaves the current password working", async () => {
+    const id = seedAccount();
+    const first = await (
+      await api(`/api/b2b/accounts/${id}/password-link`, { method: "POST", headers: ADMIN })
+    ).json();
+    const second = await (
+      await api(`/api/b2b/accounts/${id}/password-link`, { method: "POST", headers: ADMIN })
+    ).json();
+    assert.equal((await login()).res.status, 200);
+    assert.equal((await setPassword(tokenFrom(first.password_link.url))).status, 400);
+    assert.equal((await setPassword(tokenFrom(second.password_link.url))).status, 200);
+    assert.equal((await login()).res.status, 401);
+  });
+
+  test("an expired link, a bad token or a short password are refused", async () => {
+    const id = seedAccount();
+    const { password_link } = await (
+      await api(`/api/b2b/accounts/${id}/password-link`, { method: "POST", headers: ADMIN })
+    ).json();
+    const token = tokenFrom(password_link.url);
+    assert.equal((await setPassword(token, "corta")).status, 400);
+    assert.equal((await setPassword("no-es-un-token")).status, 400);
+    db.prepare(
+      "UPDATE b2b_accounts SET password_token_expires_at = datetime('now', '-1 minute') WHERE id = ?",
+    ).run(id);
+    assert.equal((await setPassword(token)).status, 400);
+  });
+
+  test("a deactivated account cannot use its link", async () => {
+    const id = seedAccount("compras@acme.es", "secreto-123", 0);
+    const { password_link } = await (
+      await api(`/api/b2b/accounts/${id}/password-link`, { method: "POST", headers: ADMIN })
+    ).json();
+    assert.equal((await setPassword(tokenFrom(password_link.url))).status, 403);
+  });
+
+  describe("forgot password", () => {
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 20));
+    function forgot(email) {
+      loginIp += 1;
+      return api("/api/b2b/forgot-password", {
+        method: "POST",
+        body: { email },
+        headers: { "X-Forwarded-For": `10.2.${Math.floor(loginIp / 250)}.${loginIp % 250}` },
+      });
+    }
+
+    test("answers the same for any email, and mails a link only to a real account", async () => {
+      const mail = captureMail();
+      setFlag("site_url", "https://tienda.example.com/");
+      try {
+        seedAccount();
+        const known = await forgot("Compras@Acme.es");
+        const unknown = await forgot("nadie@acme.es");
+        assert.equal(known.status, 200);
+        assert.equal(unknown.status, 200);
+        const knownBody = await known.json();
+        assert.deepEqual(knownBody, await unknown.json());
+        assert.equal(JSON.stringify(knownBody).includes("token"), false);
+        await flush();
+        assert.equal(mail.sent.length, 1);
+        assert.equal(mail.sent[0].to, "compras@acme.es");
+        assert.match(mail.sent[0].text, /https:\/\/tienda\.example\.com\/profesionales\/contrasena\/#token=/);
+        assert.equal((await setPassword(tokenFrom(mail.sent[0].text), "nueva-clave-1")).status, 200);
+      } finally {
+        mail.restore();
+        db.prepare("DELETE FROM config WHERE key = 'site_url'").run();
+      }
+    });
+
+    test("never builds the link from the request's Host when the site URL is unset", async () => {
+      const mail = captureMail();
+      try {
+        seedAccount();
+        const res = await forgot("compras@acme.es");
+        assert.equal(res.status, 200);
+        await flush();
+        assert.equal(mail.sent.length, 0);
+      } finally {
+        mail.restore();
+      }
+    });
+
+    test("does not reissue a link sent minutes ago, nor mail a deactivated account", async () => {
+      const mail = captureMail();
+      setFlag("site_url", "https://tienda.example.com");
+      try {
+        seedAccount();
+        await forgot("compras@acme.es");
+        await forgot("compras@acme.es");
+        seedAccount("baja@acme.es", "secreto-123", 0);
+        await forgot("baja@acme.es");
+        await flush();
+        assert.equal(mail.sent.length, 1);
+      } finally {
+        mail.restore();
+        db.prepare("DELETE FROM config WHERE key = 'site_url'").run();
+      }
+    });
+  });
+
+  test("sending a link needs the panel login", async () => {
+    const id = seedAccount();
+    const res = await api(`/api/b2b/accounts/${id}/password-link`, { method: "POST" });
+    assert.equal(res.status, 401);
   });
 });

@@ -113,7 +113,8 @@ Three consequences worth holding on to:
 ## B2B area (trade prices)
 
 Opt-in per deploy (`b2b_enabled`, default off; panel → Profesionales). The
-admin creates business accounts; they sign in at `/profesionales` and see a percentage off
+admin creates business accounts; each gets an emailed one-time link to choose its own
+password (the admin never sees it), then signs in at `/profesionales` and sees a percentage off
 retail per catalogue category, with a general fallback. `src/api/b2b.js` holds all of it.
 
 - **The static pages keep the retail price.** `web/cart.js` rewrites prices for a

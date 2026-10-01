@@ -1,8 +1,10 @@
-import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import db, { getConfig, setConfig } from "../db/database.js";
+import { getMailSettings, isSmtpConfigured, sendMail } from "../mail/mailer.js";
 import { requireAuth } from "../middleware/auth.js";
+import { asyncHandler } from "../middleware/async-handler.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 import { DEFAULT_VAT_RATE } from "../sync/liderpapel/mapping.js";
 
@@ -24,6 +26,7 @@ const router = Router();
 const COOKIE = "bl_b2b";
 const SESSION_DAYS = 30;
 const MIN_PASSWORD = 8;
+const PASSWORD_LINK_DAYS = 7;
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -205,8 +208,70 @@ function parsePct(value) {
 
 function publicAccount(row) {
   if (!row) return null;
-  const { password_hash, ...rest } = row;
-  return rest;
+  const { password_hash, password_token_hash, ...rest } = row;
+  return { ...rest, has_password: Boolean(password_hash) };
+}
+
+// ── Set-password links ───────────────────────────────────────────────────────
+//
+// The admin never chooses or sees a customer's password: creating an account
+// emails the customer a one-time link to choose it, and the panel can send a
+// fresh one at any time (a forgotten password is the same request).
+
+function hashToken(token) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+// Same resolution as site/_data/site.js; "" when the deploy has none.
+function configuredSiteUrl() {
+  return (process.env.SITE_URL || getConfig("site_url") || "").replace(/\/+$/, "");
+}
+
+// The request's own host is the fallback, which is safe only because the
+// panel is the caller: on a public endpoint the Host header is the visitor's
+// to choose, and a link built from it would mail the token to their domain.
+function siteBaseUrl(req) {
+  return configuredSiteUrl() || `${req.protocol}://${req.get("host")}`;
+}
+
+// Replaces any earlier link, then emails the new one. Never throws: the
+// account exists either way, and when the email cannot go out the panel gets
+// the link back to pass on by hand.
+async function sendPasswordLink(account, base) {
+  const token = randomBytes(32).toString("base64url");
+  db.prepare(
+    "UPDATE b2b_accounts SET password_token_hash = ?, password_token_expires_at = datetime('now', ?) WHERE id = ?",
+  ).run(hashToken(token), `+${PASSWORD_LINK_DAYS} days`, account.id);
+
+  // In the fragment, not the query: a fragment never reaches a server, so the
+  // token stays out of access logs and Referer headers.
+  const url = `${base}/profesionales/contrasena/#token=${token}`;
+  const settings = getMailSettings();
+  if (!isSmtpConfigured(settings)) {
+    return { sent: false, url, error: "El email no está configurado (SMTP)." };
+  }
+  const companyName = getConfig("company_name") || "Web";
+  try {
+    await sendMail(
+      {
+        from: `"${companyName}" <${settings.user}>`,
+        to: account.email,
+        subject: `Acceso al área de profesionales — ${companyName}`,
+        text:
+          `Hola${account.contact_name ? ` ${account.contact_name}` : ""},\n\n` +
+          `${account.company_name} tiene una cuenta en el área de profesionales de ${companyName}. ` +
+          `Con ella verás tus precios profesionales en todo el catálogo y tus reservas se harán a esos precios.\n\n` +
+          `Elige tu contraseña en este enlace (válido ${PASSWORD_LINK_DAYS} días):\n${url}\n\n` +
+          `Tu email de acceso es ${account.email}. Después podrás entrar cuando quieras en ${base}/profesionales\n\n` +
+          `Si no esperabas este mensaje, puedes ignorarlo.\n\n— ${companyName}`,
+      },
+      settings,
+    );
+    return { sent: true };
+  } catch (err) {
+    console.error("Error enviando el enlace de contraseña B2B:", err.message);
+    return { sent: false, url, error: "No se pudo enviar el email." };
+  }
 }
 
 // ── Customer endpoints ───────────────────────────────────────────────────────
@@ -225,7 +290,9 @@ router.post("/login", loginLimiter, (req, res) => {
   if (!key) return res.status(503).json({ error: "Servidor no configurado" });
 
   const account = db.prepare("SELECT * FROM b2b_accounts WHERE email = ?").get(email);
-  const passwordOk = verifyPassword(password, account ? account.password_hash : DUMMY_HASH);
+  // An account that has not used its set-password link yet has an empty hash;
+  // it costs the same scrypt as any other miss.
+  const passwordOk = verifyPassword(password, account?.password_hash || DUMMY_HASH);
   if (!account || !passwordOk) {
     return res.status(401).json({ error: "Email o contraseña incorrectos." });
   }
@@ -237,11 +304,89 @@ router.post("/login", loginLimiter, (req, res) => {
       .json({ error: "Tu cuenta de empresa está desactivada. Ponte en contacto con nosotros." });
   }
 
+  startSession(res, account, key);
+  res.json({ success: true, account: { company_name: account.company_name } });
+});
+
+function startSession(res, account, key) {
   db.prepare("UPDATE b2b_accounts SET last_login_at = datetime('now') WHERE id = ?").run(account.id);
   const token = jwt.sign({ sub: String(account.id), typ: "b2b" }, key, {
     expiresIn: `${SESSION_DAYS}d`,
   });
   res.setHeader("Set-Cookie", sessionCookie(token, SESSION_DAYS * 24 * 60 * 60));
+}
+
+// POST /api/b2b/forgot-password — { email }, from the sign-in page. The same
+// answer whether or not the email has an account, given before the email goes
+// out, so neither the text nor the timing tells which addresses are customers.
+router.post("/forgot-password", loginLimiter, (req, res) => {
+  if (!isB2bEnabled()) {
+    return res.status(404).json({ error: "El área de profesionales no está disponible." });
+  }
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  if (!email) return res.status(400).json({ error: "Introduce tu email." });
+
+  // A link issued in the last few minutes is not replaced: rotating addresses
+  // past the rate limiter must not be a way to flood someone's inbox.
+  const account = db
+    .prepare(
+      `SELECT * FROM b2b_accounts WHERE email = ? AND active = 1
+         AND (password_token_expires_at IS NULL OR password_token_expires_at < datetime('now', ?, '-5 minutes'))`,
+    )
+    .get(email, `+${PASSWORD_LINK_DAYS} days`);
+  const base = configuredSiteUrl();
+  if (account && !base) {
+    console.error("B2B: no se envía el enlace de contraseña olvidada, falta site_url (o SITE_URL)");
+  } else if (account && isSmtpConfigured()) {
+    // Not awaited (sendPasswordLink never throws). Without SMTP nothing is
+    // issued at all: a new token would void a link the admin passed on by hand.
+    void sendPasswordLink(account, base);
+  }
+  res.json({
+    success: true,
+    message: "Si ese email tiene una cuenta de empresa, te hemos enviado un enlace para elegir una contraseña nueva.",
+  });
+});
+
+// POST /api/b2b/set-password — { token, password }, from the link emailed by
+// sendPasswordLink(). Single use: the token is cleared as the password is set,
+// and the customer is signed in straight away.
+router.post("/set-password", loginLimiter, (req, res) => {
+  if (!isB2bEnabled()) {
+    return res.status(404).json({ error: "El área de profesionales no está disponible." });
+  }
+  const token = typeof req.body.token === "string" ? req.body.token.trim() : "";
+  const password = typeof req.body.password === "string" ? req.body.password : "";
+  if (password.length < MIN_PASSWORD) {
+    return res
+      .status(400)
+      .json({ error: `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres.` });
+  }
+  const key = sessionKey();
+  if (!key) return res.status(503).json({ error: "Servidor no configurado" });
+
+  const account = token
+    ? db
+        .prepare(
+          "SELECT * FROM b2b_accounts WHERE password_token_hash = ? AND password_token_expires_at > datetime('now')",
+        )
+        .get(hashToken(token))
+    : null;
+  if (!account) {
+    return res.status(400).json({
+      error: "Este enlace no es válido o ha caducado. Pídenos uno nuevo y te lo enviaremos.",
+    });
+  }
+  if (!account.active) {
+    return res
+      .status(403)
+      .json({ error: "Tu cuenta de empresa está desactivada. Ponte en contacto con nosotros." });
+  }
+
+  db.prepare(
+    "UPDATE b2b_accounts SET password_hash = ?, password_token_hash = NULL, password_token_expires_at = NULL, updated_at = datetime('now') WHERE id = ?",
+  ).run(hashPassword(password), account.id);
+  startSession(res, account, key);
   res.json({ success: true, account: { company_name: account.company_name } });
 });
 
@@ -416,7 +561,8 @@ function cleanAccountInput(body, { partial }) {
     }
     out.password_hash = hashPassword(body.password);
   } else if (!partial) {
-    return { error: `La contraseña debe tener al menos ${MIN_PASSWORD} caracteres.` };
+    // No password yet: the customer chooses one from the emailed link.
+    out.password_hash = "";
   }
   if (body.active !== undefined) out.active = body.active ? 1 : 0;
   return { values: out };
@@ -436,7 +582,10 @@ router.get("/accounts", requireAuth, (req, res) => {
   res.json({ accounts });
 });
 
-router.post("/accounts", requireAuth, (req, res) => {
+// POST /api/b2b/accounts — creates the account and emails its set-password
+// link. `password_link.sent` false means the account exists but the email did
+// not go out; `password_link.url` is then the link to pass on by hand.
+router.post("/accounts", requireAuth, asyncHandler(async (req, res) => {
   const { error, values } = cleanAccountInput(req.body, { partial: false });
   if (error) return res.status(400).json({ error });
   if (emailTaken(values.email)) {
@@ -449,8 +598,18 @@ router.post("/accounts", requireAuth, (req, res) => {
     )
     .run(values);
   const account = db.prepare("SELECT * FROM b2b_accounts WHERE id = ?").get(result.lastInsertRowid);
-  res.status(201).json({ success: true, account: publicAccount(account) });
-});
+  const password_link = await sendPasswordLink(account, siteBaseUrl(req));
+  res.status(201).json({ success: true, account: publicAccount(account), password_link });
+}));
+
+// POST /api/b2b/accounts/:id/password-link — a fresh link, replacing any
+// earlier one. Also how a customer who forgot their password gets back in;
+// the current password keeps working until the link is used.
+router.post("/accounts/:id/password-link", requireAuth, asyncHandler(async (req, res) => {
+  const account = db.prepare("SELECT * FROM b2b_accounts WHERE id = ?").get(req.params.id);
+  if (!account) return res.status(404).json({ error: "Cuenta no encontrada" });
+  res.json({ success: true, password_link: await sendPasswordLink(account, siteBaseUrl(req)) });
+}));
 
 // PUT /api/b2b/accounts/:id — partial; a password only when one is sent.
 router.put("/accounts/:id", requireAuth, (req, res) => {

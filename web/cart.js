@@ -187,6 +187,8 @@ function initB2bPage(ready) {
       });
   });
 
+  initB2bForgotPassword(form);
+
   document.getElementById("b2b-logout-btn").addEventListener("click", function () {
     fetch("/api/b2b/logout", { method: "POST", credentials: "same-origin" })
       .catch(function () {})
@@ -194,6 +196,111 @@ function initB2bPage(ready) {
         b2b = null;
         setB2bFlag(false);
         render();
+      });
+  });
+}
+
+// "¿Has olvidado tu contraseña?" on /profesionales: swaps the sign-in form for
+// one that asks POST /api/b2b/forgot-password to email a set-password link.
+// The answer is the same whether or not the email has an account.
+function initB2bForgotPassword(loginForm) {
+  var form = document.getElementById("b2b-forgot-form");
+  var toggle = document.getElementById("b2b-forgot-toggle");
+  if (!form || !toggle) return;
+  var msg = document.getElementById("b2b-forgot-msg");
+
+  function show(forgot) {
+    loginForm.hidden = forgot;
+    form.hidden = !forgot;
+    msg.hidden = true;
+    if (forgot && loginForm.email.value) form.email.value = loginForm.email.value;
+  }
+  toggle.addEventListener("click", function () {
+    show(true);
+  });
+  document.getElementById("b2b-forgot-back").addEventListener("click", function () {
+    show(false);
+  });
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    fetch("/api/b2b/forgot-password", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: form.email.value.trim() }),
+    })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          return { ok: r.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "No se pudo enviar el enlace.");
+        msg.textContent = result.data.message;
+        msg.style.color = "";
+      })
+      .catch(function (err) {
+        msg.textContent = err.message || "No se pudo enviar el enlace.";
+        msg.style.color = "var(--accent)";
+      })
+      .finally(function () {
+        msg.hidden = false;
+        submitBtn.disabled = false;
+      });
+  });
+}
+
+// /profesionales/contrasena/#token=… — the link emailed to a new B2B account.
+// The server signs the customer in on success, so /profesionales then shows
+// them as signed in.
+function initB2bSetPasswordPage() {
+  var form = document.getElementById("b2b-set-password-form");
+  if (!form) return;
+  var errorEl = document.getElementById("b2b-set-password-error");
+  var token = new URLSearchParams(location.hash.slice(1)).get("token") || "";
+
+  function showError(message) {
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+  }
+
+  if (!token) {
+    showError("Este enlace no es válido. Ábrelo desde el email que te enviamos.");
+    form.querySelector('button[type="submit"]').disabled = true;
+    return;
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    errorEl.hidden = true;
+    if (form.password.value !== form.confirm.value) {
+      showError("Las contraseñas no coinciden.");
+      return;
+    }
+    var submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    fetch("/api/b2b/set-password", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: token, password: form.password.value }),
+    })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          return { ok: r.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "No se pudo guardar la contraseña.");
+        // Replace, not assign: the back button must not return to a used link.
+        location.replace("/profesionales");
+      })
+      .catch(function (err) {
+        showError(err.message || "No se pudo guardar la contraseña.");
+        submitBtn.disabled = false;
       });
   });
 }
@@ -648,6 +755,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAddToCartButtons();
   initProductSearch();
   initCartPage();
+  initB2bSetPasswordPage();
 
   // The sign-in page asks unconditionally, flag or not: it is the page someone
   // opens precisely when they are unsure whether they are signed in.

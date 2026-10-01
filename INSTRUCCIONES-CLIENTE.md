@@ -167,7 +167,7 @@ Si no hay nada en la lista, no tienes que hacer nada.
 
 Sirve para que tus clientes de empresa (colegios, oficinas, comercios…) vean en tu web **sus propios precios, sin IVA**, con el descuento que tú decidas para cada categoría de productos.
 
-**Cómo funciona para la empresa.** Tú le das de alta una cuenta con un email y una contraseña. La empresa entra desde **Área de profesionales**, en el pie de tu web (la dirección es `tudominio.com/profesionales`), y a partir de ahí ve en todo el catálogo su precio profesional **sin IVA** y, si tiene descuento, el precio normal sin IVA tachado al lado. Sus reservas se hacen a ese precio: en Productos → Pedidos, y en el email de aviso si lo tienes configurado, verás qué empresa la ha hecho y el total sin IVA y con IVA. Los visitantes normales siguen viendo los precios de siempre.
+**Cómo funciona para la empresa.** Tú le das de alta una cuenta con su email y la web le envía un enlace para que elija su contraseña. La empresa entra desde **Área de profesionales**, en el pie de tu web (la dirección es `tudominio.com/profesionales`), y a partir de ahí ve en todo el catálogo su precio profesional **sin IVA** y, si tiene descuento, el precio normal sin IVA tachado al lado. Sus reservas se hacen a ese precio: en Productos → Pedidos, y en el email de aviso si lo tienes configurado, verás qué empresa la ha hecho y el total sin IVA y con IVA. Los visitantes normales siguen viendo los precios de siempre.
 
 **1. Activa el área.** Marca *Activar el área de profesionales* y pulsa **Guardar**. En unos segundos aparece el enlace en tu web. Si la desactivas, la página de acceso desaparece y nadie ve precios profesionales.
 
@@ -178,12 +178,14 @@ Sirve para que tus clientes de empresa (colegios, oficinas, comercios…) vean e
 
 El descuento se aplica al precio de venta al público, y la empresa ve el resultado sin IVA. Por ejemplo, un artículo de 12,10 € con IVA con un 20 % de descuento se le muestra a 8,00 € sin IVA. En el carrito ve además el IVA y el total con IVA. Si tu proveedor cambia un precio, el precio profesional cambia con él: siempre conserva el mismo porcentaje de descuento. Los cambios de descuento se aplican al momento, sin esperar a ninguna actualización.
 
-**3. Da de alta a las empresas.** Rellena el nombre de la empresa, el email con el que entrará y una contraseña (el botón **Generar** te propone una), y pulsa **Crear cuenta**. Después **envíale tú** el email y la contraseña: la web no se los manda.
+**3. Da de alta a las empresas.** Rellena el nombre de la empresa y el email con el que entrará, y pulsa **Crear cuenta**. La web le envía a ese email un enlace para que elija su contraseña (caduca en 7 días); al elegirla ya entra con su cuenta. Tú no llegas a conocer su contraseña. Si el email de tu web no está configurado o falla, el panel te muestra el enlace para que se lo envíes tú.
 
 En la lista de cuentas puedes:
 
 - **Desactivar** una cuenta con la casilla *Activa*: deja de ver los precios profesionales en ese mismo momento.
-- **Nueva contraseña** — si la empresa la ha olvidado. Envíale la nueva.
+- **Enviar enlace de acceso** — si la empresa no recibió el email, el enlace caducó o ha olvidado su contraseña. Le llega un enlace nuevo para elegir contraseña; el anterior deja de valer.
+
+Si una empresa olvida su contraseña también puede pedir el enlace ella misma, con **¿Has olvidado tu contraseña?** en la página de acceso. Para eso tu web necesita tener configurada su dirección (Mi sitio web → URL del sitio) y el email.
 - **Eliminar** la cuenta. Sus reservas anteriores se conservan.
 
 > **Una empresa quiere darse de alta.** Las empresas no pueden registrarse solas: en la página de acceso se les invita a contactar contigo, y eres tú quien decide a quién das de alta.

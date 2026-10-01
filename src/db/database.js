@@ -518,6 +518,12 @@ ensureColumn("reservations", "b2b_company", "TEXT");
 // default of 1 keeps every existing row reading correctly.
 ensureColumn("reservations", "vat_included", "INTEGER NOT NULL DEFAULT 1");
 ensureColumn("reservations", "vat_cents", "INTEGER");
+// One-time "choose your password" link for a B2B account (src/api/b2b.js).
+// Only the token's SHA-256 is kept, so a copy of the database cannot be used
+// to set anyone's password. An account created this way has an empty
+// password_hash (the column is NOT NULL) until the link is used.
+ensureColumn("b2b_accounts", "password_token_hash", "TEXT");
+ensureColumn("b2b_accounts", "password_token_expires_at", "TEXT");
 ensureColumn("products", "gtin", "TEXT");
 ensureColumn("products", "mpn", "TEXT");
 ensureColumn("products", "brand", "TEXT");

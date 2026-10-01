@@ -23,7 +23,17 @@ eleventyExcludeFromCollections: true
       <input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required>
       <button type="submit" class="site-btn">Entrar</button>
       <p id="b2b-login-error" class="b2b-login-error" role="alert" hidden></p>
+      <p class="site-page-desc"><button type="button" id="b2b-forgot-toggle" class="b2b-logout-btn">¿Has olvidado tu contraseña?</button></p>
       <p class="site-page-desc">¿Todavía no tienes cuenta? <a href="/contacto">Contacta con nosotros</a> y te damos de alta.</p>
+    </form>
+
+    <form id="b2b-forgot-form" class="site-contact-form" hidden>
+      <h2>Elige una contraseña nueva</h2>
+      <p class="site-page-desc">Escribe el email de tu cuenta de empresa y te enviaremos un enlace para elegir una contraseña nueva.</p>
+      <input type="email" name="email" placeholder="Email" autocomplete="username" required>
+      <button type="submit" class="site-btn">Enviar enlace</button>
+      <p id="b2b-forgot-msg" class="site-page-desc" role="status" hidden></p>
+      <p class="site-page-desc"><button type="button" id="b2b-forgot-back" class="b2b-logout-btn">Volver a entrar con mi contraseña</button></p>
     </form>
 
     <div id="b2b-account" class="b2b-account" hidden>
