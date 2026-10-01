@@ -737,6 +737,11 @@ body.infographic-lightbox-open {
   max-width: 480px;
   margin-top: 1.5rem;
 }
+/* display:flex above outranks the UA's [hidden] rule, so a form the scripts
+   hide (B2B sign-in once signed in, checkout on an empty cart) stayed visible. */
+.site-contact-form[hidden] {
+  display: none;
+}
 .site-contact-form input,
 .site-contact-form textarea {
   padding: 0.625rem 0.875rem;
