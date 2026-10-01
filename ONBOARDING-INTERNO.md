@@ -89,8 +89,8 @@ Viene **desactivada**. Solo se activa si el cliente lo ha pedido en el formulari
 
 - [ ] Panel → **Profesionales** → marcar *Activar el área de profesionales* y **Guardar**
 - [ ] Poner el **descuento general** y los **descuentos por categoría** que haya pedido el cliente (vacío = usa el general; 0 = sin descuento en esa categoría)
-- [ ] Si nos ha pasado empresas para dar de alta: crear cada cuenta (empresa, CIF, email y contraseña con **Generar**). Las credenciales se las envía **el cliente** a sus empresas: la web no manda ningún email
-- [ ] Verificar en la web pública que el pie muestra *Área de profesionales* y que, entrando con una cuenta de prueba, el catálogo enseña los precios **sin IVA**. Borrar la cuenta de prueba después
+- [ ] Si nos ha pasado empresas para dar de alta: crear cada cuenta (empresa, CIF, email). La web envía a cada empresa un enlace para elegir su contraseña, así que **el email (SMTP) tiene que estar configurado antes**; si no, el panel muestra el enlace para enviarlo a mano
+- [ ] Verificar en la web pública que el pie muestra *Área de profesionales* y que, entrando con una cuenta de prueba (con un email nuestro, para recibir el enlace), el catálogo enseña los precios **sin IVA**. Borrar la cuenta de prueba después
 
 Avisa al cliente en la entrega de que **las empresas ven los precios sin IVA** y de que sus reservas llegan sin IVA, con el IVA y el total con IVA desglosados en Pedidos y en el email de aviso.
 

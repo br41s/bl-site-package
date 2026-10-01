@@ -198,6 +198,58 @@ function initB2bPage(ready) {
   });
 }
 
+// /profesionales/contrasena/#token=… — the link emailed to a new B2B account.
+// The server signs the customer in on success, so /profesionales then shows
+// them as signed in.
+function initB2bSetPasswordPage() {
+  var form = document.getElementById("b2b-set-password-form");
+  if (!form) return;
+  var errorEl = document.getElementById("b2b-set-password-error");
+  var token = new URLSearchParams(location.hash.slice(1)).get("token") || "";
+
+  function showError(message) {
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+  }
+
+  if (!token) {
+    showError("Este enlace no es válido. Ábrelo desde el email que te enviamos.");
+    form.querySelector('button[type="submit"]').disabled = true;
+    return;
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    errorEl.hidden = true;
+    if (form.password.value !== form.confirm.value) {
+      showError("Las contraseñas no coinciden.");
+      return;
+    }
+    var submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    fetch("/api/b2b/set-password", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: token, password: form.password.value }),
+    })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          return { ok: r.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        if (!result.ok) throw new Error(result.data.error || "No se pudo guardar la contraseña.");
+        // Replace, not assign: the back button must not return to a used link.
+        location.replace("/profesionales");
+      })
+      .catch(function (err) {
+        showError(err.message || "No se pudo guardar la contraseña.");
+        submitBtn.disabled = false;
+      });
+  });
+}
+
 function getCart() {
   try {
     var raw = localStorage.getItem(CART_KEY);
@@ -605,6 +657,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAddToCartButtons();
   initProductSearch();
   initCartPage();
+  initB2bSetPasswordPage();
 
   // The sign-in page asks unconditionally, flag or not: it is the page someone
   // opens precisely when they are unsure whether they are signed in.
