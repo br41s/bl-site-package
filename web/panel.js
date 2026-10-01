@@ -1923,6 +1923,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   var RESERVATION_STATUSES = [
+    ["awaiting_payment", "Pendiente de pago"],
     ["pending", "Pendiente"],
     ["confirmed", "Confirmada"],
     ["ready_for_pickup", "Lista para entregar"],

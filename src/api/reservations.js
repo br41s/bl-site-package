@@ -12,7 +12,10 @@ const router = Router();
 // Public checkout endpoint: cap volume to blunt spam/DB-flooding.
 const reservationLimiter = rateLimit({ windowMs: 60 * 1000, max: 10 });
 
-const VALID_STATUSES = ["pending", "confirmed", "ready_for_pickup", "completed", "cancelled"];
+// awaiting_payment: a transfer reservation, until the admin sees the money
+// arrive and confirms it. Not a sale yet, so "Lo más vendido" ignores it
+// (SOLD_STATUSES in site/_data/shopBlocks.js).
+const VALID_STATUSES = ["awaiting_payment", "pending", "confirmed", "ready_for_pickup", "completed", "cancelled"];
 
 const eur = (cents) => `${(cents / 100).toFixed(2)} €`;
 
@@ -20,7 +23,9 @@ const eur = (cents) => `${(cents / 100).toFixed(2)} €`;
 // A B2B account pays the way it has agreed with the business, so it never
 // sees the IBAN. A retail customer pays by transfer when the panel has bank
 // details; with none set, null keeps the original reserve-and-pay-on-delivery.
-function paymentInstructions({ reservationId, amountCents, b2b }) {
+// Called before the insert, since it also decides the starting status; the
+// reference (the reservation number) is filled in once the row exists.
+function paymentInstructions({ amountCents, b2b }) {
   if (b2b) return { method: "usual" };
   const iban = getConfig("bank_iban");
   if (!iban) return null;
@@ -29,7 +34,7 @@ function paymentInstructions({ reservationId, amountCents, b2b }) {
     holder: getConfig("bank_holder") || getConfig("legal_name") || getConfig("company_name") || "",
     iban: formatIban(iban),
     bic: (getConfig("bank_bic") || "").toUpperCase(),
-    reference: `Reserva ${reservationId}`,
+    reference: null,
     amount_cents: amountCents,
   };
 }
@@ -106,17 +111,23 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
   const total_cents = resolvedItems.reduce((sum, i) => sum + i.unit_price_cents * i.quantity, 0);
   const vat_included = b2bAccount ? 0 : 1;
   const vat_cents = b2bAccount ? vatCents(total_cents) : null;
+  const payment = paymentInstructions({
+    amountCents: vat_included ? total_cents : total_cents + vat_cents,
+    b2b: Boolean(b2bAccount),
+  });
+  const status = payment?.method === "transfer" ? "awaiting_payment" : "pending";
 
   const insertReservation = db.transaction(() => {
     const result = db
       .prepare(
-        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, total_cents, b2b_account_id, b2b_company, vat_included, vat_cents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, status, total_cents, b2b_account_id, b2b_company, vat_included, vat_cents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .run(
         customer_name,
         customer_email,
         customer_phone,
         notes,
+        status,
         total_cents,
         b2bAccount ? b2bAccount.id : null,
         b2bAccount ? b2bAccount.company_name : null,
@@ -134,11 +145,7 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
 
   const reservationId = insertReservation();
 
-  const payment = paymentInstructions({
-    reservationId,
-    amountCents: vat_included ? total_cents : total_cents + vat_cents,
-    b2b: Boolean(b2bAccount),
-  });
+  if (payment?.method === "transfer") payment.reference = `Reserva ${reservationId}`;
 
   const itemsList = resolvedItems
     .map((i) => `- ${i.quantity} x ${i.product_name} (${eur(i.unit_price_cents)}${vat_included ? "" : " sin IVA"})`)

@@ -103,6 +103,27 @@ describe("payment instructions", () => {
     assert.match(mail.text, /24\.20 €/);
     assert.match(mail.text, new RegExp(`Concepto: Reserva ${body.id}`));
     assert.match(ownerEmail().text, /Pago: por transferencia/);
+    const row = db.prepare("SELECT status FROM reservations WHERE id = ?").get(body.id);
+    assert.equal(row.status, "awaiting_payment");
+  });
+
+  test("only a transfer reservation starts as awaiting payment, and the panel can confirm it", async () => {
+    const plain = await reserve();
+    assert.equal(db.prepare("SELECT status FROM reservations WHERE id = ?").get(plain.body.id).status, "pending");
+
+    setConfig("bank_iban", "ES4301824731840201605267");
+    const { body } = await reserve();
+    const jwt = (await import("jsonwebtoken")).default;
+    const res = await fetch(`${baseUrl}/api/reservations/${body.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwt.sign({ role: "admin" }, process.env.JWT_SECRET)}`,
+      },
+      body: JSON.stringify({ status: "confirmed" }),
+    });
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).status, "confirmed");
   });
 
   test("a business account never sees the IBAN and is told it pays as usual", async () => {
@@ -122,6 +143,7 @@ describe("payment instructions", () => {
     assert.deepEqual(body.payment, { method: "usual" });
     assert.doesNotMatch(customerEmail().text, /IBAN|ES43/);
     assert.match(customerEmail().text, /forma de pago habitual/);
+    assert.equal(db.prepare("SELECT status FROM reservations WHERE id = ?").get(body.id).status, "pending");
   });
 
   test("with no IBAN set, nothing changes but the customer still gets a confirmation", async () => {
