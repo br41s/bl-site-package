@@ -124,6 +124,17 @@ function initContactForm() {
 
   var turnstileWidget = document.getElementById("contact-turnstile");
 
+  // Honeypot (see src/spam.js): off-screen rather than display:none, which
+  // some bots know to skip. Out of the tab order and hidden from screen readers.
+  var honeypot = document.createElement("input");
+  honeypot.type = "text";
+  honeypot.name = "website";
+  honeypot.tabIndex = -1;
+  honeypot.autocomplete = "off";
+  honeypot.setAttribute("aria-hidden", "true");
+  honeypot.style.cssText = "position:absolute;left:-9999px;width:1px;height:1px;opacity:0";
+  form.appendChild(honeypot);
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     submitButton.disabled = true;
@@ -145,6 +156,7 @@ function initContactForm() {
         email: emailInput.value.trim(),
         message: messageInput.value.trim(),
         turnstile_token: turnstileToken,
+        website: honeypot.value,
       }),
     })
       .then(function (r) {
