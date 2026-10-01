@@ -11,6 +11,7 @@ import {
   recordVisitorEmailResult,
 } from "../mail/mailer.js";
 import { isTurnstileConfigured, verifyTurnstileToken } from "../turnstile.js";
+import { spamReason } from "../spam.js";
 import { asyncHandler } from "../middleware/async-handler.js";
 
 const router = Router();
@@ -75,6 +76,17 @@ router.post("/", contactLimiter, asyncHandler(async (req, res) => {
         .status(400)
         .json({ error: "No se pudo verificar que no eres un robot. Inténtalo de nuevo." });
     }
+  }
+
+  const reason = spamReason({ name, message, raw: req.body });
+  if (reason) {
+    // Same response as a real submission: an error would tell the bot what to
+    // change. Not stored either, so the panel inbox stays clean.
+    // WARN with the sender: if the filter ever drops a real customer, this line
+    // is the only trace of them. JSON.stringify because email is unvalidated
+    // here and a newline in it could forge a log line.
+    console.warn(`Contacto descartado como spam (${reason}) de ${JSON.stringify(email)}, sin guardar ni enviar`);
+    return res.json({ success: true });
   }
 
   db.prepare(

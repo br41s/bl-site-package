@@ -115,7 +115,7 @@ descuento, menos el IVA.
 | `LIDERPAPEL_LOCAL_DIR` | Directorio del feed en modo `local`                        | vacío              |
 | `BL_SITE_DISABLE_REBUILD` | `1` desactiva la reconstrucción automática. **Solo para tests** | vacío       |
 | `TRUST_PROXY_HOPS`    | Nº de saltos de proxy inverso hasta esta app (activa `trust proxy` de Express para que el rate limiter use la IP real). En Zeabur son `1`; sin confirmar el nº de saltos, no la actives | vacío (desactivado) |
-| `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile (formulario de contacto y login del panel), o desde el panel | vacío |
+| `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile (formulario de contacto y login del panel), o desde el panel. Detrás corre `src/spam.js` (campo trampa + texto aleatorio): el spam recibe `success` pero no se guarda ni se envía | vacío |
 
 Si estas variables están vacías, el asistente de inicio en `/setup` guarda la configuración en SQLite.
 
