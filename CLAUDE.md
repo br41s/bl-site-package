@@ -97,6 +97,10 @@ three lives. Idle, the same simulation plays itself behind the hero text.
 - **No customer data in the scene.** The warehouse sign is `company_name`; the
   truck says "Proveedor". The files are passed through one by one in
   `eleventy.config.mjs` so a file added to `web/game/` is not shipped by accident.
+- **Playable without a pointer:** keys 1-4 pick a product, arrows pick an office
+  (numbered on the canvas), Enter delivers; every order, loss and delivery is
+  read out through an `aria-live` line, and the idle demo has a pause button.
+  Browsers without `ctx.roundRect` get the plain hero, no Jugar button.
 - `prefers-reduced-motion` gets one still frame; the loop stops when the hero is
   off-screen or the tab hidden (the Browser pane counts as hidden — override
   `document.hidden` to watch it there). Best score: `localStorage` `bl-game-best`.

@@ -14,6 +14,7 @@ const LABELS = { clips: "Clips", paper: "Papel", pens: "Bolis", folders: "Carpet
 // Fixed per product, and each icon also has its own shape, so colour is never
 // the only cue. Picked to read on both the light and the dark background.
 const PRODUCT_COLORS = { clips: "#3b82f6", paper: "#10b981", pens: "#8b5cf6", folders: "#f59e0b" };
+const NAMES = { clips: "clips", paper: "papel", pens: "bolígrafos", folders: "carpetas" };
 const BEST_KEY = "bl-game-best";
 const TRUCK_CYCLE_MS = 14000;
 
@@ -23,6 +24,9 @@ if (hero) init(hero);
 function init(hero) {
   const canvas = hero.querySelector(".hero-game-canvas");
   const ctx = canvas.getContext("2d");
+  // Older browsers (Safari < 16) lack roundRect, which every shape uses. Leave
+  // the hero as plain text there rather than offer a game that cannot draw.
+  if (!ctx || typeof ctx.roundRect !== "function") return;
   const playBtn = hero.querySelector(".hero-game-play");
   const hud = hero.querySelector(".hero-game-hud");
   const livesEl = hero.querySelector(".hero-game-lives");
@@ -31,6 +35,8 @@ function init(hero) {
   const hint = hero.querySelector(".hero-game-hint");
   const overBox = hero.querySelector(".hero-game-over");
   const overText = hero.querySelector(".hero-game-over-text");
+  const live = hero.querySelector(".hero-game-live");
+  const pauseBtn = hero.querySelector(".hero-game-pause");
   const company = hero.dataset.company || "Almacén";
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -44,19 +50,58 @@ function init(hero) {
   let raf = 0;
   let last = 0;
   let visible = true;
+  let paused = false; // the visitor stopped the idle animation (WCAG 2.2.2)
+  let cursor = null; // keyboard: index of the office the arrows point at
+  let hintTimer = 0;
 
   playBtn.hidden = false;
+  pauseBtn.hidden = reducedMotion.matches;
+  pauseBtn.addEventListener("click", () => {
+    paused = !paused;
+    pauseBtn.setAttribute("aria-pressed", String(paused));
+    pauseBtn.textContent = paused ? "Reanudar animación" : "Pausar animación";
+    schedule();
+  });
   playBtn.addEventListener("click", startGame);
   hero.querySelector(".hero-game-exit").addEventListener("click", exitGame);
   hero.querySelector(".hero-game-again").addEventListener("click", startGame);
   hero.querySelector(".hero-game-leave").addEventListener("click", exitGame);
+  // Keyboard play: 1-4 pick a product, arrows move between offices, Enter or
+  // Space delivers. Each order, loss and delivery is read out through the
+  // aria-live line, since the board itself is a canvas.
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && state.mode === "play") exitGame();
+    if (state.mode !== "play") return;
+    if (e.key === "Escape") return exitGame();
+    // Enter on a focused button (Salir) keeps meaning "press that button".
+    if (state.over || e.target.closest?.("button")) return;
+    const n = Number(e.key);
+    if (n >= 1 && n <= PRODUCT_TYPES.length) {
+      selected = PRODUCT_TYPES[n - 1];
+      say(`Producto: ${NAMES[selected]}.`);
+    } else if (e.key.startsWith("Arrow")) {
+      const count = L.offices.length;
+      const step = e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 1;
+      cursor = cursor === null ? 0 : (cursor + step + count) % count;
+      const order = state.offices[cursor].order;
+      say(`Oficina ${cursor + 1}: ${order && order.dispatchedAt === null ? "pide " + NAMES[order.type] : "sin pedido"}.`);
+    } else if ((e.key === "Enter" || e.key === " ") && cursor !== null) {
+      if (!selected) say("Elige primero un producto con las teclas 1 a 4.");
+      else drop(L.offices[cursor], selected);
+    } else return;
+    e.preventDefault();
+    hover = cursor === null ? null : L.offices[cursor];
   });
+
+  function say(text) {
+    live.textContent = text;
+  }
 
   // ── Loop ──────────────────────────────────────────────────────────────
   function animating() {
-    return visible && !document.hidden && (state.mode === "play" || !reducedMotion.matches);
+    if (!visible || document.hidden) return false;
+    // After game over nothing moves: no need to redraw behind the dialog.
+    if (state.mode === "play") return !state.over;
+    return !reducedMotion.matches && !paused;
   }
 
   function frame(t) {
@@ -111,13 +156,18 @@ function init(hero) {
   function startGame() {
     state = createGame({ mode: "play" });
     effects = [];
-    drag = selected = hover = null;
+    drag = selected = hover = cursor = null;
     hero.classList.add("is-playing");
     overBox.hidden = true;
     hud.hidden = false;
     hint.hidden = false;
-    setTimeout(() => (hint.hidden = true), 4500);
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => (hint.hidden = true), 6000);
     updateHud();
+    say("Empieza la jornada. Teclas 1 a 4: producto; flechas: oficina; Intro: entregar.");
+    // Keep focus inside the game: the hero text (and the Jugar button) hides.
+    // The HUD, not a button, so Enter delivers instead of pressing Salir.
+    hud.focus({ preventScroll: true });
     // The hero opens the homepage; scrolling to it with scrollIntoView would
     // tuck its top (and the HUD) under the sticky nav.
     window.scrollTo({ top: 0, behavior: reducedMotion.matches ? "auto" : "smooth" });
@@ -128,9 +178,11 @@ function init(hero) {
   function exitGame() {
     state = createGame({ mode: "demo" });
     effects = [];
-    drag = selected = hover = null;
+    drag = selected = hover = cursor = null;
     hero.classList.remove("is-playing");
     hud.hidden = overBox.hidden = hint.hidden = true;
+    clearTimeout(hintTimer);
+    say("");
     resize();
     stillFrame();
     schedule();
@@ -141,6 +193,11 @@ function init(hero) {
     const now = performance.now();
     for (const e of events) {
       if (e.kind === "served" || e.kind === "expired") effects.push({ kind: e.kind, officeId: e.officeId, at: now });
+      if (state.mode !== "play") continue;
+      if (e.kind === "ordered") say(`Oficina ${e.officeId + 1} pide ${NAMES[e.type]}.`);
+      if (e.kind === "served") say(`Entregado en la oficina ${e.officeId + 1}.`);
+      if (e.kind === "expired" && state.lives > 0)
+        say(`Pedido perdido en la oficina ${e.officeId + 1}. Te quedan ${state.lives} vidas.`);
       if (e.kind === "over") gameOver(e.served);
     }
     if (state.mode === "play" && events.length) updateHud();
@@ -175,7 +232,8 @@ function init(hero) {
     if (served > best && best > 0) overText.textContent += " ¡Nuevo récord!";
     overBox.hidden = false;
     hud.hidden = true;
-    drag = selected = null;
+    drag = selected = cursor = null;
+    say(overText.textContent);
     hero.querySelector(".hero-game-again").focus();
   }
 
@@ -194,8 +252,15 @@ function init(hero) {
 
   function drop(office, type) {
     const result = deliver(state, office.id, type);
-    if (result === "wrong") effects.push({ kind: "wrong", officeId: office.id, at: performance.now() });
-    if (result === "dispatched") selected = null;
+    if (result === "wrong") {
+      effects.push({ kind: "wrong", officeId: office.id, at: performance.now() });
+      say(`La oficina ${office.id + 1} no pide ${NAMES[type]}.`);
+    }
+    if (result === "dispatched") {
+      selected = null;
+      say(`Furgoneta en camino a la oficina ${office.id + 1}.`);
+    }
+    if (result === "none") say(`La oficina ${office.id + 1} no tiene pedido.`);
   }
 
   canvas.addEventListener("pointerdown", (e) => {
@@ -399,7 +464,7 @@ function init(hero) {
 
   function drawOffice(c, o) {
     const { b, bubble } = o;
-    const highlighted = hover === o && (drag || selected) && state.mode === "play";
+    const highlighted = hover === o && (drag || selected || cursor !== null) && state.mode === "play";
     ctx.fillStyle = c.subtle;
     ctx.strokeStyle = highlighted ? c.accent : c.border;
     ctx.lineWidth = highlighted ? 3 : 2;
@@ -417,6 +482,14 @@ function init(hero) {
       }
     }
     ctx.fillRect(b.x + ww * 3, b.y + b.h - wh * 1.8, ww, wh * 1.8);
+    if (state.mode === "play") {
+      // Office number: what the keyboard cursor and the announcements use.
+      ctx.fillStyle = c.muted;
+      ctx.font = `600 11px ${c.font}`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(String(o.id + 1), b.x + 3, b.y + 2);
+    }
 
     const order = state.offices[o.id].order;
     if (!order || order.dispatchedAt !== null) return;
@@ -529,6 +602,10 @@ function init(hero) {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(LABELS[t.type], t.x + t.w / 2, t.y + t.h * 0.82);
+      // Its keyboard key, top-left.
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(String(PRODUCT_TYPES.indexOf(t.type) + 1), t.x + 6, t.y + 5);
       ctx.globalAlpha = 1;
     }
   }

@@ -26,15 +26,17 @@ navActive: index
   <div class="site-hero-actions reveal"><a href="/productos" class="site-btn">Ver catálogo</a><a href="/contacto" class="site-btn-ghost">Contactar</a>{% if heroGame %}<button type="button" class="site-btn-ghost hero-game-play" hidden>▶ Jugar a repartir</button>{% endif %}</div>
   </div>
   {%- if heroGame %}
-  <div class="hero-game-hud" hidden>
-    <span class="hero-game-lives"></span>
+  <button type="button" class="hero-game-pause" aria-pressed="false" hidden>Pausar animación</button>
+  <div class="hero-game-hud" tabindex="-1" aria-label="Partida en curso" hidden>
+    <span class="hero-game-lives" role="img"></span>
     <span>Pedidos <b class="hero-game-served">0</b></span>
     <span>Récord <b class="hero-game-best">0</b></span>
     <button type="button" class="site-btn-ghost hero-game-exit">Salir</button>
   </div>
-  <p class="hero-game-hint" hidden>Arrastra cada producto hasta la oficina que lo pide (o tócalo y luego toca la oficina).</p>
-  <div class="hero-game-over" role="dialog" aria-live="polite" hidden>
-    <p class="hero-game-over-text"></p>
+  <p class="hero-game-hint" hidden>Arrastra cada producto hasta la oficina que lo pide (o tócalo y luego toca la oficina). Con teclado: 1-4 eligen producto, las flechas eligen oficina e Intro entrega.</p>
+  <p class="hero-game-live visually-hidden" aria-live="polite"></p>
+  <div class="hero-game-over" role="dialog" aria-labelledby="hero-game-over-text" hidden>
+    <p class="hero-game-over-text" id="hero-game-over-text"></p>
     <div class="site-hero-actions"><button type="button" class="site-btn hero-game-again">Otra jornada</button><button type="button" class="site-btn-ghost hero-game-leave">Salir</button></div>
   </div>
   <script type="module" src="/game/hero-game.js"></script>

@@ -33,3 +33,10 @@ test("never slows down and never passes the cap", () => {
 test("is busier after five minutes than at the start", () => {
   assert.ok(ordersPerMinute(5 * MINUTE) > START_ORDERS_PER_MINUTE);
 });
+
+test("is always a positive finite rate (0 or NaN would stop orders for good)", () => {
+  for (let ms = 0; ms <= 120 * MINUTE; ms += 30000) {
+    const rate = ordersPerMinute(ms);
+    assert.ok(Number.isFinite(rate) && rate > 0, `bad rate ${rate} at ${ms} ms`);
+  }
+});

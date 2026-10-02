@@ -233,6 +233,34 @@ body {
   font-size: 0.9rem;
   white-space: nowrap;
 }
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.hero-game-pause {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.site-hero-game.is-playing .hero-game-pause {
+  display: none;
+}
+.hero-game-hud:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .hero-game-lives {
   color: #dc2626;
   letter-spacing: 0.1em;
