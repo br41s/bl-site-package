@@ -67,7 +67,7 @@ En Zeabur → tu servicio → Variables:
 
 **Comprueba antes que el hosting del cliente permite salida por el puerto 22.** El servidor del cliente es quien se conecta al sFTP del distribuidor, no nosotros: si su hosting bloquea la salida SSH, la sincronización falla con `Timed out while waiting for handshake` y **la web no da ningún otro síntoma** — sigue sirviendo el catálogo de la última pasada buena. Le pasó a Shoroban y costó horas localizarlo. Para descartarlo desde el propio panel, apunta el campo *Host* a `github.com` temporalmente y sincroniza: si da el mismo timeout, el bloqueo es del hosting y no del distribuidor. Devuelve el host a su valor real después.
 
-- [ ] Si el cliente cobra por **transferencia** (apartado 1e del formulario): Productos → Pedidos → *Pago por transferencia* → titular, IBAN y BIC → **Guardar datos bancarios**. El panel rechaza un IBAN con dígitos de control incorrectos. Comprobar con una reserva de prueba que salen los datos (y el email al cliente, si hay SMTP); borrarla después
+- [ ] Si el cliente cobra por **transferencia** (apartado 1e del formulario): Pedidos → *Pago por transferencia* → titular, IBAN y BIC → **Guardar datos bancarios**. El panel rechaza un IBAN con dígitos de control incorrectos. Comprobar con una reserva de prueba que salen los datos (y el email al cliente, si hay SMTP); borrarla después
 - [ ] Si el cliente contrató el **Product Sheet Writer**, avísalo a quien gestione Hermes (ver más abajo): ese agente solo sirve si hay catálogo conectado
 
 ### 5c. Portada de la tienda (solo si hay catálogo)
@@ -81,7 +81,7 @@ Los bloques vienen activados de fábrica y se calculan solos, así que **no hay 
 
 Dos cosas que **hay que avisarle al cliente en la entrega**, o las reportará como fallos:
 
-- **«Lo más vendido» no aparecerá al principio.** Solo cuenta reservas que él haya confirmado desde la pestaña Pedidos; los carritos sin confirmar no cuentan, a propósito (`POST /api/reservations` es público y anónimo). Aparece solo en cuanto confirme pedidos.
+- **«Lo más vendido» no aparecerá al principio.** Solo cuenta reservas que él haya confirmado desde la sección Pedidos; los carritos sin confirmar no cuentan, a propósito (`POST /api/reservations` es público y anónimo). Aparece solo en cuanto confirme pedidos.
 - **«Novedades» no significa nada hasta la segunda sincronización**, porque la carga inicial da de alta todo el catálogo a la vez.
 
 ### 5d. Área de profesionales (solo si hay catálogo y el cliente vende a empresas)
