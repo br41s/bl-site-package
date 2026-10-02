@@ -162,6 +162,10 @@ The pages state what the code does, so a code change can make them false:
   `reservations.terms_accepted_at`) and the button says «Confirmar pedido con
   obligación de pago» (TRLGDCU art. 98.2). The screen says «Pedido recibido»:
   the terms make the contract when the business confirms, not on submit.
+- **Promises depend on what the deploy can do.** Emailed copies are promised only
+  when `site.mail_configured` (SMTP set). `/uso-de-ia` and the footer must not
+  promise human review before publication: agents can publish posts and product
+  sheets directly. Add a review gate in code before ever claiming one again.
 - Wording follows `bank_iban` the way `paymentInstructions` does
   (`site.shop_payment_line`); never promise "sin pago por adelantado" again.
 

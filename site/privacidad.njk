@@ -25,7 +25,7 @@ permalink: "/privacidad.html"
     <h3>Formulario de contacto</h3>
     <ul>
       <li><strong>Datos:</strong> nombre, email y el mensaje que nos escribes.</li>
-      <li><strong>Para qué:</strong> responder a tu consulta y enviarte una copia de tu mensaje por email.</li>
+      <li><strong>Para qué:</strong> responder a tu consulta{% if site.mail_configured %} y enviarte una copia de tu mensaje por email{% endif %}.</li>
       <li><strong>Base legal:</strong> tu propia solicitud. Si consultas por un producto o un pedido, la aplicación de medidas precontractuales (art. 6.1.b RGPD); en otro caso, nuestro interés legítimo en atenderte (art. 6.1.f RGPD).</li>
       <li><strong>Plazo:</strong> {{ site.retention.contactMonths }} meses desde que nos escribes; después el mensaje se borra automáticamente. Antes, si nos lo pides.</li>
     </ul>

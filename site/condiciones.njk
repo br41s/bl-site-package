@@ -40,7 +40,7 @@ permalink: "/condiciones.html"
       <li>Añade los productos al carrito.</li>
       <li>En el carrito, indica tu nombre y tu email (el teléfono es opcional). En las notas puedes decirnos cómo prefieres recibir el pedido.</li>
       <li>Acepta estas condiciones y la política de privacidad, y pulsa <strong>«Confirmar pedido con obligación de pago»</strong>. Hasta ese momento puedes cambiar o quitar productos y corregir tus datos.</li>
-      <li>Te mostramos en pantalla el resumen del pedido, con su número, y te lo enviamos por email como acuse de recibo{% if site.bank_iban %}, junto con los datos para pagarlo por transferencia{% endif %}.</li>
+      <li>Te mostramos en pantalla el resumen del pedido, con su número{% if site.bank_iban %} y los datos para pagarlo por transferencia{% endif %}{% if site.mail_configured %}, y te lo enviamos por email como acuse de recibo{% else %}; guárdalo o imprímelo como acuse de recibo, o pídenos una copia por escrito{% endif %}.</li>
       <li>Revisamos la disponibilidad y la forma de entrega y te confirmamos el pedido. Si la entrega tiene gastos que todavía no conocías, te los indicamos antes de prepararlo y puedes anular el pedido sin coste. <strong>El contrato queda perfeccionado con esa confirmación.</strong></li>
     </ol>
     <p>Guardamos los datos de cada pedido durante el plazo indicado en la <a href="/privacidad">Política de privacidad</a>. Si necesitas una copia, pídenosla.</p>
