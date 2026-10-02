@@ -4,6 +4,7 @@ navActive: productos
 permalink: "/carrito/index.html"
 title: "Carrito"
 ---
+{%- set titular = site.legal_name or site.company_name or "El titular de este sitio web" %}
 <main class="site-page"><div class="site-page-inner">
   <h1 class="reveal">Carrito</h1>
 
@@ -24,15 +25,26 @@ title: "Carrito"
     <form id="checkout-form" class="site-contact-form" hidden>
       <h2>Datos de contacto</h2>
       {%- if site.bank_iban %}
-      <p class="site-page-desc" id="checkout-intro">Al confirmar la reserva te daremos los datos para pagarla por transferencia bancaria. No se realiza ningún pago online.</p>
+      <p class="site-page-desc" id="checkout-intro">Al confirmar el pedido te daremos los datos para pagarlo por transferencia bancaria. No se realiza ningún pago online.</p>
       {%- else %}
-      <p class="site-page-desc" id="checkout-intro">Reserva tus productos y te contactaremos para confirmar la entrega. No se realiza ningún pago online.</p>
+      <p class="site-page-desc" id="checkout-intro">Haz tu pedido y te contactaremos para confirmar la entrega. Se paga al recibirlo o recogerlo; no se realiza ningún pago online.</p>
       {%- endif %}
       <input type="text" name="customer_name" placeholder="Nombre y apellidos" required>
       <input type="email" name="customer_email" placeholder="Email" required>
-      <input type="tel" name="customer_phone" placeholder="Teléfono">
-      <textarea name="notes" placeholder="Notas (opcional)" rows="3"></textarea>
-      <button type="submit" class="site-btn">Confirmar reserva</button>
+      <input type="tel" name="customer_phone" placeholder="Teléfono (opcional)">
+      <textarea name="notes" placeholder="Notas (opcional): cómo prefieres recibirlo, datos para la factura…" rows="3"></textarea>
+      {%- if site.sales_shipping_text %}
+      <details class="checkout-shipping">
+        <summary>Entregas y gastos de envío</summary>
+        <div class="legal-shipping">{{ site.sales_shipping_text }}</div>
+      </details>
+      {%- endif %}
+      <label class="checkout-accept">
+        <input type="checkbox" name="accept_terms" required>
+        <span>He leído y acepto las <a href="/condiciones" target="_blank">condiciones de venta</a> y la <a href="/privacidad" target="_blank">política de privacidad</a>.</span>
+      </label>
+      <p class="form-privacy-note"><strong>Responsable:</strong> {{ titular }}<br>Usamos tus datos para gestionar tu pedido. Puedes acceder a ellos, rectificarlos, suprimirlos y ejercer tus demás derechos como explica la <a href="/privacidad">política de privacidad</a>.</p>
+      <button type="submit" class="site-btn">Confirmar pedido con obligación de pago</button>
     </form>
 
     <div id="checkout-success" class="site-page-body" hidden></div>

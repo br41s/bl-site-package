@@ -9,7 +9,7 @@ pagination:
 permalink: "/productos/categoria/{{ group.slug }}/index.html"
 eleventyComputed:
   title: "{{ group.category }}"
-  description: "{{ group.category }} — reserva online, sin pago por adelantado."
+  description: "{{ group.category }} — {{ site.shop_payment_line | lower }}."
   activeCategorySlug: "{{ group.slug }}"
 ---
 <main class="site-page"><div class="site-page-inner">

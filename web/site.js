@@ -55,21 +55,6 @@ function initReveals() {
   });
 }
 
-function initCookieConsent() {
-  var banner = document.getElementById("cookie-banner");
-  if (!banner) return;
-  if (localStorage.getItem("bl-cookie-consent") === "accepted") return;
-  banner.style.display = "flex";
-  var btn = document.getElementById("cookie-accept");
-  if (btn && !btn._ready) {
-    btn._ready = true;
-    btn.addEventListener("click", function () {
-      localStorage.setItem("bl-cookie-consent", "accepted");
-      banner.style.display = "none";
-    });
-  }
-}
-
 /* TABLE OF CONTENTS (blog posts) — auto-built from the article's own H2/H3s,
    skipped on short posts where a TOC would just be noise. */
 function initTOC() {
@@ -299,7 +284,6 @@ function initInfographicZoom() {
 
 document.addEventListener("DOMContentLoaded", function () {
   initTheme();
-  initCookieConsent();
   initReveals();
   initContactForm();
   initTOC();

@@ -1,6 +1,10 @@
 import { getConfig, PUBLIC_CONFIG_KEYS } from "../../src/db/database.js";
 import { formatContent } from "../../src/content/format-content.js";
 import { buildLocalBusinessLd } from "../../src/content/structured-data.js";
+import {
+  CONTACT_RETENTION_MONTHS,
+  ORDER_RETENTION_YEARS,
+} from "../../src/privacy/retention-periods.js";
 
 // Eleventy global data — same key set as GET /api/site/config, read directly
 // at build time instead of over HTTP.
@@ -28,5 +32,19 @@ export default function () {
   // absolute url/image and the geo/address gating use the final values. Null
   // when there isn't enough business data — the template then emits nothing.
   config.local_business_ld = buildLocalBusinessLd(config);
+  // How a catalogue order is paid, in one line, for the catalogue hero and its
+  // meta descriptions. Same rule as paymentInstructions in
+  // src/api/reservations.js: with an IBAN, retail orders are paid by transfer
+  // before they are prepared. "Sin pago por adelantado" was said here before
+  // the transfer flow existed, and contradicted it.
+  config.shop_payment_line = config.bank_iban
+    ? "Pide online y paga por transferencia bancaria"
+    : "Pide online y paga al recibir tu pedido";
+  // The privacy policy states the periods the purge enforces
+  // (src/privacy/retention.js), read from the same constants.
+  config.retention = {
+    contactMonths: CONTACT_RETENTION_MONTHS,
+    orderYears: ORDER_RETENTION_YEARS,
+  };
   return config;
 }

@@ -83,6 +83,15 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
       .status(400)
       .json({ error: "customer_name, customer_email y al menos un producto son obligatorios" });
   }
+  // A distance sale needs the buyer to have accepted the terms before ordering
+  // (LSSI-CE art. 27); the checkbox is in site/carrito.njk and the time it was
+  // ticked is kept with the order as the record of it. A page cached from
+  // before the checkbox existed sends nothing, hence the hint to reload.
+  if (req.body.accept_terms !== true) {
+    return res.status(400).json({
+      error: "Debes aceptar las condiciones de venta y la política de privacidad (si no ves la casilla, recarga la página).",
+    });
+  }
 
   // Recompute totals server-side from the current catalog — never trust
   // client-sent prices. A signed-in B2B account is priced at its trade price
@@ -120,7 +129,7 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
   const insertReservation = db.transaction(() => {
     const result = db
       .prepare(
-        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, status, total_cents, b2b_account_id, b2b_company, vat_included, vat_cents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, status, total_cents, b2b_account_id, b2b_company, vat_included, vat_cents, terms_accepted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))",
       )
       .run(
         customer_name,

@@ -209,6 +209,102 @@ body {
   max-width: 55ch;
 }
 
+/* LEGAL PAGES (aviso legal, condiciones, privacidad, cookies) — long-form
+   text, so it gets prose spacing; the global reset would otherwise run every
+   heading and list together. */
+.legal-doc {
+  max-width: 72ch;
+  margin-inline: auto;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.legal-doc h2 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin: 2rem 0 0.75rem;
+}
+.legal-doc h3 {
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  margin: 1.5rem 0 0.5rem;
+}
+.legal-doc p,
+.legal-doc ul,
+.legal-doc ol {
+  margin-bottom: 0.9rem;
+}
+.legal-doc ul,
+.legal-doc ol {
+  padding-left: 1.25rem;
+}
+.legal-doc li {
+  margin-bottom: 0.35rem;
+}
+.legal-doc a {
+  color: var(--accent);
+}
+.legal-doc code {
+  font-size: 0.9em;
+}
+.legal-shipping {
+  white-space: pre-line;
+  margin-bottom: 0.9rem;
+}
+.legal-form {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0;
+}
+.legal-updated {
+  margin-top: 2.5rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+/* Checkout and contact form: terms acceptance + first-layer privacy notice
+   (LOPDGDD art. 11 lets the form carry the basics and link the rest). */
+.checkout-accept {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+/* Specific enough to beat `.site-contact-form input`, which pads every input
+   like a text field. */
+.site-contact-form .checkout-accept input[type="checkbox"] {
+  width: auto;
+  flex: none;
+  padding: 0;
+  margin: 0.2rem 0 0;
+}
+.checkout-accept span {
+  flex: 1;
+  min-width: 0;
+}
+.checkout-accept a,
+.form-privacy-note a {
+  color: var(--accent);
+}
+.form-privacy-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.checkout-shipping summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.checkout-shipping .legal-shipping {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
 /* Contact page business info (address / phone / hours) — driven by the
    biz_* config fields, shown above the form when present. */
 .site-contact-info {
@@ -1365,40 +1461,6 @@ body.infographic-lightbox-open {
   background: var(--bg);
   color: var(--text-primary);
   text-align: center;
-}
-
-/* COOKIE BANNER */
-#cookie-banner {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: none;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
-  z-index: 1000;
-}
-#cookie-banner p {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin: 0;
-  flex: 1;
-}
-#cookie-banner .site-btn {
-  white-space: nowrap;
-}
-@media (max-width: 640px) {
-  #cookie-banner {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-  #cookie-banner p {
-    flex: none;
-  }
 }
 
 /* FOOTER */

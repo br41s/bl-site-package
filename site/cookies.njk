@@ -1,0 +1,57 @@
+---
+layout: base.njk
+title: "Política de cookies"
+description: "Qué guarda este sitio web en tu navegador, para qué y durante cuánto tiempo. No usamos cookies de análisis, publicidad ni de terceros."
+permalink: "/cookies.html"
+---
+{#- Lists every cookie and browser-storage key the public site writes. If code
+    adds one (web/site.js, web/cart.js, web/game/, src/api/b2b.js), it goes
+    here too — this page is the reason the site needs no consent banner. -#}
+{%- set titular = site.legal_name or site.company_name or "El titular de este sitio web" %}
+<main class="site-page"><div class="site-page-inner">
+  <h1 class="reveal">Política de cookies</h1>
+
+  <div class="site-page-desc legal-doc reveal">
+
+    <p><strong>En resumen:</strong> este sitio no usa cookies de análisis, de publicidad ni de terceros. Solo guarda en tu navegador lo imprescindible para que funcione lo que tú mismo usas, como el carrito{% if site.b2b_enabled == "1" %} o el acceso de profesionales{% endif %}. Por eso no te pedimos que aceptes cookies.</p>
+
+    <h2>1. Qué son</h2>
+    <p>Las cookies son pequeños archivos que un sitio web guarda en tu navegador. El <em>almacenamiento local</em> (<em>localStorage</em>) es una técnica parecida: datos que el navegador guarda en tu dispositivo y que no se envían por sí solos a ningún servidor. La ley trata ambas cosas igual (artículo 22.2 de la LSSI-CE).</p>
+
+    <h2>2. Qué guardamos</h2>
+    <ul>
+      {%- if site.b2b_enabled == "1" %}
+      <li><strong><code>bl_b2b</code></strong> — cookie propia y técnica. Mantiene abierta tu sesión en el área de profesionales. Dura 30 días o hasta que cierres sesión. Solo se crea si entras con una cuenta de empresa.</li>
+      <li><strong><code>bl_b2b_v1</code></strong> — almacenamiento local. Recuerda que tienes una sesión de profesional abierta, para mostrarte tus precios. Se borra al cerrar sesión.</li>
+      {%- endif %}
+      {%- if products.length %}
+      <li><strong><code>bl_cart_v1</code></strong> — almacenamiento local. Guarda los productos de tu carrito mientras navegas. Se borra al completar el pedido.</li>
+      {%- endif %}
+      <li><strong><code>bl-theme</code></strong> — almacenamiento local. Recuerda si elegiste el modo claro o el oscuro. Solo se guarda si pulsas el botón de cambiar de modo.</li>
+      {%- if site.hero_game == "1" %}
+      <li><strong><code>bl-game-best</code></strong> — almacenamiento local. Guarda tu mejor puntuación en el minijuego de la portada. Solo se guarda si juegas.</li>
+      {%- endif %}
+    </ul>
+    <p>Todos son necesarios para prestarte un servicio que tú pides (el carrito, tu sesión, tu preferencia de modo), por lo que la ley no exige pedirte consentimiento. Ninguno sirve para seguirte por otros sitios ni para hacer perfiles.</p>
+
+    <h2>3. Contenido de otros servidores</h2>
+    <ul>
+      {%- if products.length %}
+      <li><strong>Imágenes de producto.</strong> Algunas fotografías de producto se cargan directamente desde los servidores de nuestro proveedor de catálogo. Como con cualquier imagen en internet, tu navegador se conecta a ese servidor, que recibe tu dirección IP y datos técnicos del navegador, y se rige por su propia política. No le cedemos ningún otro dato.</li>
+      {%- endif %}
+      {%- if site.turnstile_site_key %}
+      <li><strong>Verificación anti-spam del formulario de contacto.</strong> En la página de contacto se carga Cloudflare Turnstile (Cloudflare, Inc.), que comprueba que quien envía el formulario es una persona. Para ello analiza datos técnicos de tu navegador y tu conexión. Consulta la <a href="https://www.cloudflare.com/turnstile-privacy-policy/" target="_blank" rel="noopener noreferrer">política de privacidad de Turnstile</a>.</li>
+      {%- endif %}
+      <li>Las fuentes tipográficas y el resto de recursos del sitio se sirven desde este mismo servidor.</li>
+    </ul>
+
+    <h2>4. Cómo borrarlos</h2>
+    <p>Puedes borrar las cookies y el almacenamiento local cuando quieras desde la configuración de tu navegador (normalmente en «Privacidad» o «Datos de sitios»). Si lo haces, se vaciará tu carrito y tendrás que volver a iniciar sesión.</p>
+
+    <h2>5. Cambios</h2>
+    <p>Si en el futuro usamos cookies que necesiten tu consentimiento, te lo pediremos antes de instalarlas y actualizaremos esta página.</p>
+
+    <p><strong>Responsable:</strong> {{ titular }}<br>Más información en la <a href="/privacidad">Política de privacidad</a>.</p>
+    <p class="legal-updated">Última actualización: 2 de octubre de 2026.</p>
+  </div>
+</div></main>
