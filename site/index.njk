@@ -5,7 +5,17 @@ navActive: index
 {%- if not site.page_index_title %}
 <div class="construction-wrap"><div class="construction-icon">🚧</div><h1>Página en construcción</h1><p>Estamos preparando esta página. Vuelve pronto.</p><a href="/" class="site-btn">Volver al inicio</a></div>
 {%- else %}
-<main class="site-hero{% if site.hero_density == 'compact' %} site-hero-compact{% endif %}"><div class="site-hero-inner">
+{#
+  hero_game == "1": the "Pedido a pedido" canvas (web/game/) plays behind the
+  hero text and "Jugar" turns it into the game. Without JS it stays an empty
+  canvas and the Jugar button stays hidden, so the hero reads as before.
+#}
+{%- set heroGame = site.hero_game == "1" %}
+<main class="site-hero{% if site.hero_density == 'compact' %} site-hero-compact{% endif %}{% if heroGame %} site-hero-game{% endif %}"{% if heroGame %} data-hero-game data-company="{{ site.company_name | escape }}"{% endif %}>
+  {%- if heroGame %}
+  <canvas class="hero-game-canvas" aria-hidden="true"></canvas>
+  {%- endif %}
+  <div class="site-hero-inner">
   <h1 class="reveal">{{ site.page_index_title | safe }}</h1>
   {%- if site.page_index_subtitle %}
   <p class="site-hero-subtitle reveal">{{ site.page_index_subtitle | safe }}</p>
@@ -13,8 +23,25 @@ navActive: index
   {%- if site.page_index_desc %}
   <p class="site-hero-desc reveal">{{ site.page_index_desc | safe }}</p>
   {%- endif %}
-  <div class="site-hero-actions reveal"><a href="/productos" class="site-btn">Ver catálogo</a><a href="/contacto" class="site-btn-ghost">Contactar</a></div>
-</div></main>
+  <div class="site-hero-actions reveal"><a href="/productos" class="site-btn">Ver catálogo</a><a href="/contacto" class="site-btn-ghost">Contactar</a>{% if heroGame %}<button type="button" class="site-btn-ghost hero-game-play" hidden>▶ Jugar a repartir</button>{% endif %}</div>
+  </div>
+  {%- if heroGame %}
+  <button type="button" class="hero-game-pause" aria-pressed="false" hidden>Pausar animación</button>
+  <div class="hero-game-hud" tabindex="-1" aria-label="Partida en curso" hidden>
+    <span class="hero-game-lives" role="img"></span>
+    <span>Pedidos <b class="hero-game-served">0</b></span>
+    <span>Récord <b class="hero-game-best">0</b></span>
+    <button type="button" class="site-btn-ghost hero-game-exit">Salir</button>
+  </div>
+  <p class="hero-game-hint" hidden>Arrastra cada producto hasta la oficina que lo pide (o tócalo y luego toca la oficina). Con teclado: 1-4 eligen producto, las flechas eligen oficina e Intro entrega.</p>
+  <p class="hero-game-live visually-hidden" aria-live="polite"></p>
+  <div class="hero-game-over" role="dialog" aria-labelledby="hero-game-over-text" hidden>
+    <p class="hero-game-over-text" id="hero-game-over-text"></p>
+    <div class="site-hero-actions"><button type="button" class="site-btn hero-game-again">Otra jornada</button><button type="button" class="site-btn-ghost hero-game-leave">Salir</button></div>
+  </div>
+  <script type="module" src="/game/hero-game.js"></script>
+  {%- endif %}
+</main>
 {%- if site.page_index_image %}
 <section class="site-page"><div class="site-page-inner">
   <img src="{{ site.page_index_image }}" alt="{{ site.page_index_image_alt or site.page_index_title }}" class="site-page-image reveal" loading="lazy" decoding="async">

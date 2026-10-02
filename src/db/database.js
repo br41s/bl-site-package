@@ -72,6 +72,8 @@ export const PUBLIC_CONFIG_KEYS = [
   "radius_style",
   "theme_default",
   "hero_density",
+  // "1" puts the "Pedido a pedido" animation + game in the homepage hero.
+  "hero_game",
   // Cloudflare Turnstile site key — public by design, it's meant to be
   // embedded in the page. The paired secret key (turnstile_secret_key) is
   // deliberately NOT in this list; see src/turnstile.js.

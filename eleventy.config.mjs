@@ -19,6 +19,11 @@ export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "web/style.css": "style.css" });
   eleventyConfig.addPassthroughCopy({ "web/site.js": "site.js" });
   eleventyConfig.addPassthroughCopy({ "web/cart.js": "cart.js" });
+  // The homepage game, file by file: web/game/ holds no tests today, but a
+  // directory copy would ship one the moment someone added it there.
+  eleventyConfig.addPassthroughCopy({ "web/game/rules.js": "game/rules.js" });
+  eleventyConfig.addPassthroughCopy({ "web/game/traffic.js": "game/traffic.js" });
+  eleventyConfig.addPassthroughCopy({ "web/game/hero-game.js": "game/hero-game.js" });
   eleventyConfig.addPassthroughCopy({ "web/img": "img" });
   eleventyConfig.addPassthroughCopy({ "web/fonts": "fonts" });
 

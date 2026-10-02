@@ -81,6 +81,30 @@ through. The bug is invisible on desktop, where the min-content floor is never r
 - **`1rem` is 16px in this repo**, unlike biglobster's 62.5% root, and the fade cover uses
   `--bg`, not `--bg-base`. Neither is interchangeable between the two stylesheets.
 
+## Homepage game (`hero_game`)
+
+Opt-in per deploy (panel → Mi sitio → Apariencia → Animación de portada, default
+off). "Pedido a pedido": offices order clips, paper, pens or folders; the player
+drags the product from the dock to the office before its patience ring runs out;
+three lives. Idle, the same simulation plays itself behind the hero text.
+
+- **Rules and drawing are split, as in FlyWell.** `web/game/rules.js` is pure (no
+  DOM) and owns every timing — spawn, patience, van travel — so
+  `web/game/hero-game.js` only lays out, paints and calls `deliver()`. Tests in
+  `src/game/` import across, like `site/_data` tests, so they never reach `_site`.
+- **Difficulty is one function**, `ordersPerMinute` in `web/game/traffic.js`.
+  Patience and office count are fixed; tune the game there and nowhere else.
+- **No customer data in the scene.** The warehouse sign is `company_name`; the
+  truck says "Proveedor". The files are passed through one by one in
+  `eleventy.config.mjs` so a file added to `web/game/` is not shipped by accident.
+- **Playable without a pointer:** keys 1-4 pick a product, arrows pick an office
+  (numbered on the canvas), Enter delivers; every order, loss and delivery is
+  read out through an `aria-live` line, and the idle demo has a pause button.
+  Browsers without `ctx.roundRect` get the plain hero, no Jugar button.
+- `prefers-reduced-motion` gets one still frame; the loop stops when the hero is
+  off-screen or the tab hidden (the Browser pane counts as hidden — override
+  `document.hidden` to watch it there). Best score: `localStorage` `bl-game-best`.
+
 ## The catalogue
 
 Clients who sell from a distributor feed get a synced catalogue. Shoroban's is Liderpapel:
