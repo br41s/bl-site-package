@@ -702,6 +702,7 @@ function initCartPage() {
         customer_email: form.customer_email.value.trim(),
         customer_phone: form.customer_phone.value.trim(),
         notes: form.notes.value.trim(),
+        accept_terms: form.accept_terms.checked,
         items: cart.map(function (i) {
           return { sku: i.sku, quantity: i.quantity };
         }),
@@ -729,7 +730,9 @@ function initCartPage() {
         successBox.textContent = "";
         appendParagraph(
           successBox,
-          "Reserva confirmada (nº " + d.id + ", total " +
+          // "Recibido", not "confirmado": the sales terms (site/condiciones.njk)
+          // say the contract is made when the business confirms the order.
+          "Pedido recibido (nº " + d.id + ", total " +
             (d.vat_included
               ? formatEur(d.total_cents)
               : formatEur(d.total_cents) + " sin IVA, " + formatEur(d.total_cents + d.vat_cents) + " con IVA") +

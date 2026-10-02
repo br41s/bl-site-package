@@ -86,7 +86,7 @@ function reserve(items, headers = {}) {
   return api("/api/reservations", {
     method: "POST",
     headers,
-    body: { customer_name: "Ana", customer_email: "ana@acme.es", items },
+    body: { customer_name: "Ana", customer_email: "ana@acme.es", items, accept_terms: true },
   });
 }
 

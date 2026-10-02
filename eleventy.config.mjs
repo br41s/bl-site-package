@@ -25,6 +25,7 @@ export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "web/game/traffic.js": "game/traffic.js" });
   eleventyConfig.addPassthroughCopy({ "web/game/hero-game.js": "game/hero-game.js" });
   eleventyConfig.addPassthroughCopy({ "web/img": "img" });
+  eleventyConfig.addPassthroughCopy({ "web/fonts": "fonts" });
 
   // Builds an absolute canonical URL from a page path and the configured
   // site_url. Normalizes the served form (drops "index.html" and the ".html"

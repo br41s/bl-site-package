@@ -13,17 +13,20 @@ Puedes responder a este documento y enviárnoslo por email o WhatsApp.
 
 ---
 
-**1a. Datos legales (para las páginas de Privacidad y Aviso Legal)**
+**1a. Datos legales (para el Aviso legal, la Privacidad y las Condiciones de venta)**
 
-Tu web incluye las páginas legales que exige el RGPD. Estos datos aparecen
-en ellas. Si aún no los tienes (por ejemplo, empresa en constitución),
-puedes dejarlos en blanco y añadirlos más tarde desde tu panel
-(Mi sitio → Datos legales).
+Tu web incluye las páginas legales que exigen la LSSI, el RGPD y, si vendes
+online, la ley de consumidores. Estos datos aparecen en ellas. Si aún no los
+tienes (por ejemplo, empresa en constitución), puedes dejarlos en blanco y
+añadirlos más tarde desde tu panel (Mi sitio → Notificaciones → Datos legales).
 
 - Razón social (ej: Mi Empresa S.L., o tu nombre si eres autónomo):
 - NIF / CIF:
 - Domicilio fiscal:
 - Email de contacto para temas legales:
+- Datos del Registro Mercantil, si eres una sociedad (registro, tomo, folio, hoja):
+- Si vendes online — formas de entrega, con su coste y plazo (ej.: recogida en tienda gratis; envío a la península 6,95 € en 2-4 días):
+- ¿Estás adherido a la Junta Arbitral de Consumo o a otro sistema de arbitraje? (sí / no, y cuál):
 
 ---
 

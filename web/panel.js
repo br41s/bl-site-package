@@ -645,12 +645,28 @@ document.addEventListener("DOMContentLoaded", function () {
               escapeHtml(m.email) +
               '</span><span class="message-card-date">' +
               new Date(m.created_at).toLocaleString("es-ES") +
-              '</span></div><div class="message-card-body">' +
+              '</span><button class="btn-ghost-sm btn-danger" data-delete-message="' +
+              m.id +
+              '">Borrar</button></div><div class="message-card-body">' +
               escapeHtml(m.message) +
               "</div></article>"
             );
           })
           .join("");
+        // Lets the business honour an erasure request (RGPD art. 17) from
+        // here; messages are otherwise deleted after the period the privacy
+        // policy states (src/privacy/retention.js).
+        list.querySelectorAll("[data-delete-message]").forEach(function (btn) {
+          btn.addEventListener("click", async function () {
+            if (!confirm("¿Borrar este mensaje? No se puede deshacer.")) return;
+            var res = await fetch("/api/contact/" + btn.dataset.deleteMessage, {
+              method: "DELETE",
+              headers: authHeaders(),
+            });
+            if (!res.ok) alert("No se pudo borrar el mensaje");
+            loadMessages();
+          });
+        });
       })
       .catch(function () {
         var list = document.getElementById("messages-list");
@@ -1061,6 +1077,9 @@ document.addEventListener("DOMContentLoaded", function () {
           "legal_id",
           "legal_address",
           "legal_email",
+          "legal_registry",
+          "sales_shipping_text",
+          "legal_adr",
           "biz_type",
           "biz_street",
           "biz_city",
@@ -1481,6 +1500,13 @@ document.addEventListener("DOMContentLoaded", function () {
           legal_email: document
             .getElementById("legal-email-input")
             .value.trim(),
+          legal_registry: document
+            .getElementById("legal-registry-input")
+            .value.trim(),
+          sales_shipping_text: document
+            .getElementById("sales-shipping-text-input")
+            .value.trim(),
+          legal_adr: document.getElementById("legal-adr-input").value.trim(),
         };
 
         try {

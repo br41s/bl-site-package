@@ -1,0 +1,66 @@
+---
+layout: base.njk
+title: "Aviso legal"
+description: "Aviso legal: datos identificativos del titular del sitio web, condiciones de uso, propiedad intelectual y legislación aplicable."
+permalink: "/aviso-legal.html"
+---
+{#- Identity per art. 10 LSSI-CE. Every fact comes from the business's own
+    config (panel → Mi sitio → Notificaciones → Datos legales); nothing here
+    names the company that builds or hosts the site. -#}
+{%- set titular = site.legal_name or site.company_name or "El titular de este sitio web" %}
+<main class="site-page"><div class="site-page-inner">
+  <h1 class="reveal">Aviso legal</h1>
+
+  <div class="site-page-desc legal-doc reveal">
+
+    <h2>1. Datos identificativos</h2>
+    <p>En cumplimiento del artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI-CE), te informamos de que este sitio web pertenece a:</p>
+    <ul>
+      <li><strong>Titular:</strong> {{ titular }}</li>
+      {%- if site.legal_id %}
+      <li><strong>NIF:</strong> {{ site.legal_id }}</li>
+      {%- endif %}
+      {%- if site.legal_address %}
+      <li><strong>Domicilio:</strong> {{ site.legal_address }}</li>
+      {%- endif %}
+      {%- if site.legal_email %}
+      <li><strong>Email:</strong> <a href="mailto:{{ site.legal_email }}">{{ site.legal_email }}</a></li>
+      {%- endif %}
+      {%- if site.biz_phone %}
+      <li><strong>Teléfono:</strong> {{ site.biz_phone }}</li>
+      {%- endif %}
+      {%- if site.legal_registry %}
+      <li><strong>Datos registrales:</strong> {{ site.legal_registry }}</li>
+      {%- endif %}
+    </ul>
+    {%- if not site.legal_email %}
+    <p>Puedes escribirnos a través del <a href="/contacto">formulario de contacto</a>.</p>
+    {%- endif %}
+
+    <h2>2. Objeto y aceptación</h2>
+    <p>Este sitio web presenta la actividad de {{ titular }}{% if products.length %}, su catálogo de productos y la posibilidad de hacer pedidos{% endif %}. Navegar por él es libre y gratuito, e implica aceptar este aviso legal. {% if products.length %}Las compras se rigen además por las <a href="/condiciones">Condiciones de venta</a>.{% endif %}</p>
+
+    <h2>3. Uso del sitio</h2>
+    <p>Te comprometes a usar el sitio de forma lícita y a no realizar acciones que puedan dañarlo, sobrecargarlo o impedir que otras personas lo usen, como introducir código malicioso o extraer su contenido de forma masiva y automatizada.</p>
+
+    <h2>4. Propiedad intelectual e industrial</h2>
+    <p>Los textos, diseños, logotipos y demás contenidos propios del sitio pertenecen a {{ titular }} o a quienes le han autorizado a usarlos. No está permitido reproducirlos, distribuirlos ni transformarlos sin autorización, salvo para uso personal y privado.</p>
+    {%- if products.length %}
+    <p>Los nombres, marcas, fotografías y descripciones de los productos pertenecen a sus fabricantes o distribuidores y se muestran únicamente para identificar los productos que ofrecemos.</p>
+    {%- endif %}
+
+    <h2>5. Responsabilidad</h2>
+    <p>Procuramos que la información del sitio sea correcta y esté actualizada, pero puede contener errores u omisiones. {% if products.length %}Si un precio contiene un error evidente, te avisaremos antes de seguir adelante con tu pedido, tal como explican las <a href="/condiciones">Condiciones de venta</a>. {% endif %}No respondemos de las interrupciones del servicio por causas técnicas, de mantenimiento o ajenas a nuestro control.</p>
+
+    <h2>6. Enlaces a otros sitios</h2>
+    <p>Los enlaces a sitios de terceros se ofrecen solo como referencia. No controlamos su contenido ni respondemos de él; si tenemos conocimiento de que un enlace lleva a un contenido ilícito, lo retiraremos.</p>
+
+    <h2>7. Datos personales y cookies</h2>
+    <p>El tratamiento de tus datos personales se explica en la <a href="/privacidad">Política de privacidad</a>, y lo que este sitio guarda en tu navegador, en la <a href="/cookies">Política de cookies</a>.</p>
+
+    <h2>8. Legislación aplicable y jurisdicción</h2>
+    <p>Este aviso legal se rige por la legislación española. Si eres consumidor, puedes acudir a los juzgados y tribunales de tu domicilio. En los demás casos, las partes se someten a los juzgados y tribunales del domicilio del titular.</p>
+
+    <p class="legal-updated">Última actualización: 2 de octubre de 2026.</p>
+  </div>
+</div></main>

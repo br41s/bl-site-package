@@ -44,6 +44,13 @@ export const PUBLIC_CONFIG_KEYS = [
   "legal_id",
   "legal_address",
   "legal_email",
+  // Registro Mercantil inscription (LSSI art. 10), the delivery options/costs a
+  // distance sale must state before the order (TRLGDCU art. 97), and whether
+  // the business takes part in consumer arbitration (Ley 7/2017). Free text
+  // the business writes; rendered on the legal pages and the cart.
+  "legal_registry",
+  "sales_shipping_text",
+  "legal_adr",
   // Business profile for local SEO (LocalBusiness JSON-LD + contact page).
   // All optional; empty ones are omitted from the structured data.
   "biz_type",
@@ -520,6 +527,9 @@ ensureColumn("reservations", "b2b_company", "TEXT");
 // default of 1 keeps every existing row reading correctly.
 ensureColumn("reservations", "vat_included", "INTEGER NOT NULL DEFAULT 1");
 ensureColumn("reservations", "vat_cents", "INTEGER");
+// When the buyer ticked "acepto las condiciones de venta" (src/api/reservations.js).
+// NULL on orders placed before the checkbox existed.
+ensureColumn("reservations", "terms_accepted_at", "TEXT");
 // One-time "choose your password" link for a B2B account (src/api/b2b.js).
 // Only the token's SHA-256 is kept, so a copy of the database cannot be used
 // to set anyone's password. An account created this way has an empty

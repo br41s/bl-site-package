@@ -34,7 +34,7 @@ Configura los textos de cada página de tu web:
 - **Páginas** — edita el título, subtítulo y descripción de cada página: Inicio, Quiénes somos, Servicios, Contacto y Blog
 - **Apariencia** — color, bordes, tema y portada de inicio. En **Animación de portada** puedes activar *Reparto de pedidos*: una animación de tu almacén sirviendo pedidos a oficinas detrás del texto de inicio, que tus visitantes pueden convertir en un minijuego con el botón **Jugar a repartir**
 - **Modelo IA** — selecciona el modelo de inteligencia artificial para el agente (por defecto: gratuito)
-- **Notificaciones** — configura tu email para recibir avisos cuando alguien te contacte, y activa el captcha anti-spam del formulario de contacto
+- **Notificaciones** — configura tu email para recibir avisos cuando alguien te contacte, y activa el captcha anti-spam del formulario de contacto. Aquí están también tus **Datos legales**: razón social, NIF, domicilio, email, Registro Mercantil, tus formas de entrega y si estás adherido al arbitraje de consumo. Con ellos se escriben el Aviso legal, la Política de privacidad y las Condiciones de venta de tu web; si cambian, actualízalos aquí
 
 ### Blog
 
@@ -199,6 +199,8 @@ Si una empresa olvida su contraseña también puede pedir el enlace ella misma, 
 ### Mensajes
 
 Aquí aparecen todos los mensajes que tus visitantes envían a través del formulario de contacto de tu web. Si configuraste las notificaciones, también los recibirás por email.
+
+Los mensajes se borran solos a los 24 meses, y los pedidos a los 6 años, tal como dice tu política de privacidad. Si alguien te pide que borres sus datos antes, usa el botón **Borrar** del mensaje.
 
 ### Ajustes
 

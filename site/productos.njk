@@ -20,7 +20,7 @@ eleventyComputed:
   <header class="shop-hero">
     <div class="shop-hero-inner">
       <h1>Catálogo</h1>
-      <p class="shop-hero-subtitle">Reserva online, sin pago por adelantado. Recoges en tienda.</p>
+      <p class="shop-hero-subtitle">{{ site.shop_payment_line }}.</p>
 
       {%- if products.length %}
       <div class="product-search">
