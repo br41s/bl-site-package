@@ -1,35 +1,110 @@
 ---
 layout: base.njk
-title: "Aviso Legal y Condiciones"
-description: "Aviso legal y condiciones de uso del sitio web: titularidad, propiedad intelectual, reservas de productos, responsabilidad y legislación aplicable."
+title: "Condiciones de venta"
+description: "Condiciones generales de venta: cómo hacer un pedido, precios, formas de pago y entrega, derecho de desistimiento, garantía y reclamaciones."
 permalink: "/condiciones.html"
 ---
+{#- Distance-sale terms (RDL 1/2007, TRLGDCU; LSSI-CE arts. 27-28). The steps
+    described in §4 are the ones the code performs: the cart form
+    (site/carrito.njk), the order + emailed summary (src/api/reservations.js)
+    and the status the business moves it through in the panel. Payment wording
+    follows bank_iban exactly as reservations.js does. The site identity used
+    to live on this page; it is now /aviso-legal. -#}
+{%- set titular = site.legal_name or site.company_name or "El titular de este sitio web" %}
+{%- set contacto %}{% if site.legal_email %}<a href="mailto:{{ site.legal_email }}">{{ site.legal_email }}</a>{% else %}el <a href="/contacto">formulario de contacto</a>{% endif %}{% endset %}
 <main class="site-page"><div class="site-page-inner">
-  <h1 class="reveal">Aviso Legal y Condiciones</h1>
+  <h1 class="reveal">Condiciones de venta</h1>
 
-  <div class="site-page-desc reveal" style="text-align:left;max-width:720px;margin-inline:auto;">
+  <div class="site-page-desc legal-doc reveal">
+  {%- if not products.length %}
+    <p>Este sitio web no vende productos online. Los datos del titular y las condiciones de uso del sitio están en el <a href="/aviso-legal">Aviso legal</a>.</p>
+  {%- else %}
 
-    <h2>1. Titularidad</h2>
-    <p>Este sitio web es propiedad de {{ site.legal_name or site.company_name or "su titular" }}{% if site.legal_id %}, con NIF/CIF {{ site.legal_id }}{% endif %}{% if site.legal_address %}, domicilio en {{ site.legal_address }}{% endif %}.
-    {% if site.legal_email %}Contacto: <a href="mailto:{{ site.legal_email }}">{{ site.legal_email }}</a>.{% else %}Puedes contactarnos a través del <a href="/contacto">formulario de contacto</a>.{% endif %}</p>
+    <h2>1. Vendedor</h2>
+    <p>{{ titular }}{% if site.legal_id %}, NIF {{ site.legal_id }}{% endif %}{% if site.legal_address %}, {{ site.legal_address }}{% endif %}. Contacto: {{ contacto | safe }}{% if site.biz_phone %}, teléfono {{ site.biz_phone }}{% endif %}. Más datos en el <a href="/aviso-legal">Aviso legal</a>.</p>
 
-    <h2>2. Objeto</h2>
-    <p>Este sitio presenta la actividad, servicios y, en su caso, catálogo de productos del titular. El acceso y uso del sitio implica la aceptación de estas condiciones.</p>
+    <h2>2. Ámbito</h2>
+    <p>Estas condiciones regulan las compras hechas a través de este sitio web. Antes de confirmar un pedido te pedimos que las leas y las aceptes. Se aplican las vigentes en la fecha de tu pedido; puedes guardarlas o imprimirlas desde esta página. El contrato se celebra en español.</p>
+    <p>Si compras como consumidor, tienes además todos los derechos que te reconoce el Texto Refundido de la Ley General para la Defensa de los Consumidores y Usuarios (Real Decreto Legislativo 1/2007), y nada en estas condiciones los limita.{% if site.b2b_enabled == "1" %} Las compras de empresas y profesionales tienen las particularidades del apartado 10.{% endif %}</p>
 
-    <h2>3. Reservas de productos</h2>
-    <p>Las reservas realizadas a través del catálogo no constituyen una compra online: sirven para apartar el producto, y {% if site.bank_iban %}el pago se realiza por transferencia bancaria, con los datos que se facilitan al confirmar la reserva (las cuentas de empresa pagan según la forma de pago acordada){% else %}el pago se realiza en el momento de la entrega{% endif %}. Los precios y la disponibilidad mostrados tienen carácter orientativo y pueden confirmarse al gestionar la reserva.</p>
+    <h2>3. Productos y precios</h2>
+    <ul>
+      <li>Los precios están en euros e <strong>incluyen el IVA</strong>. Los gastos de entrega, si los hay, se indican aparte (apartado 5).</li>
+      <li>Las fotografías y descripciones proceden en muchos casos del fabricante o del distribuidor y son orientativas del producto.</li>
+      <li>La disponibilidad se actualiza a diario, pero puede cambiar entre la actualización y tu pedido. Si un producto no está disponible, te lo diremos antes de seguir adelante.</li>
+      <li>Si un precio publicado contiene un error evidente, te avisaremos y podrás confirmar el pedido con el precio correcto o anularlo sin coste.</li>
+    </ul>
 
-    <h2>4. Propiedad intelectual</h2>
-    <p>Los contenidos del sitio (textos, diseños, imágenes, logotipos) son propiedad del titular o de sus licenciantes. Queda prohibida su reproducción total o parcial sin autorización expresa.</p>
+    <h2>4. Cómo hacer un pedido</h2>
+    <ol>
+      <li>Añade los productos al carrito.</li>
+      <li>En el carrito, indica tu nombre y tu email (el teléfono es opcional). En las notas puedes decirnos cómo prefieres recibir el pedido.</li>
+      <li>Acepta estas condiciones y la política de privacidad, y pulsa <strong>«Confirmar pedido con obligación de pago»</strong>. Hasta ese momento puedes cambiar o quitar productos y corregir tus datos.</li>
+      <li>Te mostramos en pantalla el resumen del pedido, con su número{% if site.bank_iban %} y los datos para pagarlo por transferencia{% endif %}{% if site.mail_configured %}, y te lo enviamos por email como acuse de recibo{% else %}; guárdalo o imprímelo como acuse de recibo, o pídenos una copia por escrito{% endif %}.</li>
+      <li>Revisamos la disponibilidad y la forma de entrega y te confirmamos el pedido. Si la entrega tiene gastos que todavía no conocías, te los indicamos antes de prepararlo y puedes anular el pedido sin coste. <strong>El contrato queda perfeccionado con esa confirmación.</strong></li>
+    </ol>
+    <p>Guardamos los datos de cada pedido durante el plazo indicado en la <a href="/privacidad">Política de privacidad</a>. Si necesitas una copia, pídenosla.</p>
 
-    <h2>5. Responsabilidad</h2>
-    <p>El titular no se responsabiliza de los daños que puedan derivarse del uso del sitio ni de su interrupción temporal por causas técnicas o de mantenimiento. El sitio se proporciona "tal cual", sin garantía de disponibilidad continua.</p>
+    <h2>5. Entrega</h2>
+    {%- if site.sales_shipping_text %}
+    <div class="legal-shipping">{{ site.sales_shipping_text }}</div>
+    {%- else %}
+    <p>Te informaremos de las formas de entrega disponibles para tu pedido y de su coste antes de confirmarlo.</p>
+    {%- endif %}
+    <ul>
+      <li>Salvo que acordemos otra cosa, entregaremos el pedido en un plazo máximo de 30 días desde su confirmación. Si no podemos, te avisaremos y podrás anularlo; te devolveremos sin demora todo lo pagado.</li>
+      <li>El producto viaja bajo nuestra responsabilidad hasta que lo recibes tú o la persona que indiques.</li>
+      <li>Si al recibirlo ves el embalaje dañado o falta algo, avísanos cuanto antes para que podamos reclamar al transportista.</li>
+    </ul>
 
-    <h2>6. Privacidad</h2>
-    <p>El tratamiento de datos personales se rige por la <a href="/privacidad">Política de Privacidad</a>.</p>
+    <h2>6. Pago</h2>
+    {%- if site.bank_iban %}
+    <p>El pago se hace por <strong>transferencia bancaria</strong> a la cuenta que te indicamos al hacer el pedido, con la referencia que te damos como concepto. Preparamos el pedido cuando recibimos el pago. Si no lo recibimos, te avisaremos antes de anular el pedido.</p>
+    {%- else %}
+    <p>El pago se hace en el momento de la entrega o de la recogida del pedido; te indicaremos las formas de pago aceptadas al confirmarlo.</p>
+    {%- endif %}
+    <p>Este sitio no admite pagos con tarjeta ni te pedirá nunca los datos de tu tarjeta. Si necesitas factura con tus datos fiscales, indícalo en las notas del pedido.</p>
 
-    <h2>7. Legislación aplicable</h2>
-    <p>Estas condiciones se rigen por la legislación española. Para cualquier controversia, las partes se someten a los juzgados y tribunales competentes según la normativa aplicable.</p>
+    <h2>7. Derecho de desistimiento</h2>
+    <p>Si compras como consumidor, puedes desistir del contrato <strong>en un plazo de 14 días naturales</strong> sin indicar el motivo. El plazo empieza el día en que tú, o la persona que indiques (que no sea el transportista), recibís el producto; si el pedido llega en varias entregas, desde la recepción de la última.</p>
+    <p><strong>Cómo ejercerlo.</strong> Comunícanoslo antes de que termine el plazo con una declaración inequívoca, por ejemplo por email a {{ contacto | safe }}{% if site.legal_address %} o por carta a {{ site.legal_address }}{% endif %}. Puedes usar el formulario de abajo, aunque no es obligatorio.</p>
+    <p><strong>Devolución del dinero.</strong> Te devolveremos todos los pagos recibidos, incluidos los gastos de entrega ordinarios, en un plazo máximo de 14 días naturales desde que nos comuniques tu decisión, por transferencia a la cuenta que nos indiques y sin ningún coste para ti. Podemos esperar a recibir el producto, o a que nos acredites que lo has enviado, antes de devolverte el dinero.</p>
+    <p><strong>Devolución del producto.</strong> Envíanoslo{% if site.legal_address %} a {{ site.legal_address }}{% endif %} {% if site.biz_street %} o entrégalo en nuestro establecimiento{% endif %}, como muy tarde 14 días naturales después de comunicarnos tu desistimiento. El coste directo de devolverlo corre de tu cuenta. Solo respondes de la pérdida de valor del producto que se deba a una manipulación distinta de la necesaria para comprobar su naturaleza, características y funcionamiento.</p>
+    <p><strong>Excepciones.</strong> No se puede desistir, entre otros casos previstos en el artículo 103 del TRLGDCU, de la compra de productos hechos según tus especificaciones o claramente personalizados; de productos precintados que no sean aptos para devolverse por razones de protección de la salud o de higiene, si se han desprecintado; ni de grabaciones de audio o vídeo o programas informáticos precintados, si se han desprecintado.</p>
 
+    <div class="legal-form">
+      <p><strong>Modelo de formulario de desistimiento</strong><br><em>(Solo debe cumplimentar y enviar el presente formulario si desea desistir del contrato.)</em></p>
+      <p>A la atención de {{ titular }}{% if site.legal_address %}, {{ site.legal_address }}{% endif %}{% if site.legal_email %}, {{ site.legal_email }}{% endif %}:</p>
+      <p>Por la presente le comunico/comunicamos (*) que desisto de mi/desistimos de nuestro (*) contrato de venta del siguiente bien/prestación del siguiente servicio (*):</p>
+      <p>— Pedido el/recibido el (*):<br>— Nombre del consumidor o de los consumidores:<br>— Domicilio del consumidor o de los consumidores:<br>— Firma del consumidor o de los consumidores (solo si el presente formulario se presenta en papel):<br>— Fecha:</p>
+      <p>(*) Táchese lo que no proceda.</p>
+    </div>
+
+    <h2>8. Garantía</h2>
+    <p>Respondemos de cualquier falta de conformidad de los productos que exista en el momento de la entrega y se manifieste en un plazo de <strong>tres años</strong> desde entonces. Si se manifiesta en los dos primeros años, se presume que ya existía al entregarlo. Puedes pedir la reparación o la sustitución del producto, sin coste para ti; y, si no son posibles o no se hacen en un plazo razonable, una rebaja del precio o la resolución del contrato. Las garantías comerciales que ofrezca el fabricante se suman a esta, no la sustituyen.</p>
+
+    <h2>9. Atención al cliente y reclamaciones</h2>
+    <p>Para cualquier duda, incidencia o reclamación sobre un pedido, escríbenos a {{ contacto | safe }}{% if site.biz_phone %} o llámanos al {{ site.biz_phone }}{% endif %}. Te responderemos lo antes posible y, en todo caso, en el plazo de un mes. También puedes presentar una hoja de reclamaciones oficial ante los servicios de consumo de tu comunidad autónoma.</p>
+    {%- if site.legal_adr %}
+    <p><strong>Arbitraje de consumo:</strong> {{ site.legal_adr }}.</p>
+    {%- else %}
+    <p>{{ titular }} no está adherida a ningún sistema de arbitraje de consumo. Si tu reclamación no se resuelve con nosotros, puedes acudir a los servicios de consumo de tu comunidad autónoma o a los tribunales.</p>
+    {%- endif %}
+
+    {%- if site.b2b_enabled == "1" %}
+    <h2>10. Empresas y profesionales</h2>
+    <ul>
+      <li>Las cuentas de empresa las damos de alta nosotros. Con ella, en el <a href="/profesionales">área de profesionales</a> ves tus precios.</li>
+      <li>Los precios de profesional <strong>no incluyen el IVA</strong>, que se añade al tipo vigente y se muestra desglosado en el pedido.</li>
+      <li>El pago se hace según la forma de pago acordada con tu empresa.</li>
+      <li>El derecho de desistimiento y la garantía de los apartados 7 y 8 son derechos de los consumidores y no se aplican a las compras de empresas o profesionales, que se rigen por el Código de Comercio y el Código Civil. Si un producto llega defectuoso, avísanos y lo resolveremos.</li>
+    </ul>
+    {%- endif %}
+
+    <h2>{% if site.b2b_enabled == "1" %}11{% else %}10{% endif %}. Legislación aplicable y jurisdicción</h2>
+    <p>Estas condiciones se rigen por la legislación española. Si eres consumidor, puedes acudir a los juzgados y tribunales de tu domicilio. En los demás casos, las partes se someten a los juzgados y tribunales del domicilio del vendedor.</p>
+
+    <p class="legal-updated">Última actualización: 2 de octubre de 2026.</p>
+  {%- endif %}
   </div>
 </div></main>

@@ -43,6 +43,16 @@ router.get("/", requireAuth, (req, res) => {
   res.json({ messages });
 });
 
+// DELETE /api/contact/:id — borrar un mensaje desde el panel (derecho de
+// supresión). Sin esto la única forma era tocar la base de datos.
+router.delete("/:id", requireAuth, (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: "id no válido" });
+  const { changes } = db.prepare("DELETE FROM contact_messages WHERE id = ?").run(id);
+  if (!changes) return res.status(404).json({ error: "Mensaje no encontrado" });
+  res.json({ success: true });
+});
+
 // POST /api/contact — formulario público
 router.post("/", contactLimiter, asyncHandler(async (req, res) => {
   const name = typeof req.body.name === "string" ? req.body.name.trim() : "";

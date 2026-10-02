@@ -20,6 +20,7 @@ export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "web/site.js": "site.js" });
   eleventyConfig.addPassthroughCopy({ "web/cart.js": "cart.js" });
   eleventyConfig.addPassthroughCopy({ "web/img": "img" });
+  eleventyConfig.addPassthroughCopy({ "web/fonts": "fonts" });
 
   // Builds an absolute canonical URL from a page path and the configured
   // site_url. Normalizes the served form (drops "index.html" and the ".html"

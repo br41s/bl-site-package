@@ -138,6 +138,37 @@ retail per catalogue category, with a general fallback. `src/api/b2b.js` holds a
 - Discounts and the general % are written without `setConfig`: they are in no built page,
   and a rebuild of ~14,500 pages for a discount change would be pure cost.
 
+## Legal pages — they describe the code, so they move with it
+
+`/aviso-legal`, `/condiciones` (sales terms, only with a catalogue), `/privacidad`,
+`/cookies`, `/uso-de-ia`. The **customer** is the titular, controller and seller,
+under Spanish law; the company that builds and hosts the site is named nowhere
+on them (only as "proveedor de alojamiento y mantenimiento técnico"). Every fact
+comes from config (`legal_*`, `biz_phone`, `bank_iban`, `sales_shipping_text`,
+`legal_adr`), and each section renders only when its feature is on.
+
+The pages state what the code does, so a code change can make them false:
+
+- **A new cookie or `localStorage` key** goes on `/cookies`. The site has no
+  consent banner because everything it stores is strictly necessary or asked
+  for; a key that is not would need consent, and a banner.
+- **A new third-party request** from public pages (script, font, image host)
+  goes on `/privacidad` and `/cookies`. Fonts are self-hosted in `web/fonts/`
+  for this reason: Google Fonts sent every visitor's IP to Google.
+- **Retention is enforced, not promised.** `src/privacy/retention.js` deletes
+  contact messages after 24 months and orders after 6 years, daily; the policy
+  reads the same constants (`retention-periods.js` → `site.retention`).
+- **Checkout requires accepted terms** (`accept_terms`, stored as
+  `reservations.terms_accepted_at`) and the button says «Confirmar pedido con
+  obligación de pago» (TRLGDCU art. 98.2). The screen says «Pedido recibido»:
+  the terms make the contract when the business confirms, not on submit.
+- **Promises depend on what the deploy can do.** Emailed copies are promised only
+  when `site.mail_configured` (SMTP set). `/uso-de-ia` and the footer must not
+  promise human review before publication: agents can publish posts and product
+  sheets directly. Add a review gate in code before ever claiming one again.
+- Wording follows `bank_iban` the way `paymentInstructions` does
+  (`site.shop_payment_line`); never promise "sin pago por adelantado" again.
+
 ## Customer configuration
 
 Per-customer setup runs through `/setup` and the panel, not through code. Company name,

@@ -9,7 +9,7 @@ pagination:
 permalink: "/productos/marca/{{ group.slug }}/index.html"
 eleventyComputed:
   title: "{{ group.brand }}"
-  description: "Productos {{ group.brand }} — reserva online, sin pago por adelantado."
+  description: "Productos {{ group.brand }} — {{ site.shop_payment_line | lower }}."
 ---
 <main class="site-page"><div class="site-page-inner">
   <a href="/productos" class="site-back-link">← Volver al catálogo</a>

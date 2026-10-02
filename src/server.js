@@ -20,6 +20,7 @@ import knowledgeRouter from "./api/knowledge.js";
 import conversationsRouter from "./api/conversations.js";
 import { startLiderpapelScheduler } from "./sync/liderpapel/scheduler.js";
 import { startUploadsCleanupScheduler } from "./media/cleanup-uploads.js";
+import { startRetentionScheduler } from "./privacy/retention.js";
 import { apiErrorHandler } from "./middleware/async-handler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -66,7 +67,7 @@ app.use((req, res, next) => {
     // the Turnstile widget on the contact page (site/contacto.njk) — it's
     // opt-in (src/turnstile.js) but the CSP has to allow it unconditionally
     // since this header is set before any per-page config is known.
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://api.fontshare.com; img-src 'self' data: blob: https://*.liderpapel.com; connect-src 'self' https://openrouter.ai https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.liderpapel.com; connect-src 'self' https://openrouter.ai https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'",
   );
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
@@ -159,6 +160,7 @@ for (const [signal, code] of [["SIGTERM", 143], ["SIGINT", 130]]) {
 await buildOnStartup();
 startLiderpapelScheduler();
 startUploadsCleanupScheduler();
+startRetentionScheduler();
 
 app.listen(PORT, () => {
   console.log(`🦞 bl-site-package running on port ${PORT}`);

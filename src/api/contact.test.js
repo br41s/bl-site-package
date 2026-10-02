@@ -98,3 +98,35 @@ describe("POST /api/contact — Turnstile", () => {
     fetchMock.mock.restore();
   });
 });
+
+describe("DELETE /api/contact/:id — erasure from the panel", () => {
+  async function del(id, auth = true) {
+    const jwt = (await import("jsonwebtoken")).default;
+    return fetch(`${baseUrl}/api/contact/${id}`, {
+      method: "DELETE",
+      headers: auth ? { Authorization: `Bearer ${jwt.sign({ role: "admin" }, process.env.JWT_SECRET)}` } : {},
+    });
+  }
+  const insert = () =>
+    db
+      .prepare("INSERT INTO contact_messages (name, email, message) VALUES ('Ana', 'ana@example.com', 'Hola')")
+      .run().lastInsertRowid;
+
+  test("deletes the message", async () => {
+    const id = insert();
+    const res = await del(id);
+    assert.equal(res.status, 200);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM contact_messages WHERE id = ?").get(id).n, 0);
+  });
+
+  test("needs the panel session", async () => {
+    const id = insert();
+    assert.equal((await del(id, false)).status, 401);
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM contact_messages WHERE id = ?").get(id).n, 1);
+  });
+
+  test("404 for a message that does not exist, 400 for a bad id", async () => {
+    assert.equal((await del(999999)).status, 404);
+    assert.equal((await del("abc")).status, 400);
+  });
+});
