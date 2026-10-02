@@ -39,7 +39,11 @@ export function seededRandom(seed) {
   };
 }
 
-export function createGame({ mode = "demo", officeCount = 6, rng = Math.random } = {}) {
+export function createGame({
+  mode = "demo",
+  officeCount = 6,
+  rng = Math.random,
+} = {}) {
   const state = {
     mode,
     rng,
@@ -47,7 +51,10 @@ export function createGame({ mode = "demo", officeCount = 6, rng = Math.random }
     lives: LIVES,
     served: 0,
     over: false,
-    offices: Array.from({ length: officeCount }, (_, id) => ({ id, order: null })),
+    offices: Array.from({ length: officeCount }, (_, id) => ({
+      id,
+      order: null,
+    })),
     // The first order arrives at once, so neither face opens on an empty board.
     nextOrderAt: 0,
   };
@@ -55,7 +62,9 @@ export function createGame({ mode = "demo", officeCount = 6, rng = Math.random }
 }
 
 function rate(state) {
-  return state.mode === "demo" ? DEMO_ORDERS_PER_MINUTE : ordersPerMinute(state.now);
+  return state.mode === "demo"
+    ? DEMO_ORDERS_PER_MINUTE
+    : ordersPerMinute(state.now);
 }
 
 // Gap until the next order: the mean from the current rate, jittered ±40 % so
@@ -105,7 +114,11 @@ export function step(state, dtMs) {
     }
     if (state.mode === "demo" && state.now >= order.autoAt) {
       order.dispatchedAt = state.now;
-      events.push({ kind: "dispatched", officeId: office.id, type: order.type });
+      events.push({
+        kind: "dispatched",
+        officeId: office.id,
+        type: order.type,
+      });
       continue;
     }
     if (state.now >= order.bornAt + PATIENCE_MS) {

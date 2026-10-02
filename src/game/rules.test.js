@@ -19,7 +19,8 @@ function run(state, ms, dt = 50) {
   return events;
 }
 
-const openOrder = (state) => state.offices.find((o) => o.order && o.order.dispatchedAt === null);
+const openOrder = (state) =>
+  state.offices.find((o) => o.order && o.order.dispatchedAt === null);
 
 test("the first order arrives straight away", () => {
   const state = createGame({ mode: "play", rng: seededRandom(1) });
@@ -37,7 +38,9 @@ test("the right product dispatches a van and the order is served on arrival", ()
   assert.equal(state.served, 0);
   assert.ok(patienceLeft(state, office.order) > 0.9);
   const events = run(state, 200);
-  assert.ok(events.some((e) => e.kind === "served" && e.officeId === office.id));
+  assert.ok(
+    events.some((e) => e.kind === "served" && e.officeId === office.id),
+  );
   assert.equal(state.served, 1);
 });
 
@@ -45,7 +48,9 @@ test("the wrong product is refused and changes nothing", () => {
   const state = createGame({ mode: "play", rng: seededRandom(3) });
   step(state, 16);
   const office = openOrder(state);
-  const wrong = ["clips", "paper", "pens", "folders"].find((t) => t !== office.order.type);
+  const wrong = ["clips", "paper", "pens", "folders"].find(
+    (t) => t !== office.order.type,
+  );
   assert.equal(deliver(state, office.id, wrong), "wrong");
   assert.equal(office.order.dispatchedAt, null);
 });
@@ -79,7 +84,11 @@ test("the demo serves orders on its own and never loses a life", () => {
 });
 
 test("a full board waits for a free office instead of overwriting one", () => {
-  const state = createGame({ mode: "demo", officeCount: 2, rng: seededRandom(7) });
+  const state = createGame({
+    mode: "demo",
+    officeCount: 2,
+    rng: seededRandom(7),
+  });
   run(state, 20000, 100);
   for (const office of state.offices) {
     if (office.order) assert.ok(office.order.bornAt <= state.now);

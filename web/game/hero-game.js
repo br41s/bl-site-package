@@ -8,13 +8,36 @@
  * Only rendered when the `hero_game` config key is "1" (site/index.njk).
  */
 
-import { createGame, step, deliver, patienceLeft, vanProgress, PRODUCT_TYPES, LIVES } from "./rules.js";
+import {
+  createGame,
+  step,
+  deliver,
+  patienceLeft,
+  vanProgress,
+  PRODUCT_TYPES,
+  LIVES,
+} from "./rules.js";
 
-const LABELS = { clips: "Clips", paper: "Papel", pens: "Bolis", folders: "Carpetas" };
+const LABELS = {
+  clips: "Clips",
+  paper: "Papel",
+  pens: "Bolis",
+  folders: "Carpetas",
+};
 // Fixed per product, and each icon also has its own shape, so colour is never
 // the only cue. Picked to read on both the light and the dark background.
-const PRODUCT_COLORS = { clips: "#3b82f6", paper: "#10b981", pens: "#8b5cf6", folders: "#f59e0b" };
-const NAMES = { clips: "clips", paper: "papel", pens: "bolígrafos", folders: "carpetas" };
+const PRODUCT_COLORS = {
+  clips: "#3b82f6",
+  paper: "#10b981",
+  pens: "#8b5cf6",
+  folders: "#f59e0b",
+};
+const NAMES = {
+  clips: "clips",
+  paper: "papel",
+  pens: "bolígrafos",
+  folders: "carpetas",
+};
 const BEST_KEY = "bl-game-best";
 const TRUCK_CYCLE_MS = 14000;
 
@@ -83,7 +106,9 @@ function init(hero) {
       const step = e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 1;
       cursor = cursor === null ? 0 : (cursor + step + count) % count;
       const order = state.offices[cursor].order;
-      say(`Oficina ${cursor + 1}: ${order && order.dispatchedAt === null ? "pide " + NAMES[order.type] : "sin pedido"}.`);
+      say(
+        `Oficina ${cursor + 1}: ${order && order.dispatchedAt === null ? "pide " + NAMES[order.type] : "sin pedido"}.`,
+      );
     } else if ((e.key === "Enter" || e.key === " ") && cursor !== null) {
       if (!selected) say("Elige primero un producto con las teclas 1 a 4.");
       else drop(L.offices[cursor], selected);
@@ -142,11 +167,16 @@ function init(hero) {
   new MutationObserver(() => {
     colors = null;
     draw();
-  }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    colors = null;
-    draw();
+  }).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
   });
+  window
+    .matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", () => {
+      colors = null;
+      draw();
+    });
 
   new ResizeObserver(resize).observe(hero);
   resize();
@@ -164,13 +194,18 @@ function init(hero) {
     clearTimeout(hintTimer);
     hintTimer = setTimeout(() => (hint.hidden = true), 6000);
     updateHud();
-    say("Empieza la jornada. Teclas 1 a 4: producto; flechas: oficina; Intro: entregar.");
+    say(
+      "Empieza la jornada. Teclas 1 a 4: producto; flechas: oficina; Intro: entregar.",
+    );
     // Keep focus inside the game: the hero text (and the Jugar button) hides.
     // The HUD, not a button, so Enter delivers instead of pressing Salir.
     hud.focus({ preventScroll: true });
     // The hero opens the homepage; scrolling to it with scrollIntoView would
     // tuck its top (and the HUD) under the sticky nav.
-    window.scrollTo({ top: 0, behavior: reducedMotion.matches ? "auto" : "smooth" });
+    window.scrollTo({
+      top: 0,
+      behavior: reducedMotion.matches ? "auto" : "smooth",
+    });
     resize();
     schedule();
   }
@@ -192,12 +227,17 @@ function init(hero) {
   function handle(events) {
     const now = performance.now();
     for (const e of events) {
-      if (e.kind === "served" || e.kind === "expired") effects.push({ kind: e.kind, officeId: e.officeId, at: now });
+      if (e.kind === "served" || e.kind === "expired")
+        effects.push({ kind: e.kind, officeId: e.officeId, at: now });
       if (state.mode !== "play") continue;
-      if (e.kind === "ordered") say(`Oficina ${e.officeId + 1} pide ${NAMES[e.type]}.`);
-      if (e.kind === "served") say(`Entregado en la oficina ${e.officeId + 1}.`);
+      if (e.kind === "ordered")
+        say(`Oficina ${e.officeId + 1} pide ${NAMES[e.type]}.`);
+      if (e.kind === "served")
+        say(`Entregado en la oficina ${e.officeId + 1}.`);
       if (e.kind === "expired" && state.lives > 0)
-        say(`Pedido perdido en la oficina ${e.officeId + 1}. Te quedan ${state.lives} vidas.`);
+        say(
+          `Pedido perdido en la oficina ${e.officeId + 1}. Te quedan ${state.lives} vidas.`,
+        );
       if (e.kind === "over") gameOver(e.served);
     }
     if (state.mode === "play" && events.length) updateHud();
@@ -212,7 +252,8 @@ function init(hero) {
   }
 
   function updateHud() {
-    livesEl.textContent = "♥".repeat(state.lives) + "♡".repeat(LIVES - state.lives);
+    livesEl.textContent =
+      "♥".repeat(state.lives) + "♡".repeat(LIVES - state.lives);
     livesEl.setAttribute("aria-label", `${state.lives} vidas`);
     servedEl.textContent = state.served;
     bestEl.textContent = Math.max(readBest(), state.served);
@@ -228,7 +269,9 @@ function init(hero) {
       }
     }
     overText.textContent =
-      served === 1 ? "Fin de la jornada: has servido 1 pedido." : `Fin de la jornada: has servido ${served} pedidos.`;
+      served === 1
+        ? "Fin de la jornada: has servido 1 pedido."
+        : `Fin de la jornada: has servido ${served} pedidos.`;
     if (served > best && best > 0) overText.textContent += " ¡Nuevo récord!";
     overBox.hidden = false;
     hud.hidden = true;
@@ -244,7 +287,12 @@ function init(hero) {
   }
 
   function inRect(p, r, pad = 0) {
-    return p.x >= r.x - pad && p.x <= r.x + r.w + pad && p.y >= r.y - pad && p.y <= r.y + r.h + pad;
+    return (
+      p.x >= r.x - pad &&
+      p.x <= r.x + r.w + pad &&
+      p.y >= r.y - pad &&
+      p.y <= r.y + r.h + pad
+    );
   }
 
   const tileAt = (p) => L.tiles.find((t) => inRect(p, t, 4));
@@ -253,7 +301,11 @@ function init(hero) {
   function drop(office, type) {
     const result = deliver(state, office.id, type);
     if (result === "wrong") {
-      effects.push({ kind: "wrong", officeId: office.id, at: performance.now() });
+      effects.push({
+        kind: "wrong",
+        officeId: office.id,
+        at: performance.now(),
+      });
       say(`La oficina ${office.id + 1} no pide ${NAMES[type]}.`);
     }
     if (result === "dispatched") {
@@ -268,7 +320,14 @@ function init(hero) {
     const p = pos(e);
     const tile = tileAt(p);
     if (tile) {
-      drag = { type: tile.type, x: p.x, y: p.y, sx: p.x, sy: p.y, moved: false };
+      drag = {
+        type: tile.type,
+        x: p.x,
+        y: p.y,
+        sx: p.x,
+        sy: p.y,
+        moved: false,
+      };
       canvas.setPointerCapture(e.pointerId);
       return;
     }
@@ -332,12 +391,20 @@ function init(hero) {
       warehouse = { x: w * 0.63, y: h * 0.72, w: w * 0.24, h: h * 0.18 };
       tileArea = null;
       truckFrom = { x: w + 60, y: warehouse.y + warehouse.h * 0.5 };
-      truckTo = { x: warehouse.x + warehouse.w + 44, y: warehouse.y + warehouse.h * 0.5 };
+      truckTo = {
+        x: warehouse.x + warehouse.w + 44,
+        y: warehouse.y + warehouse.h * 0.5,
+      };
     } else if (wide) {
       const colX = w * 0.72;
       const colW = w * 0.24;
       officeArea = { x: w * 0.05, y: h * 0.12, w: w * 0.62, h: h * 0.8 };
-      warehouse = { x: colX + colW * 0.08, y: h * 0.26, w: colW * 0.84, h: h * 0.24 };
+      warehouse = {
+        x: colX + colW * 0.08,
+        y: h * 0.26,
+        w: colW * 0.84,
+        h: h * 0.24,
+      };
       tileArea = { x: colX, y: h * 0.58, w: colW, h: h * 0.34 };
       tileCols = 2;
       truckFrom = { x: warehouse.x + warehouse.w * 0.5, y: -60 };
@@ -348,7 +415,10 @@ function init(hero) {
       tileArea = { x: w * 0.03, y: h * 0.84, w: w * 0.94, h: h * 0.14 };
       tileCols = 4;
       truckFrom = { x: w + 60, y: warehouse.y + warehouse.h * 0.5 };
-      truckTo = { x: warehouse.x + warehouse.w + 44, y: warehouse.y + warehouse.h * 0.5 };
+      truckTo = {
+        x: warehouse.x + warehouse.w + 44,
+        y: warehouse.y + warehouse.h * 0.5,
+      };
     }
     // Streets leave from the side facing the offices: the left wall when the
     // warehouse stands in its own column, otherwise the roof edge (offices above).
@@ -358,19 +428,36 @@ function init(hero) {
         : { x: warehouse.x + warehouse.w * 0.5, y: warehouse.y };
 
     const cols = wide ? 3 : 2;
-    const offices = grid(officeArea, cols, Math.ceil(count / cols), count).map((cell, id) => {
-      const bw = Math.min(cell.w * 0.5, cell.h * 0.55);
-      const bh = bw * 0.78;
-      const b = { x: cell.x + (cell.w - bw) / 2, y: cell.y + cell.h - bh - cell.h * 0.08, w: bw, h: bh };
-      const r = Math.max(14, Math.min(34, Math.min(cell.w, cell.h) * 0.17));
-      const bubble = { x: b.x + bw / 2, y: b.y - r - 8, r };
-      const hit = { x: cell.x + 4, y: bubble.y - r - 4, w: cell.w - 8, h: b.y + bh - (bubble.y - r - 4) };
-      return { id, b, bubble, hit, door: { x: b.x + bw / 2, y: b.y + bh } };
-    });
+    const offices = grid(officeArea, cols, Math.ceil(count / cols), count).map(
+      (cell, id) => {
+        const bw = Math.min(cell.w * 0.5, cell.h * 0.55);
+        const bh = bw * 0.78;
+        const b = {
+          x: cell.x + (cell.w - bw) / 2,
+          y: cell.y + cell.h - bh - cell.h * 0.08,
+          w: bw,
+          h: bh,
+        };
+        const r = Math.max(14, Math.min(34, Math.min(cell.w, cell.h) * 0.17));
+        const bubble = { x: b.x + bw / 2, y: b.y - r - 8, r };
+        const hit = {
+          x: cell.x + 4,
+          y: bubble.y - r - 4,
+          w: cell.w - 8,
+          h: b.y + bh - (bubble.y - r - 4),
+        };
+        return { id, b, bubble, hit, door: { x: b.x + bw / 2, y: b.y + bh } };
+      },
+    );
 
     let tiles = [];
     if (tileArea) {
-      const cells = grid(tileArea, tileCols, Math.ceil(PRODUCT_TYPES.length / tileCols), PRODUCT_TYPES.length);
+      const cells = grid(
+        tileArea,
+        tileCols,
+        Math.ceil(PRODUCT_TYPES.length / tileCols),
+        PRODUCT_TYPES.length,
+      );
       const s = Math.min(...cells.map((c) => Math.min(c.w, c.h))) * 0.86;
       tiles = cells.map((c, i) => ({
         type: PRODUCT_TYPES[i],
@@ -445,7 +532,11 @@ function init(hero) {
     ctx.font = `600 ${Math.max(10, Math.min(14, w.h * 0.14))}px ${c.font}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(fit(company, w.w - 12), w.x + w.w / 2, w.y + Math.max(18, w.h * 0.28) / 2);
+    ctx.fillText(
+      fit(company, w.w - 12),
+      w.x + w.w / 2,
+      w.y + Math.max(18, w.h * 0.28) / 2,
+    );
     // Loading bays.
     ctx.fillStyle = c.border;
     const bays = 3;
@@ -458,13 +549,17 @@ function init(hero) {
   function fit(text, max) {
     if (ctx.measureText(text).width <= max) return text;
     let t = text;
-    while (t.length > 1 && ctx.measureText(t + "…").width > max) t = t.slice(0, -1);
+    while (t.length > 1 && ctx.measureText(t + "…").width > max)
+      t = t.slice(0, -1);
     return t + "…";
   }
 
   function drawOffice(c, o) {
     const { b, bubble } = o;
-    const highlighted = hover === o && (drag || selected || cursor !== null) && state.mode === "play";
+    const highlighted =
+      hover === o &&
+      (drag || selected || cursor !== null) &&
+      state.mode === "play";
     ctx.fillStyle = c.subtle;
     ctx.strokeStyle = highlighted ? c.accent : c.border;
     ctx.lineWidth = highlighted ? 3 : 2;
@@ -478,7 +573,12 @@ function init(hero) {
     for (let row = 0; row < 2; row++) {
       for (let col = 0; col < 3; col++) {
         if (row === 1 && col === 1) continue;
-        ctx.fillRect(b.x + ww * (1 + col * 2), b.y + wh * (1 + row * 2.2), ww, wh);
+        ctx.fillRect(
+          b.x + ww * (1 + col * 2),
+          b.y + wh * (1 + row * 2.2),
+          ww,
+          wh,
+        );
       }
     }
     ctx.fillRect(b.x + ww * 3, b.y + b.h - wh * 1.8, ww, wh * 1.8);
@@ -502,10 +602,17 @@ function init(hero) {
     ctx.arc(bubble.x, bubble.y, bubble.r, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    ctx.strokeStyle = left > 0.5 ? "#16a34a" : left > 0.25 ? "#f59e0b" : "#dc2626";
+    ctx.strokeStyle =
+      left > 0.5 ? "#16a34a" : left > 0.25 ? "#f59e0b" : "#dc2626";
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(bubble.x, bubble.y, bubble.r + 1, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * left);
+    ctx.arc(
+      bubble.x,
+      bubble.y,
+      bubble.r + 1,
+      -Math.PI / 2,
+      -Math.PI / 2 + Math.PI * 2 * left,
+    );
     ctx.stroke();
     drawIcon(order.type, bubble.x, bubble.y, bubble.r * 0.62, 1);
   }
@@ -516,7 +623,15 @@ function init(hero) {
     const t = vanProgress(state, order);
     const x = L.door.x + (o.door.x - L.door.x) * t;
     const y = L.door.y + (o.door.y - L.door.y) * t;
-    vehicle(x, y, Math.atan2(o.door.y - L.door.y, o.door.x - L.door.x), 26, 14, PRODUCT_COLORS[order.type], c);
+    vehicle(
+      x,
+      y,
+      Math.atan2(o.door.y - L.door.y, o.door.x - L.door.x),
+      26,
+      14,
+      PRODUCT_COLORS[order.type],
+      c,
+    );
   }
 
   function drawTruck(c) {
@@ -531,7 +646,16 @@ function init(hero) {
     const { truckFrom: a, truckTo: b } = L;
     const x = a.x + (b.x - a.x) * k;
     const y = a.y + (b.y - a.y) * k;
-    vehicle(x, y, Math.atan2(b.y - a.y, b.x - a.x), 56, 24, c.muted, c, "Proveedor");
+    vehicle(
+      x,
+      y,
+      Math.atan2(b.y - a.y, b.x - a.x),
+      56,
+      24,
+      c.muted,
+      c,
+      "Proveedor",
+    );
   }
 
   function vehicle(x, y, angle, len, wid, body, c, label) {
