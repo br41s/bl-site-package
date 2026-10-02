@@ -182,6 +182,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     if (name === "misite") initMiSite();
     if (name === "productos") initProductos();
+    if (name === "pedidos") initPedidos();
     if (name === "profesionales") initProfesionales();
   }
 
@@ -2242,7 +2243,7 @@ document.addEventListener("DOMContentLoaded", function () {
       name: "vendidos",
       label: "Lo más vendido",
       curated: false,
-      hint: "Se calcula solo, a partir de tus pedidos confirmados. No aparece hasta que confirmes pedidos en la pestaña Pedidos: los carritos sin confirmar no cuentan.",
+      hint: "Se calcula solo, a partir de tus pedidos confirmados. No aparece hasta que confirmes pedidos en la sección Pedidos: los carritos sin confirmar no cuentan.",
     },
     {
       name: "destacados",
@@ -2931,7 +2932,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initB2bActions();
   }
 
-  // Pay-by-transfer details (Pedidos tab). Public config, read back from
+  // Pay-by-transfer details (Pedidos section). Public config, read back from
   // GET /api/site/config; the server rejects an IBAN or BIC that does not
   // check out (src/utils/iban.js).
   function loadBankSettings() {
@@ -2986,13 +2987,22 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  var pedidosInitialized = false;
+
+  function initPedidos() {
+    loadReservationsList();
+    loadBankSettings();
+
+    if (pedidosInitialized) return;
+    pedidosInitialized = true;
+    initBankSettings();
+  }
+
   function initProductos() {
     // loadShopFront() loads the config and facets first, then paints the
     // catalogue list — the stars need to know what is already pinned before the
     // rows are drawn.
     loadShopFront();
-    loadReservationsList();
-    loadBankSettings();
     loadSyncStatus();
     loadFichas();
     loadFichasLog(false);
@@ -3002,7 +3012,6 @@ document.addEventListener("DOMContentLoaded", function () {
     initFichasActions();
     initFichasLog();
     initShopFrontActions();
-    initBankSettings();
 
     document.querySelectorAll(".productos-tab").forEach(function (tab) {
       tab.addEventListener("click", function () {

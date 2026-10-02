@@ -312,6 +312,23 @@
               </button>
             </li>
             <li>
+              <button class="sidebar-nav-item" data-section="pedidos">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  <rect x="8" y="2" width="8" height="4" rx="1" />
+                  <path d="M9 12h6M9 16h6" />
+                </svg>
+                <span>Pedidos</span>
+              </button>
+            </li>
+            <li>
               <button class="sidebar-nav-item" data-section="profesionales">
                 <svg
                   width="20"
@@ -1402,13 +1419,12 @@
           <section data-panel="productos" class="panel-section" hidden>
             <div class="section-header">
               <h2>Productos</h2>
-              <p>Catálogo sincronizado desde Liderpapel, reservas de recogida en tienda y configuración de la sincronización.</p>
+              <p>Catálogo sincronizado desde Liderpapel, portada de la tienda, fichas de producto y configuración de la sincronización.</p>
             </div>
 
             <div class="productos-tabs">
               <button class="productos-tab active" data-productos-tab="catalogo">Catálogo</button>
               <button class="productos-tab" data-productos-tab="portada">Portada</button>
-              <button class="productos-tab" data-productos-tab="pedidos">Pedidos</button>
               <button class="productos-tab" data-productos-tab="fichas">Fichas</button>
               <button class="productos-tab" data-productos-tab="sync">Sincronización</button>
             </div>
@@ -1454,39 +1470,6 @@
                 </button>
                 <span id="save-shop-blocks-msg" style="font-size: 0.8125rem; display: none"></span>
               </div>
-            </div>
-
-            <!-- TAB: PEDIDOS -->
-            <div class="productos-tab-panel" id="productos-pedidos">
-              <div class="misite-block">
-                <h3>Pago por transferencia</h3>
-                <p class="misite-hint">
-                  Si rellenas tu IBAN, al hacer una reserva el cliente ve estos
-                  datos, el importe y el concepto («Reserva» y su número), y los
-                  recibe también por email si tienes el email configurado. Las
-                  empresas con cuenta de profesional no los ven: pagan según su
-                  forma de pago habitual. Déjalo vacío para no pedir transferencia.
-                </p>
-                <div class="misite-page-form" style="max-width: 560px">
-                  <div>
-                    <label for="bank-holder-input">Titular de la cuenta</label>
-                    <input type="text" id="bank-holder-input" placeholder="Mi Empresa S.L." />
-                  </div>
-                  <div>
-                    <label for="bank-iban-input">IBAN</label>
-                    <input type="text" id="bank-iban-input" placeholder="ES00 0000 0000 0000 0000 0000" autocomplete="off" />
-                  </div>
-                  <div>
-                    <label for="bank-bic-input">BIC / SWIFT (opcional)</label>
-                    <input type="text" id="bank-bic-input" placeholder="XXXXESMMXXX" autocomplete="off" />
-                  </div>
-                </div>
-                <div style="margin-top: 1rem; display: flex; gap: 1rem; align-items: center">
-                  <button class="btn-primary-sm" id="save-bank-btn">Guardar datos bancarios</button>
-                  <span id="save-bank-msg" style="font-size: 0.8125rem; display: none"></span>
-                </div>
-              </div>
-              <div id="productos-reservations-list"></div>
             </div>
 
             <!-- TAB: FICHAS -->
@@ -1568,6 +1551,44 @@
                 </form>
               </div>
             </div>
+          </section>
+
+          <!-- PEDIDOS -->
+          <section data-panel="pedidos" class="panel-section" hidden>
+            <div class="section-header">
+              <h2>Pedidos</h2>
+              <p>Las reservas de recogida en tienda que te dejan los clientes desde la web, y los datos para que paguen por transferencia.</p>
+            </div>
+
+            <div class="misite-block">
+              <h3>Pago por transferencia</h3>
+              <p class="misite-hint">
+                Si rellenas tu IBAN, al hacer una reserva el cliente ve estos
+                datos, el importe y el concepto («Reserva» y su número), y los
+                recibe también por email si tienes el email configurado. Las
+                empresas con cuenta de profesional no los ven: pagan según su
+                forma de pago habitual. Déjalo vacío para no pedir transferencia.
+              </p>
+              <div class="misite-page-form" style="max-width: 560px">
+                <div>
+                  <label for="bank-holder-input">Titular de la cuenta</label>
+                  <input type="text" id="bank-holder-input" placeholder="Mi Empresa S.L." />
+                </div>
+                <div>
+                  <label for="bank-iban-input">IBAN</label>
+                  <input type="text" id="bank-iban-input" placeholder="ES00 0000 0000 0000 0000 0000" autocomplete="off" />
+                </div>
+                <div>
+                  <label for="bank-bic-input">BIC / SWIFT (opcional)</label>
+                  <input type="text" id="bank-bic-input" placeholder="XXXXESMMXXX" autocomplete="off" />
+                </div>
+              </div>
+              <div style="margin-top: 1rem; display: flex; gap: 1rem; align-items: center">
+                <button class="btn-primary-sm" id="save-bank-btn">Guardar datos bancarios</button>
+                <span id="save-bank-msg" style="font-size: 0.8125rem; display: none"></span>
+              </div>
+            </div>
+            <div id="productos-reservations-list"></div>
           </section>
 
           <!-- PROFESIONALES -->
