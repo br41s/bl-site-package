@@ -178,6 +178,126 @@ body {
   flex-wrap: wrap;
 }
 
+/* HERO GAME ("Pedido a pedido", web/game/) — only when hero_game is on.
+   The canvas sits under the hero text; a veil in --bg keeps the text legible
+   while the demo plays. Playing hides the text and hands the canvas the
+   pointer. Everything is scoped to .site-hero-game. */
+.site-hero-game {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.site-hero-game.site-hero-compact {
+  min-height: 560px;
+}
+.hero-game-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  pointer-events: none;
+}
+.site-hero-game::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    var(--bg) 0%,
+    color-mix(in srgb, var(--bg) 88%, transparent) 40%,
+    color-mix(in srgb, var(--bg) 0%, transparent) 72%
+  );
+}
+.site-hero-game .site-hero-inner {
+  position: relative;
+}
+/* The overlays below set display, which would beat the hidden attribute. */
+.site-hero-game [hidden] {
+  display: none;
+}
+.hero-game-hud {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4rem 0.5rem 0.4rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.hero-game-lives {
+  color: #dc2626;
+  letter-spacing: 0.1em;
+}
+.hero-game-hud .site-btn-ghost {
+  padding: 0.3rem 0.8rem;
+}
+.hero-game-hint {
+  position: absolute;
+  top: 4.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90%, 44ch);
+  text-align: center;
+  padding: 0.5rem 0.9rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.hero-game-over {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(90%, 26rem);
+  padding: 1.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.18);
+}
+.hero-game-over-text {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  margin-bottom: 1rem;
+}
+.hero-game-over .site-hero-actions {
+  justify-content: center;
+}
+.site-hero-game.is-playing {
+  min-height: max(560px, calc(100dvh - 56px));
+}
+.site-hero-game.is-playing::before,
+.site-hero-game.is-playing .site-hero-inner {
+  visibility: hidden;
+}
+.site-hero-game.is-playing .hero-game-canvas {
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+}
+@media (max-width: 719px) {
+  /* Narrow: the hero text spans the width, so the veil covers it all. */
+  .site-hero-game::before {
+    background: color-mix(in srgb, var(--bg) 84%, transparent);
+  }
+  .hero-game-hud {
+    gap: 0.6rem;
+    font-size: 0.85rem;
+  }
+}
+
 /* INTERIOR PAGES */
 .site-page {
   padding: 4rem 1.5rem;

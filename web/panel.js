@@ -1077,6 +1077,7 @@ document.addEventListener("DOMContentLoaded", function () {
           "radius_style",
           "theme_default",
           "hero_density",
+          "hero_game",
         ].forEach(function (key) {
           var input = document.getElementById(key.replace(/_/g, "-") + "-input");
           if (input) input.value = cfg[key] || "";
@@ -1515,6 +1516,7 @@ document.addEventListener("DOMContentLoaded", function () {
           radius_style: document.getElementById("radius-style-input").value,
           theme_default: document.getElementById("theme-default-input").value,
           hero_density: document.getElementById("hero-density-input").value,
+          hero_game: document.getElementById("hero-game-input").value,
         };
 
         try {
