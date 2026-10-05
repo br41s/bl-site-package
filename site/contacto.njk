@@ -48,6 +48,7 @@ permalink: "/contacto.html"
     {%- if site.turnstile_site_key %}
     <div class="cf-turnstile" id="contact-turnstile" data-sitekey="{{ site.turnstile_site_key }}"></div>
     {%- endif %}
+    <p class="form-privacy-note"><strong>Responsable:</strong> {{ site.legal_name or site.company_name or "el titular de este sitio" }}<br>Usamos tus datos solo para responderte. Puedes acceder a ellos, rectificarlos, suprimirlos y ejercer tus demás derechos como explica la <a href="/privacidad">política de privacidad</a>.</p>
     <button type="submit" class="site-btn" id="contact-submit">Enviar</button>
     <p class="site-form-msg" id="contact-form-msg" aria-live="polite"></p>
   </form>

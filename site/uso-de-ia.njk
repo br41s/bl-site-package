@@ -7,9 +7,12 @@ permalink: "/uso-de-ia.html"
 <main class="site-page"><div class="site-page-inner">
   <h1 class="reveal">Uso de inteligencia artificial</h1>
 
-  <div class="site-page-desc reveal" style="text-align:left;max-width:720px;margin-inline:auto;">
+  {#- Says only what the code does: agents can publish blog posts and product
+      sheets directly (src/api/blog.js, src/api/product-content.js), so this
+      page must not promise review before publication. -#}
+  <div class="site-page-desc legal-doc reveal">
 
-    <p><strong>Aviso de transparencia.</strong> Parte de los contenidos de este sitio web se generan con asistencia de sistemas de inteligencia artificial, siempre con revisión humana antes de su publicación.</p>
+    <p><strong>Aviso de transparencia.</strong> Parte de los contenidos de este sitio web se generan con asistencia de sistemas de inteligencia artificial. {{ site.company_name or "La empresa" }} es responsable de todo lo que publica y lo corrige cuando detecta un error o se lo comunican.</p>
 
     <h2>1. Por qué publicamos este aviso</h2>
     <p>Desde el <strong>2 de agosto de 2026</strong> son aplicables las obligaciones de transparencia del <strong>artículo 50 del Reglamento (UE) 2024/1689</strong>, el Reglamento Europeo de Inteligencia Artificial. Entre otras cosas exige informar a las personas cuando interactúan con un sistema de IA y señalar los contenidos generados o manipulados artificialmente.</p>
@@ -18,18 +21,22 @@ permalink: "/uso-de-ia.html"
     <h2>2. Dónde se usa la IA en este sitio</h2>
     <ul>
       <li><strong>Textos de páginas y artículos del blog.</strong> Se redactan con asistencia de un modelo de lenguaje{% if site.ai_model %} ({{ site.ai_model }}){% endif %} a partir de las indicaciones y los datos que facilita la empresa.</li>
+      {%- if products.length %}
+      <li><strong>Fichas de producto.</strong> Algunos títulos y descripciones de producto los redacta un asistente de IA a partir de los datos técnicos del fabricante o del distribuidor. Esos datos, el precio y la disponibilidad no los genera la IA.</li>
+      {%- endif %}
       <li><strong>Imágenes ilustrativas.</strong> Algunas imágenes del sitio están generadas artificialmente{% if site.image_model %} con {{ site.image_model }}{% endif %}. No representan personas, lugares ni hechos reales, y no deben interpretarse como fotografías documentales.</li>
-      <!-- DRAFT: WhatsApp AI disclosure wording pending owner/legal review -->
-      <li><strong>Conversaciones por WhatsApp.</strong> Si esta empresa ha contratado el servicio de asistencia por WhatsApp, las conversaciones se procesan mediante un sistema de inteligencia artificial (OpenRouter) que genera respuestas automáticas a partir de la información publicada en este sitio web. El sistema de IA se presenta a sí mismo al inicio de la conversación y transferirá automáticamente la consulta a una persona para responder a preguntas que no pueda resolver de forma segura o a solicitudes de compra o reserva.</li>
-      <li><strong>Formulario de contacto y reservas.</strong> No intervienen sistemas de IA: los mensajes los recibe y responde una persona.</li>
+      {%- if site.whatsapp_bot_enabled == "1" %}
+      <li><strong>Conversaciones por WhatsApp.</strong> Las conversaciones se procesan mediante un sistema de inteligencia artificial (OpenRouter) que genera respuestas automáticas a partir de la información publicada en este sitio web. El sistema de IA se presenta a sí mismo al inicio de la conversación y transferirá automáticamente la consulta a una persona para responder a preguntas que no pueda resolver de forma segura o a solicitudes de compra o reserva.</li>
+      {%- endif %}
+      <li><strong>Formulario de contacto y pedidos.</strong> No intervienen sistemas de IA: los mensajes los recibe y responde una persona.</li>
     </ul>
 
-    <h2>3. Dónde interviene una persona</h2>
-    <p>La IA asiste en la redacción y la generación de imágenes; no decide nada por su cuenta. En concreto, hay revisión humana en:</p>
+    <h2>3. Supervisión humana</h2>
+    <p>La IA asiste en la redacción y la generación de imágenes; no decide nada por su cuenta.</p>
     <ul>
-      <li>La aprobación de cualquier texto o imagen antes de publicarse.</li>
-      <li>Los datos de producto, precios, disponibilidad y condiciones comerciales, que los introduce y verifica la empresa.</li>
-      <li>La atención a consultas, reservas y reclamaciones.</li>
+      <li>Las personas de la empresa deciden qué puede escribir cada asistente, revisan lo publicado y lo corrigen o retiran cuando hace falta. Algunos contenidos pueden publicarse antes de esa revisión.</li>
+      <li>Los precios, la disponibilidad, los datos técnicos de los productos y las condiciones comerciales los fija la empresa o proceden del catálogo de su proveedor, nunca de la IA.</li>
+      <li>Los pedidos y las reclamaciones los atiende una persona.</li>
     </ul>
     <p>No se adoptan decisiones automatizadas con efectos jurídicos sobre las personas ni que las afecten significativamente de modo similar, en el sentido del artículo 22 del Reglamento (UE) 2016/679. El tratamiento de datos personales se rige por la <a href="/privacidad">Política de Privacidad</a>.</p>
 
@@ -43,7 +50,7 @@ permalink: "/uso-de-ia.html"
     <h2>5. Contacto</h2>
     <p>Si quieres saber si un contenido concreto de este sitio se generó con asistencia de IA, o solicitar su revisión, escríbenos{% if site.legal_email %} a <a href="mailto:{{ site.legal_email }}">{{ site.legal_email }}</a>{% else %} a través del <a href="/contacto">formulario de contacto</a>{% endif %}.</p>
 
-    <p style="margin-top:2rem;"><a href="/privacidad">Política de Privacidad</a> · <a href="/condiciones">Aviso legal y condiciones</a></p>
+    <p style="margin-top:2rem;"><a href="/aviso-legal">Aviso legal</a> · <a href="/privacidad">Política de privacidad</a> · <a href="/cookies">Política de cookies</a></p>
 
   </div>
 </div></main>

@@ -65,7 +65,7 @@ beforeEach(() => {
   setConfig("b2b_default_discount_pct", "0");
 });
 
-function reserve(headers = {}) {
+function reserve(headers = {}, extra = { accept_terms: true }) {
   return fetch(`${baseUrl}/api/reservations`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...headers },
@@ -73,6 +73,7 @@ function reserve(headers = {}) {
       customer_name: "Ana",
       customer_email: "ana@cliente.es",
       items: [{ sku: "A1", quantity: 2 }],
+      ...extra,
     }),
   }).then(async (res) => ({ status: res.status, body: await res.json() }));
 }
@@ -160,5 +161,24 @@ describe("payment instructions", () => {
     assert.equal(status, 201);
     assert.equal(body.payment.method, "transfer");
     assert.equal(sent.length, 0);
+  });
+});
+
+describe("terms acceptance", () => {
+  test("an order without accepted terms is refused and nothing is stored", async () => {
+    const before = db.prepare("SELECT COUNT(*) AS n FROM reservations").get().n;
+    for (const extra of [{}, { accept_terms: "true" }, { accept_terms: false }]) {
+      const { status, body } = await reserve({}, extra);
+      assert.equal(status, 400);
+      assert.match(body.error, /condiciones de venta/);
+    }
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM reservations").get().n, before);
+  });
+
+  test("an accepted order records when the terms were accepted", async () => {
+    const { status, body } = await reserve();
+    assert.equal(status, 201);
+    const row = db.prepare("SELECT terms_accepted_at FROM reservations WHERE id = ?").get(body.id);
+    assert.ok(row.terms_accepted_at, "terms_accepted_at should be set");
   });
 });

@@ -81,6 +81,30 @@ through. The bug is invisible on desktop, where the min-content floor is never r
 - **`1rem` is 16px in this repo**, unlike biglobster's 62.5% root, and the fade cover uses
   `--bg`, not `--bg-base`. Neither is interchangeable between the two stylesheets.
 
+## Homepage game (`hero_game`)
+
+Opt-in per deploy (panel → Mi sitio → Apariencia → Animación de portada, default
+off). "Pedido a pedido": offices order clips, paper, pens or folders; the player
+drags the product from the dock to the office before its patience ring runs out;
+three lives. Idle, the same simulation plays itself behind the hero text.
+
+- **Rules and drawing are split, as in FlyWell.** `web/game/rules.js` is pure (no
+  DOM) and owns every timing — spawn, patience, van travel — so
+  `web/game/hero-game.js` only lays out, paints and calls `deliver()`. Tests in
+  `src/game/` import across, like `site/_data` tests, so they never reach `_site`.
+- **Difficulty is one function**, `ordersPerMinute` in `web/game/traffic.js`.
+  Patience and office count are fixed; tune the game there and nowhere else.
+- **No customer data in the scene.** The warehouse sign is `company_name`; the
+  truck says "Proveedor". The files are passed through one by one in
+  `eleventy.config.mjs` so a file added to `web/game/` is not shipped by accident.
+- **Playable without a pointer:** keys 1-4 pick a product, arrows pick an office
+  (numbered on the canvas), Enter delivers; every order, loss and delivery is
+  read out through an `aria-live` line, and the idle demo has a pause button.
+  Browsers without `ctx.roundRect` get the plain hero, no Jugar button.
+- `prefers-reduced-motion` gets one still frame; the loop stops when the hero is
+  off-screen or the tab hidden (the Browser pane counts as hidden — override
+  `document.hidden` to watch it there). Best score: `localStorage` `bl-game-best`.
+
 ## The catalogue
 
 Clients who sell from a distributor feed get a synced catalogue. Shoroban's is Liderpapel:
@@ -147,6 +171,37 @@ retail per catalogue category, with a general fallback. `src/api/b2b.js` holds a
   panel login for every trade customer. `src/api/b2b.test.js` asserts this.
 - Discounts and the general % are written without `setConfig`: they are in no built page,
   and a rebuild of ~14,500 pages for a discount change would be pure cost.
+
+## Legal pages — they describe the code, so they move with it
+
+`/aviso-legal`, `/condiciones` (sales terms, only with a catalogue), `/privacidad`,
+`/cookies`, `/uso-de-ia`. The **customer** is the titular, controller and seller,
+under Spanish law; the company that builds and hosts the site is named nowhere
+on them (only as "proveedor de alojamiento y mantenimiento técnico"). Every fact
+comes from config (`legal_*`, `biz_phone`, `bank_iban`, `sales_shipping_text`,
+`legal_adr`), and each section renders only when its feature is on.
+
+The pages state what the code does, so a code change can make them false:
+
+- **A new cookie or `localStorage` key** goes on `/cookies`. The site has no
+  consent banner because everything it stores is strictly necessary or asked
+  for; a key that is not would need consent, and a banner.
+- **A new third-party request** from public pages (script, font, image host)
+  goes on `/privacidad` and `/cookies`. Fonts are self-hosted in `web/fonts/`
+  for this reason: Google Fonts sent every visitor's IP to Google.
+- **Retention is enforced, not promised.** `src/privacy/retention.js` deletes
+  contact messages after 24 months and orders after 6 years, daily; the policy
+  reads the same constants (`retention-periods.js` → `site.retention`).
+- **Checkout requires accepted terms** (`accept_terms`, stored as
+  `reservations.terms_accepted_at`) and the button says «Confirmar pedido con
+  obligación de pago» (TRLGDCU art. 98.2). The screen says «Pedido recibido»:
+  the terms make the contract when the business confirms, not on submit.
+- **Promises depend on what the deploy can do.** Emailed copies are promised only
+  when `site.mail_configured` (SMTP set). `/uso-de-ia` and the footer must not
+  promise human review before publication: agents can publish posts and product
+  sheets directly. Add a review gate in code before ever claiming one again.
+- Wording follows `bank_iban` the way `paymentInstructions` does
+  (`site.shop_payment_line`); never promise "sin pago por adelantado" again.
 
 ## Customer configuration
 

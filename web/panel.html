@@ -5,12 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Panel de cliente" />
     <title>Mi panel</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap"
-    />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
     <style>
       /* ── CSS variables base (no depende de style.css del sitio público) ── */
       :root {
@@ -987,6 +982,13 @@
                       <option value="compact">Compacta</option>
                     </select>
                   </div>
+                  <div>
+                    <label for="hero-game-input">Animación de portada</label>
+                    <select id="hero-game-input">
+                      <option value="">Sin animación</option>
+                      <option value="1">Reparto de pedidos (con minijuego)</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div
@@ -1211,9 +1213,10 @@
               <div class="misite-block">
                 <h3>Datos legales</h3>
                 <p class="misite-hint">
-                  Aparecen en las páginas de Privacidad y Aviso Legal de tu
-                  web. Si los dejas vacíos, las páginas usan un texto
-                  genérico con el nombre de tu empresa.
+                  Aparecen en el Aviso legal, la Política de privacidad y las
+                  Condiciones de venta de tu web. La ley obliga a publicar la
+                  razón social, el NIF, el domicilio, un email y, si tu empresa
+                  es una sociedad, sus datos del Registro Mercantil.
                 </p>
 
                 <div class="misite-page-form" style="max-width: 560px">
@@ -1243,6 +1246,30 @@
                       type="email"
                       id="legal-email-input"
                       placeholder="hola@miempresa.com"
+                    />
+                  </div>
+                  <div>
+                    <label for="legal-registry-input">Inscripción registral</label>
+                    <input
+                      type="text"
+                      id="legal-registry-input"
+                      placeholder="Registro Mercantil de Ourense, tomo 123, folio 45, hoja OR-6789"
+                    />
+                  </div>
+                  <div>
+                    <label for="sales-shipping-text-input">Entregas y envíos</label>
+                    <textarea
+                      id="sales-shipping-text-input"
+                      rows="5"
+                      placeholder="Recogida en tienda: gratis, en 24 h.&#10;Reparto en Ourense: gratis desde 30 €, si no 4,95 €; en 24-48 h laborables.&#10;Envío al resto de la península: 6,95 €; en 2-4 días laborables."
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label for="legal-adr-input">Arbitraje de consumo</label>
+                    <input
+                      type="text"
+                      id="legal-adr-input"
+                      placeholder="Adheridos a la Junta Arbitral de Consumo de Galicia (déjalo vacío si no lo estáis)"
                     />
                   </div>
                 </div>
@@ -2179,6 +2206,9 @@
         font-size: 1rem;
         font-weight: 600;
         color: var(--text-primary);
+      }
+      .message-card-header [data-delete-message] {
+        margin-left: auto;
       }
       .message-card-email,
       .message-card-date {

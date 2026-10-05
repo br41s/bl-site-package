@@ -178,6 +178,154 @@ body {
   flex-wrap: wrap;
 }
 
+/* HERO GAME ("Pedido a pedido", web/game/) — only when hero_game is on.
+   The canvas sits under the hero text; a veil in --bg keeps the text legible
+   while the demo plays. Playing hides the text and hands the canvas the
+   pointer. Everything is scoped to .site-hero-game. */
+.site-hero-game {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.site-hero-game.site-hero-compact {
+  min-height: 560px;
+}
+.hero-game-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  pointer-events: none;
+}
+.site-hero-game::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    var(--bg) 0%,
+    color-mix(in srgb, var(--bg) 88%, transparent) 40%,
+    color-mix(in srgb, var(--bg) 0%, transparent) 72%
+  );
+}
+.site-hero-game .site-hero-inner {
+  position: relative;
+}
+/* The overlays below set display, which would beat the hidden attribute. */
+.site-hero-game [hidden] {
+  display: none;
+}
+.hero-game-hud {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.4rem 0.5rem 0.4rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.hero-game-pause {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.site-hero-game.is-playing .hero-game-pause {
+  display: none;
+}
+.hero-game-hud:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.hero-game-lives {
+  color: #dc2626;
+  letter-spacing: 0.1em;
+}
+.hero-game-hud .site-btn-ghost {
+  padding: 0.3rem 0.8rem;
+}
+.hero-game-hint {
+  position: absolute;
+  top: 4.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90%, 44ch);
+  text-align: center;
+  padding: 0.5rem 0.9rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.hero-game-over {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(90%, 26rem);
+  padding: 1.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.18);
+}
+.hero-game-over-text {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  margin-bottom: 1rem;
+}
+.hero-game-over .site-hero-actions {
+  justify-content: center;
+}
+.site-hero-game.is-playing {
+  min-height: max(560px, calc(100dvh - 56px));
+}
+.site-hero-game.is-playing::before,
+.site-hero-game.is-playing .site-hero-inner {
+  visibility: hidden;
+}
+.site-hero-game.is-playing .hero-game-canvas {
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+}
+@media (max-width: 719px) {
+  /* Narrow: the hero text spans the width, so the veil covers it all. */
+  .site-hero-game::before {
+    background: color-mix(in srgb, var(--bg) 84%, transparent);
+  }
+  .hero-game-hud {
+    gap: 0.6rem;
+    font-size: 0.85rem;
+  }
+}
+
 /* INTERIOR PAGES */
 .site-page {
   padding: 4rem 1.5rem;
@@ -207,6 +355,102 @@ body {
   color: var(--text-muted);
   margin-bottom: 2rem;
   max-width: 55ch;
+}
+
+/* LEGAL PAGES (aviso legal, condiciones, privacidad, cookies) — long-form
+   text, so it gets prose spacing; the global reset would otherwise run every
+   heading and list together. */
+.legal-doc {
+  max-width: 72ch;
+  margin-inline: auto;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.legal-doc h2 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin: 2rem 0 0.75rem;
+}
+.legal-doc h3 {
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  margin: 1.5rem 0 0.5rem;
+}
+.legal-doc p,
+.legal-doc ul,
+.legal-doc ol {
+  margin-bottom: 0.9rem;
+}
+.legal-doc ul,
+.legal-doc ol {
+  padding-left: 1.25rem;
+}
+.legal-doc li {
+  margin-bottom: 0.35rem;
+}
+.legal-doc a {
+  color: var(--accent);
+}
+.legal-doc code {
+  font-size: 0.9em;
+}
+.legal-shipping {
+  white-space: pre-line;
+  margin-bottom: 0.9rem;
+}
+.legal-form {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0;
+}
+.legal-updated {
+  margin-top: 2.5rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+/* Checkout and contact form: terms acceptance + first-layer privacy notice
+   (LOPDGDD art. 11 lets the form carry the basics and link the rest). */
+.checkout-accept {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+/* Specific enough to beat `.site-contact-form input`, which pads every input
+   like a text field. */
+.site-contact-form .checkout-accept input[type="checkbox"] {
+  width: auto;
+  flex: none;
+  padding: 0;
+  margin: 0.2rem 0 0;
+}
+.checkout-accept span {
+  flex: 1;
+  min-width: 0;
+}
+.checkout-accept a,
+.form-privacy-note a {
+  color: var(--accent);
+}
+.form-privacy-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.checkout-shipping summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.checkout-shipping .legal-shipping {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
 }
 
 /* Contact page business info (address / phone / hours) — driven by the
@@ -1365,40 +1609,6 @@ body.infographic-lightbox-open {
   background: var(--bg);
   color: var(--text-primary);
   text-align: center;
-}
-
-/* COOKIE BANNER */
-#cookie-banner {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: none;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
-  z-index: 1000;
-}
-#cookie-banner p {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin: 0;
-  flex: 1;
-}
-#cookie-banner .site-btn {
-  white-space: nowrap;
-}
-@media (max-width: 640px) {
-  #cookie-banner {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-  #cookie-banner p {
-    flex: none;
-  }
 }
 
 /* FOOTER */

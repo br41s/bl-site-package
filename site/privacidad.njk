@@ -1,42 +1,123 @@
 ---
 layout: base.njk
-title: "Política de Privacidad"
-description: "Política de privacidad: qué datos recogemos, con qué finalidad, cuánto los conservamos y cómo ejercer tus derechos RGPD."
+title: "Política de privacidad"
+description: "Qué datos personales tratamos, para qué, con qué base legal, a quién los comunicamos, cuánto tiempo los conservamos y cómo ejercer tus derechos."
 permalink: "/privacidad.html"
 ---
+{#- Art. 13 RGPD. Each section renders only when the feature it describes is
+    on, and states what the code does: the retention periods are the ones
+    src/privacy/retention.js enforces (site.retention), the data lists match
+    the tables in src/db/database.js. Change the code, change this page. -#}
+{%- set titular = site.legal_name or site.company_name or "El titular de este sitio web" %}
+{%- set contacto %}{% if site.legal_email %}<a href="mailto:{{ site.legal_email }}">{{ site.legal_email }}</a>{% else %}el <a href="/contacto">formulario de contacto</a>{% endif %}{% endset %}
+{%- set whatsapp = site.whatsapp_bot_enabled == "1" %}
+{%- set turnstile = site.turnstile_site_key %}
 <main class="site-page"><div class="site-page-inner">
-  <h1 class="reveal">Política de Privacidad</h1>
+  <h1 class="reveal">Política de privacidad</h1>
 
-  <div class="site-page-desc reveal" style="text-align:left;max-width:720px;margin-inline:auto;">
+  <div class="site-page-desc legal-doc reveal">
 
     <h2>1. Responsable del tratamiento</h2>
-    <p>{{ site.legal_name or site.company_name or "El titular de este sitio web" }}{% if site.legal_id %}, con NIF/CIF {{ site.legal_id }}{% endif %}{% if site.legal_address %}, domicilio en {{ site.legal_address }}{% endif %}.
-    {% if site.legal_email %}Contacto: <a href="mailto:{{ site.legal_email }}">{{ site.legal_email }}</a>.{% else %}Puedes contactarnos a través del <a href="/contacto">formulario de contacto</a>.{% endif %}</p>
+    <p>{{ titular }}{% if site.legal_id %}, con NIF {{ site.legal_id }}{% endif %}{% if site.legal_address %}, con domicilio en {{ site.legal_address }}{% endif %}. Para cualquier cuestión sobre tus datos, escríbenos a {{ contacto | safe }}.</p>
 
-    <h2>2. Datos que recogemos</h2>
-    <p>Recogemos únicamente los datos que nos facilitas directamente:</p>
+    <h2>2. Qué datos tratamos, para qué y durante cuánto tiempo</h2>
+
+    <h3>Formulario de contacto</h3>
     <ul>
-      <li><strong>Formulario de contacto:</strong> nombre, email y mensaje.</li>
-      <li><strong>Reservas de productos</strong> (si usas el catálogo): nombre, datos de contacto y productos reservados.</li>
-      <!-- DRAFT: WhatsApp/OpenRouter processing disclosure pending owner/legal review -->
-      <li><strong>Conversaciones por WhatsApp</strong> (si la empresa ha contratado este servicio): número de teléfono de WhatsApp, nombre que has registrado en WhatsApp (si lo has compartido), contenido del mensaje, información de contacto y necesidad extraída de la conversación (nombre, tipo de solicitud, marcas de tiempo) y estado de entrega del mensaje.</li>
+      <li><strong>Datos:</strong> nombre, email y el mensaje que nos escribes.</li>
+      <li><strong>Para qué:</strong> responder a tu consulta{% if site.mail_configured %} y enviarte una copia de tu mensaje por email{% endif %}.</li>
+      <li><strong>Base legal:</strong> tu propia solicitud. Si consultas por un producto o un pedido, la aplicación de medidas precontractuales (art. 6.1.b RGPD); en otro caso, nuestro interés legítimo en atenderte (art. 6.1.f RGPD).</li>
+      <li><strong>Plazo:</strong> {{ site.retention.contactMonths }} meses desde que nos escribes; después el mensaje se borra automáticamente. Antes, si nos lo pides.</li>
     </ul>
-    <p>No utilizamos cookies de seguimiento ni analítica de terceros. La web guarda una preferencia técnica en el <em>localStorage</em> de tu navegador (aviso de cookies aceptado y modo claro/oscuro); esa información permanece en tu dispositivo.</p>
 
-    <h2>3. Finalidad y base legal</h2>
-    <p>Usamos tus datos exclusivamente para responder a tu consulta o gestionar tu reserva. La base legal es tu consentimiento al enviar el formulario y, en el caso de las reservas, la gestión de la relación precontractual.</p>
+    {%- if products.length %}
+    <h3>Pedidos</h3>
+    <ul>
+      <li><strong>Datos:</strong> nombre, email, teléfono (opcional), las notas que añadas, los productos, cantidades e importes{% if site.b2b_enabled == "1" %} y, en pedidos de empresa, el nombre de la empresa{% endif %}. Si pides entrega a domicilio, también la dirección que nos facilites para entregarlo.</li>
+      <li><strong>Para qué:</strong> gestionar tu pedido, el pago, la entrega, las devoluciones y la garantía, y cumplir nuestras obligaciones contables y fiscales.</li>
+      <li><strong>Base legal:</strong> la ejecución del contrato de compraventa (art. 6.1.b RGPD) y el cumplimiento de obligaciones legales (art. 6.1.c RGPD).</li>
+      <li><strong>Plazo:</strong> {{ site.retention.orderYears }} años desde el pedido, el plazo de conservación de la documentación mercantil (art. 30 del Código de Comercio); después se borra automáticamente.</li>
+    </ul>
+    {%- endif %}
 
-    <h2>4. Conservación</h2>
-    <p>Tus mensajes y reservas se almacenan en la base de datos de este sitio el tiempo necesario para gestionarlos. Puedes solicitar su supresión en cualquier momento.</p>
+    {%- if site.b2b_enabled == "1" %}
+    <h3>Área de profesionales</h3>
+    <ul>
+      <li><strong>Datos:</strong> nombre de la empresa, NIF, persona de contacto, email, teléfono, la fecha de tu último acceso y tu contraseña, que guardamos solo cifrada de forma irreversible (nadie, tampoco nosotros, puede leerla).</li>
+      <li><strong>Para qué:</strong> darte acceso a tus precios de profesional y gestionar tus pedidos.</li>
+      <li><strong>Base legal:</strong> la relación comercial con tu empresa (art. 6.1.b RGPD).</li>
+      <li><strong>Plazo:</strong> mientras la cuenta esté activa. Al darla de baja se borra; los pedidos que hiciste se conservan según el apartado anterior.</li>
+    </ul>
+    {%- endif %}
 
-    <h2>5. Terceros</h2>
-    <p>Si está configurado el aviso por email, los mensajes se remiten a través del proveedor de correo del titular, que actúa como encargado del tratamiento.</p>
-    <!-- DRAFT: WhatsApp/OpenRouter processing disclosure pending owner/legal review -->
-    <p>Las conversaciones por WhatsApp (si está contratado el servicio) se procesan a través de la plataforma WhatsApp Business de Meta y del servicio de inteligencia artificial OpenRouter, que actúan como encargados del tratamiento. Los datos se almacenan en infraestructura de BigLobster ubicada en la Unión Europea. Se dispone de un <strong>Acuerdo de Tratamiento de Datos</strong> (Data Processing Agreement, DPA) bajo petición.</p>
-    <p>No cedemos tus datos a ningún otro tercero no mencionado en esta política.</p>
+    {%- if whatsapp %}
+    <h3>Conversaciones por WhatsApp</h3>
+    <ul>
+      <li><strong>Datos:</strong> tu número de teléfono, el nombre de tu perfil de WhatsApp, el contenido de la conversación y los datos que nos des en ella (por ejemplo, tu nombre o lo que necesitas).</li>
+      <li><strong>Para qué:</strong> responder a tu consulta. Las primeras respuestas las genera un asistente de inteligencia artificial, que se presenta como tal y pasa la conversación a una persona cuando hace falta (ver <a href="/uso-de-ia">Uso de IA</a>).</li>
+      <li><strong>Base legal:</strong> tu propia solicitud al escribirnos (art. 6.1.b o, si no tiene que ver con una compra, 6.1.f RGPD).</li>
+      <li><strong>Plazo:</strong> el necesario para atender tu consulta. Puedes pedirnos que borremos la conversación en cualquier momento.</li>
+    </ul>
+    {%- endif %}
 
-    <h2>6. Tus derechos (RGPD)</h2>
-    <p>Puedes ejercer en cualquier momento los derechos de acceso, rectificación, supresión, oposición y portabilidad {% if site.legal_email %}escribiendo a <a href="mailto:{{ site.legal_email }}">{{ site.legal_email }}</a>{% else %}a través del <a href="/contacto">formulario de contacto</a>{% endif %}. También puedes presentar una reclamación ante la <strong>AEPD</strong> (aepd.es).</p>
+    <h3>Seguridad del sitio</h3>
+    <ul>
+      <li>Para frenar el envío masivo de formularios, el servidor recuerda tu dirección IP solo en memoria y durante unos minutos; no la guarda.</li>
+      <li>Si el filtro anti-spam descarta un mensaje del formulario de contacto, ese mensaje no se guarda, pero la dirección de email que contenía queda anotada en el registro técnico del servidor, para poder localizar un mensaje legítimo descartado por error.</li>
+      {%- if turnstile %}
+      <li>El formulario de contacto usa Cloudflare Turnstile para comprobar que lo envía una persona (ver el apartado 4).</li>
+      {%- endif %}
+      <li>Como cualquier servidor web, el nuestro puede anotar datos técnicos de cada visita (dirección IP, fecha y página solicitada) durante un tiempo limitado, para su seguridad y funcionamiento.</li>
+      <li><strong>Base legal:</strong> nuestro interés legítimo en proteger el sitio y a sus usuarios (art. 6.1.f RGPD).</li>
+    </ul>
 
+    <h2>3. Datos obligatorios</h2>
+    <p>Los campos marcados como obligatorios en cada formulario son necesarios para atender lo que nos pides. Sin ellos no podremos responderte{% if products.length %} ni gestionar tu pedido{% endif %}.</p>
+
+    <h2>4. A quién comunicamos tus datos</h2>
+    <p>No vendemos tus datos ni los usamos para publicidad. Solo los conocen, en la medida necesaria:</p>
+    <ul>
+      <li><strong>Nuestro proveedor de alojamiento y mantenimiento técnico del sitio web</strong>, como encargado del tratamiento.</li>
+      <li><strong>Nuestro proveedor de correo electrónico</strong>, que envía y recibe los emails, como encargado del tratamiento.</li>
+      {%- if products.length %}
+      <li><strong>Empresas de transporte</strong>, si tu pedido se envía: solo el nombre, la dirección y el teléfono de entrega.</li>
+      <li><strong>Entidades bancarias</strong>, en la gestión de los pagos y devoluciones.</li>
+      {%- endif %}
+      <li><strong>Administraciones públicas</strong> (por ejemplo, la Agencia Tributaria), cuando una ley nos obligue.</li>
+      {%- if turnstile %}
+      <li><strong>Cloudflare, Inc.</strong> (Estados Unidos), que presta el servicio Turnstile en el formulario de contacto y recibe datos técnicos de tu navegador y tu conexión.</li>
+      {%- endif %}
+      {%- if whatsapp %}
+      <li><strong>Meta Platforms</strong> (WhatsApp Business), por donde llegan y salen los mensajes; una plataforma de gestión de conversaciones; y <strong>OpenRouter, Inc.</strong> (Estados Unidos), que da acceso al modelo de inteligencia artificial que genera las respuestas automáticas. Actúan como encargados del tratamiento.</li>
+      {%- endif %}
+    </ul>
+    {%- if products.length %}
+    <p>Algunas imágenes de producto se cargan desde los servidores de nuestro proveedor de catálogo; al verlas, tu navegador se conecta a ese servidor, que recibe tu dirección IP. No le comunicamos ningún otro dato.</p>
+    {%- endif %}
+
+    <h2>5. Transferencias internacionales</h2>
+    {%- if turnstile or whatsapp %}
+    <p>Los proveedores establecidos en Estados Unidos indicados en el apartado anterior pueden tratar datos fuera del Espacio Económico Europeo. Lo hacen con las garantías previstas en el RGPD: el Marco de Privacidad de Datos UE-EE. UU. cuando la empresa está adherida a él o, en otro caso, las cláusulas contractuales tipo de la Comisión Europea.</p>
+    {%- else %}
+    <p>No realizamos transferencias internacionales de tus datos. Si alguno de nuestros proveedores tuviera que tratarlos fuera del Espacio Económico Europeo, lo haría con las garantías previstas en el RGPD.</p>
+    {%- endif %}
+
+    <h2>6. Decisiones automatizadas</h2>
+    <p>No tomamos decisiones basadas únicamente en un tratamiento automatizado que produzcan efectos jurídicos sobre ti ni te afecten de forma similar, ni elaboramos perfiles.</p>
+
+    <h2>7. Tus derechos</h2>
+    <p>Puedes pedirnos en cualquier momento <strong>acceder</strong> a tus datos, <strong>rectificarlos</strong>, <strong>suprimirlos</strong>, <strong>oponerte</strong> a su tratamiento, <strong>limitarlo</strong> o recibirlos en un formato que puedas llevar a otro responsable (<strong>portabilidad</strong>). Escríbenos a {{ contacto | safe }} indicando qué derecho quieres ejercer; solo te pediremos que acredites tu identidad si tenemos dudas razonables sobre ella. Te responderemos en el plazo de un mes.</p>
+    <p>Si crees que no hemos atendido bien tu solicitud, puedes reclamar ante la <strong>Agencia Española de Protección de Datos</strong> (<a href="https://www.aepd.es" target="_blank" rel="noopener noreferrer">www.aepd.es</a>).</p>
+
+    <h2>8. Menores</h2>
+    <p>Este sitio no está dirigido a menores de 14 años y no recogemos conscientemente sus datos.</p>
+
+    <h2>9. Cookies</h2>
+    <p>Lo que este sitio guarda en tu navegador se explica en la <a href="/cookies">Política de cookies</a>.</p>
+
+    <h2>10. Cambios en esta política</h2>
+    <p>Si cambiamos la forma en que tratamos tus datos, actualizaremos esta página y la fecha de abajo.</p>
+
+    <p class="legal-updated">Última actualización: 2 de octubre de 2026.</p>
   </div>
 </div></main>
