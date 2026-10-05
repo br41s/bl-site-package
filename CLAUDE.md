@@ -112,13 +112,23 @@ Clients who sell from a distributor feed get a synced catalogue. Shoroban's is L
 
 **Two owners, and the split is the whole design.**
 
-- **Feed-owned** — price, stock, `feed_active`, plus the physical facts: `gtin`, `mpn`,
-  `brand`, weight, dimensions, and the `product_features` / `product_images` /
-  `product_documents` child tables. The sync overwrites all of it on every run. Editing any
-  of it by hand is pointless; that is why `PUT /api/products/:id` accepts only `active`.
+- **Feed-owned** — cost (`cost_ex_vat`), price, stock, `feed_active`, plus the physical
+  facts: `gtin`, `mpn`, `brand`, weight, dimensions, and the `product_features` /
+  `product_images` / `product_documents` child tables. The sync overwrites all of it on
+  every run. Editing any of it by hand is pointless; that is why `PUT /api/products/:id`
+  accepts only `active`.
 - **Ours** — `product_content`: the title and body we write when the feed's are missing or
   poor. **The sync cannot reach this table.** Only `status = 'owned'` renders, so a draft
   never reaches a visitor, and it is what carries our copy through a change of distributor.
+
+**PVP is made by the sync, not at display time.** `price_cents` = cost × (1 + margin) ×
+1.21, through `pvpCents()` in `src/sync/liderpapel/parse.js`. The margin is ours: a general
+one (`liderpapel_margin_pct`) and an optional one per category (`category_margins`), set in
+panel → Productos → Precios (`src/api/pricing.js`). Saving one re-prices the stored catalogue
+from `cost_ex_vat` with the same `pvpCents()` and rebuilds once, so the sync and the panel
+can never disagree by a cent. Everything else (built pages, JSON-LD, cart, reservations,
+the B2B discount) reads `price_cents` and needs no change; never add a markup at read time.
+Rows synced before `cost_ex_vat` existed have it NULL and keep their price until the next sync.
 
 Three consequences worth holding on to:
 

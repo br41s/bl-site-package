@@ -68,8 +68,10 @@ export const IMAGE_MML_TYPE = "IMG";
 export const DOCUMENT_MML_TYPE = "DOC"; // datasheets, safety sheets, manuals
 
 // price_cents = round(purchase_price_ex_vat * (1 + margin) * (1 + vat) * 100)
-// Margin is configurable via the "liderpapel_margin_pct" config key (see
-// database.js); this is only the fallback default. VAT is fixed at the feed's
-// documented Spanish rate (also present per-product under Prices.VATRates).
-export const DEFAULT_MARGIN = 0.4;
+// Margin is a whole-number percentage, set in the panel (Productos → Precios):
+// a general one in the "liderpapel_margin_pct" config key and an optional one
+// per category (src/api/pricing.js). This is only the fallback default. VAT is
+// fixed at the feed's documented Spanish rate (also present per-product under
+// Prices.VATRates).
+export const DEFAULT_MARGIN_PCT = 40;
 export const DEFAULT_VAT_RATE = 0.21;

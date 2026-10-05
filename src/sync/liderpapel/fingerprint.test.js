@@ -163,7 +163,7 @@ function fingerprintFor(overrides = {}) {
 
   const products = joinLiderpapelCatalog(paths, {
     supplierCode: SUPPLIER,
-    marginPct: 0.4,
+    marginFor: () => 40,
     vatRate: 0.21,
   });
   return products.get(SKU).row.source_fingerprint;

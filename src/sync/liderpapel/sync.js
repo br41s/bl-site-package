@@ -2,6 +2,7 @@ import db, { getConfig, setConfig } from "../../db/database.js";
 import { scheduleRebuild } from "../../build/rebuild.js";
 import { fetchViaSftp, fetchFromLocalDir, cleanupScratch } from "./client.js";
 import { joinLiderpapelCatalog } from "./parse.js";
+import { marginPricing } from "../../api/pricing.js";
 
 // Inserts new SKUs (seeding active = feed_active) and refreshes every
 // feed-owned column on existing SKUs — but never touches `active`, so an
@@ -42,13 +43,14 @@ export function upsertProducts(products) {
     db.prepare("UPDATE products SET feed_active = 0 WHERE feed_active = 1").run();
 
     const stmt = db.prepare(`
-      INSERT INTO products (sku, slug, name, description, category, search_text, price_cents, stock_qty, image_url, gtin, mpn, brand, weight_grams, dimensions_mm, source_fingerprint, feed_active, active, last_synced_at)
-      VALUES (@sku, @slug, @name, @description, @category, @search_text, @price_cents, @stock_qty, @image_url, @gtin, @mpn, @brand, @weight_grams, @dimensions_mm, @source_fingerprint, @feed_active, @feed_active, datetime('now'))
+      INSERT INTO products (sku, slug, name, description, category, search_text, cost_ex_vat, price_cents, stock_qty, image_url, gtin, mpn, brand, weight_grams, dimensions_mm, source_fingerprint, feed_active, active, last_synced_at)
+      VALUES (@sku, @slug, @name, @description, @category, @search_text, @cost_ex_vat, @price_cents, @stock_qty, @image_url, @gtin, @mpn, @brand, @weight_grams, @dimensions_mm, @source_fingerprint, @feed_active, @feed_active, datetime('now'))
       ON CONFLICT(sku) DO UPDATE SET
         name = excluded.name,
         description = excluded.description,
         category = excluded.category,
         search_text = excluded.search_text,
+        cost_ex_vat = excluded.cost_ex_vat,
         price_cents = excluded.price_cents,
         stock_qty = excluded.stock_qty,
         image_url = excluded.image_url,
@@ -128,11 +130,10 @@ export async function runLiderpapelSync() {
     if (!supplierCode) {
       throw new Error("Código de proveedor de Liderpapel no configurado");
     }
-    // Explicit null/empty check, not `||` — a deployment can legitimately
-    // set margin to "0" (sell at purchase price), and Number("0") is falsy.
-    const rawMargin = getConfig("liderpapel_margin_pct");
-    const marginPct = (rawMargin != null && rawMargin !== "" ? Number(rawMargin) : 40) / 100;
-    const products = joinLiderpapelCatalog(paths, { supplierCode, marginPct });
+    // Read after the download, not before it: a margin saved in the panel
+    // while the files were transferring is the one this sync prices with.
+    const { marginFor } = marginPricing();
+    const products = joinLiderpapelCatalog(paths, { supplierCode, marginFor });
     if (products.size === 0) {
       // Almost certainly an upstream feed/parse problem, not reality — never
       // let an empty sync wipe out feed_active on the whole catalog.

@@ -105,11 +105,12 @@ Ejemplos de lo que puedes pedirle:
 
 > Esta sección solo se usa si tu web tiene catálogo conectado con tu proveedor.
 
-Tu catálogo se sincroniza solo con tu proveedor: los precios, el stock y las altas y bajas de artículos llegan sin que tengas que tocar nada. Tiene cuatro pestañas:
+Tu catálogo se sincroniza solo con tu proveedor: los precios, el stock y las altas y bajas de artículos llegan sin que tengas que tocar nada. Tiene cinco pestañas:
 
 - **Catálogo** — todos tus productos. Puedes ocultar cualquiera de la web con el interruptor *Visible en la tienda*, y ese ajuste no se pierde en la siguiente sincronización. La estrella ★ de cada producto sirve para destacarlo en la portada de la tienda (ver más abajo). Como el catálogo es muy grande, se muestran los primeros 100 productos: usa el buscador de arriba para encontrar uno concreto.
 - **Portada** — ver más abajo.
 - **Fichas** — ver más abajo.
+- **Precios** — el margen que aplicas sobre el precio de coste de tu proveedor. Hay un **margen general** para todo el catálogo y puedes poner un **margen propio a cualquier categoría**, que sustituye al general solo en ella (deja la casilla vacía para que vuelva a usar el general). El precio de venta al público es el coste más el margen, con el IVA incluido: con un 40 %, un artículo que te cuesta 10 € se vende a 16,94 €. Al guardar, los precios de tu web se actualizan en un par de minutos. Si tienes el área de profesionales activa, sus descuentos se aplican sobre el precio nuevo.
 - **Sincronización** — cuándo se actualizó el catálogo por última vez y los datos de conexión con tu proveedor.
 
 #### La pestaña Portada

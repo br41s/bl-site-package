@@ -2607,6 +2607,174 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // ── Per-category percentage lists ───────────────────────────────
+  // Productos → Precios (margins) and Profesionales (discounts) both list every
+  // catalogue category with a % input. Edits live in a dirty map keyed by
+  // category, so only the categories someone changed are sent: both endpoints
+  // are partial, and a category nobody touched is never rewritten.
+  //   cfg.listId / cfg.searchId — the list container and its search box
+  //   cfg.categories            — [{ category, total, <pctKey> }] from the API
+  //   cfg.dirty                 — the edits map, mutated in place
+  //   cfg.pctKey, cfg.max, cfg.ariaLabel — what the row edits
+  function renderCategoryPctList(cfg) {
+    var list = document.getElementById(cfg.listId);
+    var query = document.getElementById(cfg.searchId).value.trim().toLowerCase();
+    list.textContent = "";
+    var shown = cfg.categories.filter(function (c) {
+      return !query || c.category.toLowerCase().indexOf(query) !== -1;
+    });
+    if (!shown.length) {
+      var empty = document.createElement("p");
+      empty.className = "misite-hint";
+      empty.style.padding = "1rem";
+      empty.style.margin = "0";
+      empty.textContent = cfg.categories.length
+        ? "Ninguna categoría coincide con la búsqueda."
+        : "Todavía no hay productos sincronizados.";
+      list.appendChild(empty);
+      return;
+    }
+    shown.forEach(function (c) {
+      var row = document.createElement("label");
+      row.className = "b2b-discount-row";
+
+      var name = document.createElement("span");
+      name.className = "b2b-discount-name";
+      name.textContent = c.category;
+
+      var count = document.createElement("span");
+      count.className = "b2b-discount-count";
+      count.textContent = c.total
+        ? c.total + " producto" + (c.total === 1 ? "" : "s")
+        : "ya no está en el catálogo";
+
+      var input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.max = cfg.max;
+      input.step = "0.01";
+      input.placeholder = "general";
+      input.setAttribute("aria-label", cfg.ariaLabel + " " + c.category + " (%)");
+      var value = c[cfg.pctKey];
+      var original = value === null || value === undefined ? "" : String(value);
+      var hasDirty = Object.prototype.hasOwnProperty.call(cfg.dirty, c.category);
+      input.value = hasDirty ? cfg.dirty[c.category] : original;
+      input.classList.toggle("is-dirty", hasDirty);
+      input.addEventListener("input", function () {
+        if (input.value === original) delete cfg.dirty[c.category];
+        else cfg.dirty[c.category] = input.value;
+        input.classList.toggle("is-dirty", input.value !== original);
+      });
+
+      var pct = document.createElement("span");
+      pct.className = "b2b-discount-count";
+      pct.textContent = "%";
+
+      row.appendChild(name);
+      row.appendChild(count);
+      row.appendChild(input);
+      row.appendChild(pct);
+      list.appendChild(row);
+    });
+  }
+
+  // The dirty map as a request body: an emptied input clears that category's
+  // own value (null) so it falls back to the general one.
+  function dirtyPayload(dirty) {
+    var out = {};
+    Object.keys(dirty).forEach(function (category) {
+      var value = dirty[category].trim();
+      out[category] = value === "" ? null : value;
+    });
+    return out;
+  }
+
+  // ── PRODUCTOS → PRECIOS ─────────────────────────────────────────
+  // Categories come from GET /api/pricing/margins; edits are held in
+  // pricingDirty and saved by "Guardar márgenes" (see renderCategoryPctList).
+  var pricingCategories = [];
+  var pricingDirty = {};
+
+  function showPricingPending(pending) {
+    var hint = document.getElementById("pricing-pending-hint");
+    hint.hidden = !pending;
+    hint.textContent = pending
+      ? pending + " producto" + (pending === 1 ? "" : "s") +
+        " tomará" + (pending === 1 ? "" : "n") +
+        " el margen nuevo en la próxima sincronización (o pulsa «Sincronizar ahora»)."
+      : "";
+  }
+
+  function renderPricingMargins() {
+    renderCategoryPctList({
+      listId: "pricing-margins-list",
+      searchId: "pricing-category-search",
+      categories: pricingCategories,
+      dirty: pricingDirty,
+      pctKey: "margin_pct",
+      max: "200",
+      ariaLabel: "Margen para",
+    });
+  }
+
+  function loadPricing() {
+    fetch("/api/pricing/margins", { headers: authHeaders() })
+      .then(jsonOrError)
+      .then(function (data) {
+        document.getElementById("pricing-default-pct-input").value = String(data.default_pct);
+        pricingCategories = data.categories || [];
+        pricingDirty = {};
+        renderPricingMargins();
+        showPricingPending(data.pending);
+      })
+      .catch(function () {});
+  }
+
+  function savePricing(body, msg, okText) {
+    fetch("/api/pricing/margins", {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    })
+      .then(jsonOrError)
+      .then(function (data) {
+        flashMsg(
+          msg,
+          true,
+          data.repriced
+            ? okText + " " + data.repriced + " precio" + (data.repriced === 1 ? "" : "s") +
+              " actualizado" + (data.repriced === 1 ? "" : "s") + "; tu web los mostrará en un par de minutos."
+            : okText + " Ningún precio ha cambiado.",
+        );
+        loadPricing();
+      })
+      .catch(function (err) {
+        flashMsg(msg, false, err.message);
+      });
+  }
+
+  function initPricingActions() {
+    document.getElementById("pricing-default-save").addEventListener("click", function () {
+      savePricing(
+        { default_pct: document.getElementById("pricing-default-pct-input").value.trim() },
+        document.getElementById("pricing-default-msg"),
+        "✓ Margen guardado.",
+      );
+    });
+
+    document.getElementById("pricing-category-search").addEventListener("input", renderPricingMargins);
+
+    document.getElementById("pricing-margins-save").addEventListener("click", function () {
+      var msg = document.getElementById("pricing-margins-msg");
+      var margins = dirtyPayload(pricingDirty);
+      if (!Object.keys(margins).length) {
+        flashMsg(msg, true, "No hay cambios que guardar.");
+        return;
+      }
+      savePricing({ margins: margins }, msg, "✓ Márgenes guardados.");
+    });
+  }
+
   // ── PROFESIONALES (B2B) ─────────────────────────────────────────
   // Categories come from GET /api/b2b/discounts: every category the live
   // catalogue has, plus any that still carry a discount after leaving it. Edits
@@ -2639,68 +2807,15 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch(function () {});
   }
 
-  function formatB2bPct(value) {
-    return value === null || value === undefined ? "" : String(value);
-  }
-
   function renderB2bDiscounts() {
-    var list = document.getElementById("b2b-discounts-list");
-    var query = document.getElementById("b2b-category-search").value.trim().toLowerCase();
-    list.textContent = "";
-    var shown = b2bCategories.filter(function (c) {
-      return !query || c.category.toLowerCase().indexOf(query) !== -1;
-    });
-    if (!shown.length) {
-      var empty = document.createElement("p");
-      empty.className = "misite-hint";
-      empty.style.padding = "1rem";
-      empty.style.margin = "0";
-      empty.textContent = b2bCategories.length
-        ? "Ninguna categoría coincide con la búsqueda."
-        : "Todavía no hay productos sincronizados.";
-      list.appendChild(empty);
-      return;
-    }
-    shown.forEach(function (c) {
-      var row = document.createElement("label");
-      row.className = "b2b-discount-row";
-
-      var name = document.createElement("span");
-      name.className = "b2b-discount-name";
-      name.textContent = c.category;
-
-      var count = document.createElement("span");
-      count.className = "b2b-discount-count";
-      count.textContent = c.total
-        ? c.total + " producto" + (c.total === 1 ? "" : "s")
-        : "ya no está en el catálogo";
-
-      var input = document.createElement("input");
-      input.type = "number";
-      input.min = "0";
-      input.max = "99.99";
-      input.step = "0.01";
-      input.placeholder = "general";
-      input.setAttribute("aria-label", "Descuento para " + c.category + " (%)");
-      var original = formatB2bPct(c.discount_pct);
-      var hasDirty = Object.prototype.hasOwnProperty.call(b2bDirty, c.category);
-      input.value = hasDirty ? b2bDirty[c.category] : original;
-      input.classList.toggle("is-dirty", hasDirty);
-      input.addEventListener("input", function () {
-        if (input.value === original) delete b2bDirty[c.category];
-        else b2bDirty[c.category] = input.value;
-        input.classList.toggle("is-dirty", input.value !== original);
-      });
-
-      var pct = document.createElement("span");
-      pct.className = "b2b-discount-count";
-      pct.textContent = "%";
-
-      row.appendChild(name);
-      row.appendChild(count);
-      row.appendChild(input);
-      row.appendChild(pct);
-      list.appendChild(row);
+    renderCategoryPctList({
+      listId: "b2b-discounts-list",
+      searchId: "b2b-category-search",
+      categories: b2bCategories,
+      dirty: b2bDirty,
+      pctKey: "discount_pct",
+      max: "99.99",
+      ariaLabel: "Descuento para",
     });
   }
 
@@ -2869,11 +2984,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById("b2b-discounts-save").addEventListener("click", function () {
       var msg = document.getElementById("b2b-discounts-msg");
-      var discounts = {};
-      Object.keys(b2bDirty).forEach(function (category) {
-        var value = b2bDirty[category].trim();
-        discounts[category] = value === "" ? null : value;
-      });
+      var discounts = dirtyPayload(b2bDirty);
       if (!Object.keys(discounts).length) {
         flashMsg(msg, true, "No hay cambios que guardar.");
         return;
@@ -3034,10 +3145,12 @@ document.addEventListener("DOMContentLoaded", function () {
     loadSyncStatus();
     loadFichas();
     loadFichasLog(false);
+    loadPricing();
 
     if (productosInitialized) return;
     productosInitialized = true;
     initFichasActions();
+    initPricingActions();
     initFichasLog();
     initShopFrontActions();
 
