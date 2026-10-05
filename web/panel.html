@@ -1419,13 +1419,14 @@
           <section data-panel="productos" class="panel-section" hidden>
             <div class="section-header">
               <h2>Productos</h2>
-              <p>Catálogo sincronizado desde Liderpapel, portada de la tienda, fichas de producto y configuración de la sincronización.</p>
+              <p>Catálogo sincronizado desde Liderpapel, portada de la tienda, fichas de producto, márgenes de venta y configuración de la sincronización.</p>
             </div>
 
             <div class="productos-tabs">
               <button class="productos-tab active" data-productos-tab="catalogo">Catálogo</button>
               <button class="productos-tab" data-productos-tab="portada">Portada</button>
               <button class="productos-tab" data-productos-tab="fichas">Fichas</button>
+              <button class="productos-tab" data-productos-tab="precios">Precios</button>
               <button class="productos-tab" data-productos-tab="sync">Sincronización</button>
             </div>
 
@@ -1511,6 +1512,45 @@
             </div>
 
             <!-- TAB: SINCRONIZACIÓN -->
+            <!-- TAB: PRECIOS -->
+            <div class="productos-tab-panel" id="productos-precios">
+              <div class="misite-block">
+                <h3>Margen general</h3>
+                <p class="misite-hint">
+                  El precio de venta al público de cada producto es su precio de
+                  coste del proveedor más este margen, con el IVA incluido. Con
+                  un 40 %, un artículo que te cuesta 10 € se vende a 16,94 €
+                  (10 € + 40 % + 21 % de IVA).
+                </p>
+                <div class="form-group">
+                  <label for="pricing-default-pct-input">Margen general (%)</label>
+                  <input type="number" id="pricing-default-pct-input" min="0" max="200" step="0.01" placeholder="40" />
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center">
+                  <button class="btn-primary-sm" id="pricing-default-save">Guardar</button>
+                  <span id="pricing-default-msg" style="font-size: 0.8125rem" hidden></span>
+                </div>
+                <p id="pricing-pending-hint" class="misite-hint" hidden></p>
+              </div>
+
+              <div class="misite-block b2b-wide-block">
+                <h3>Margen por categoría</h3>
+                <p class="misite-hint">
+                  Sustituye al margen general en esa categoría. Deja la casilla
+                  vacía para que la categoría use el margen general. Al guardar,
+                  los precios de tu web se actualizan en un par de minutos. Si
+                  tienes el área de profesionales activa, sus descuentos se
+                  aplican sobre el precio nuevo.
+                </p>
+                <div class="productos-catalog-toolbar">
+                  <input type="search" id="pricing-category-search" placeholder="Buscar categoría…" aria-label="Buscar categoría" />
+                  <button class="btn-primary-sm" id="pricing-margins-save">Guardar márgenes</button>
+                  <span id="pricing-margins-msg" style="font-size: 0.8125rem" hidden></span>
+                </div>
+                <div id="pricing-margins-list" class="b2b-discounts-list"></div>
+              </div>
+            </div>
+
             <div class="productos-tab-panel" id="productos-sync">
               <div class="misite-block">
                 <h3>Estado de la sincronización</h3>

@@ -64,6 +64,7 @@ En Zeabur → tu servicio → Variables:
 - [ ] Panel → Productos → Sincronización → rellenar host, puerto, usuario, contraseña y **código de proveedor** (se lo da el distribuidor; en Liderpapel es el que identifica su cuenta dentro del feed, p. ej. `CSP`)
 - [ ] Pulsar **Sincronizar ahora** y esperar: la primera pasada descarga el feed entero (~175 MB en Liderpapel) y puede tardar varios minutos. No pulsar dos veces
 - [ ] Verificar que Productos → Catálogo lista artículos y que una ficha se ve bien en la web pública
+- [ ] Productos → **Precios** → poner el margen general que haya pedido el cliente (por defecto 40 %) y, si quiere, un margen distinto en categorías concretas. Comprobar el precio de una ficha en la web pública después del guardado
 
 **Comprueba antes que el hosting del cliente permite salida por el puerto 22.** El servidor del cliente es quien se conecta al sFTP del distribuidor, no nosotros: si su hosting bloquea la salida SSH, la sincronización falla con `Timed out while waiting for handshake` y **la web no da ningún otro síntoma** — sigue sirviendo el catálogo de la última pasada buena. Le pasó a Shoroban y costó horas localizarlo. Para descartarlo desde el propio panel, apunta el campo *Host* a `github.com` temporalmente y sincroniza: si da el mismo timeout, el bloqueo es del hosting y no del distribuidor. Devuelve el host a su valor real después.
 
