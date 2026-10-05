@@ -410,6 +410,17 @@ db.exec(`
     discount_pct REAL NOT NULL,
     updated_at TEXT DEFAULT (datetime('now'))
   );
+
+  -- Retail margin per catalogue category, as a whole-number percentage over
+  -- the feed's ex-VAT purchase price (products.cost_ex_vat). Keyed by
+  -- products.category verbatim, like b2b_category_discounts. A category with
+  -- no row falls back to the general margin (config key liderpapel_margin_pct).
+  -- Ours, not the feed's: the sync reads it to price, and never writes it.
+  CREATE TABLE IF NOT EXISTS category_margins (
+    category TEXT PRIMARY KEY,
+    margin_pct REAL NOT NULL,
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // Additive migration for columns added after a client's DB was first
@@ -529,6 +540,12 @@ ensureColumn("products", "mpn", "TEXT");
 ensureColumn("products", "brand", "TEXT");
 ensureColumn("products", "weight_grams", "REAL");
 ensureColumn("products", "dimensions_mm", "TEXT");
+// The feed's ex-VAT purchase price, in euros as the feed gives it (not rounded
+// to cents: price_cents is derived from it, and rounding twice would move a
+// re-priced product off the price the sync gives it). Feed-owned. NULL on rows
+// synced before the column existed, until the next sync fills it — those keep
+// their price when a margin changes (src/api/pricing.js).
+ensureColumn("products", "cost_ex_vat", "REAL");
 
 const productsNeedingSearchText = db
   .prepare("SELECT id, name, category FROM products WHERE search_text = ''")

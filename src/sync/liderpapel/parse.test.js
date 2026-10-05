@@ -262,7 +262,7 @@ before(() => {
 function parse() {
   return joinLiderpapelCatalog(paths, {
     supplierCode: SUPPLIER,
-    marginPct: 0.4,
+    marginFor: () => 40,
     vatRate: 0.21,
   });
 }
@@ -282,6 +282,18 @@ describe("joinLiderpapelCatalog", () => {
     assert.equal(row.image_url, "https://cdn.test/78276g.jpg");
     assert.equal(row.category, "Destructoras de documentos");
     assert.equal(row.slug, "78276-destructora-de-documentos-fellowes-99ci");
+  });
+
+  test("prices each product with its category's margin and keeps the cost", () => {
+    const products = joinLiderpapelCatalog(paths, {
+      supplierCode: SUPPLIER,
+      marginFor: (category) => (category === "Destructoras de documentos" ? 60 : 40),
+      vatRate: 0.21,
+    });
+    const { row } = products.get("78276");
+    // 100.00 purchase * 1.6 margin * 1.21 VAT = 193.60
+    assert.equal(row.price_cents, 19360);
+    assert.equal(row.cost_ex_vat, 100);
   });
 
   test("extracts the unit EAN and the manufacturer reference", () => {

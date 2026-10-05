@@ -12,9 +12,17 @@ import {
   BRAND_FEATURE_NAME,
   IMAGE_MML_TYPE,
   DOCUMENT_MML_TYPE,
-  DEFAULT_MARGIN,
+  DEFAULT_MARGIN_PCT,
   DEFAULT_VAT_RATE,
 } from "./mapping.js";
+
+// Public price in cents, VAT included, from the ex-VAT purchase price and a
+// whole-number margin. The one formula for it: the sync prices every product
+// with it, and src/api/pricing.js re-prices the stored catalogue with it when
+// a margin changes, so the two can never disagree by a cent.
+export function pvpCents(costExVat, marginPct, vatRate = DEFAULT_VAT_RATE) {
+  return Math.round(costExVat * (1 + marginPct / 100) * (1 + vatRate) * 100);
+}
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -150,7 +158,7 @@ export function joinLiderpapelCatalog(
   paths,
   {
     supplierCode = DEFAULT_SUPPLIER_CODE,
-    marginPct = DEFAULT_MARGIN,
+    marginFor = () => DEFAULT_MARGIN_PCT,
     vatRate = DEFAULT_VAT_RATE,
   } = {},
 ) {
@@ -223,7 +231,10 @@ export function joinLiderpapelCatalog(
         search_text: normalizeForSearch(
           [name, category, mpn, gtin].filter(Boolean).join(" "),
         ),
-        price_cents: Math.round(purchase * (1 + marginPct) * (1 + vatRate) * 100),
+        // Kept so a margin change can re-price the catalogue at once,
+        // without waiting for the next feed (src/api/pricing.js).
+        cost_ex_vat: purchase,
+        price_cents: pvpCents(purchase, marginFor(category), vatRate),
         stock_qty: sumStock(stockByWarehouse, id),
         image_url: images[0] || null,
         gtin,
