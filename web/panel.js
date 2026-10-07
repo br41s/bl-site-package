@@ -1071,6 +1071,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (siteUrlInput) {
           siteUrlInput.value = cfg.site_url || "";
         }
+        var gsvInput = document.getElementById("google-site-verification-input");
+        if (gsvInput) gsvInput.value = cfg.google_site_verification || "";
 
         [
           "legal_name",
@@ -1462,6 +1464,12 @@ document.addEventListener("DOMContentLoaded", function () {
             .value.trim()
             .replace(/\/+$/, ""),
         };
+        // Search Console hands out the whole <meta> tag; keep only its content.
+        var gsv = document
+          .getElementById("google-site-verification-input")
+          .value.trim();
+        var gsvMatch = gsv.match(/content\s*=\s*["']([^"']*)["']/i);
+        payload.google_site_verification = gsvMatch ? gsvMatch[1].trim() : gsv;
 
         try {
           var res = await fetch("/api/site/texts", {

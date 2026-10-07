@@ -11,6 +11,9 @@ export const PUBLIC_CONFIG_KEYS = [
   "company_name",
   "sector",
   "site_url",
+  // Google Search Console ownership token, rendered as a
+  // <meta name="google-site-verification"> in every page's <head>.
+  "google_site_verification",
   "page_index_title",
   "page_index_subtitle",
   "page_index_desc",
