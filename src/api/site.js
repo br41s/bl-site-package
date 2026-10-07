@@ -103,6 +103,7 @@ router.get("/config", (req, res) => {
 router.post("/texts", requireAuth, (req, res) => {
   const allowed = [
     "site_url",
+    "google_site_verification",
     "page_index_title",
     "page_index_subtitle",
     "page_index_desc",
@@ -178,6 +179,9 @@ router.post("/texts", requireAuth, (req, res) => {
     theme_default: (v) => ["", "light", "dark"].includes(v),
     hero_density: (v) => ["", "compact", "spacious"].includes(v),
     hero_game: (v) => ["", "1"].includes(v),
+    // Goes into a meta attribute in every page's <head>; Google's tokens are
+    // base64url, so anything else is a paste error or an injection attempt.
+    google_site_verification: (v) => /^[A-Za-z0-9_-]{0,100}$/.test(v),
     bank_iban: (v) => v === "" || isValidIban(v),
     bank_bic: (v) => v === "" || isValidBic(v),
     ...SHOP_BLOCK_VALIDATORS,

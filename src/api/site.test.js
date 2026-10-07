@@ -297,6 +297,22 @@ describe("POST /api/site/texts — bank details", () => {
   });
 });
 
+describe("POST /api/site/texts — google_site_verification", () => {
+  test("accepts a Search Console token and an empty reset", async () => {
+    for (const v of ["4_KxTpT87f6_rDPfVceMALCcv1wKuAqYF6990TjBdg8", ""]) {
+      const res = await call("POST", "/api/site/texts", { token: TOKEN, body: { google_site_verification: v } });
+      assert.equal(res.status, 200, JSON.stringify(v));
+    }
+  });
+
+  test("refuses anything that could break out of the meta attribute", async () => {
+    for (const bad of ['abc" /><script>x', '<meta name="google-site-verification" content="abc" />', "a b"]) {
+      const res = await call("POST", "/api/site/texts", { token: TOKEN, body: { google_site_verification: bad } });
+      assert.equal(res.status, 400, bad);
+    }
+  });
+});
+
 describe("GET /api/site/models — upstream deadline", () => {
   // Stub only OpenRouter; the test's own call to the local server has to go
   // through the real fetch.

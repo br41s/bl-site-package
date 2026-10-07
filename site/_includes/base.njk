@@ -25,6 +25,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ fullTitle }}</title>
   <meta name="description" content="{{ resolvedDesc }}">
+  {%- if site.google_site_verification %}
+  <meta name="google-site-verification" content="{{ site.google_site_verification }}">
+  {%- endif %}
   {%- set canonicalUrl = page.url | absoluteUrl(site.site_url) -%}
   {%- set ogImage = (("/uploads/logo." + site.logo_ext) | absoluteUrl(site.site_url)) if (site.site_url and site.logo_ext) else "" -%}
   {%- if site.site_url %}
