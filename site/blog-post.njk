@@ -36,7 +36,7 @@ eleventyComputed:
   {%- endif %}
   <div class="site-post-body">{{ post.contentHtml | safe }}</div>
   {%- if post.cta_url %}
-  <a href="{{ post.cta_url }}" class="site-btn site-post-cta" target="_blank" rel="noopener noreferrer">{{ post.cta_label or "Ver ficha original" }}</a>
+  <a href="{{ post.cta_url }}" class="site-btn site-post-cta"{% if not post.ctaSameSite %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ post.cta_label or "Ver ficha original" }}</a>
   {%- endif %}
   {%- if post.related.length %}
   <aside class="site-related-posts">

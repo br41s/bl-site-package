@@ -1,6 +1,7 @@
 import db, { getConfig } from "../../src/db/database.js";
 import { formatContent } from "../../src/content/format-content.js";
 import { buildArticleLd, buildFaqLd, mdToPlain } from "../../src/content/structured-data.js";
+import { isSameSiteUrl } from "../../src/content/same-site.js";
 
 export default function () {
   // Minimal site context for the per-post JSON-LD (publisher name, absolute
@@ -42,6 +43,9 @@ export default function () {
     faq_ld: buildFaqLd(a.content),
     related: rows.filter((r) => r.id !== a.id).slice(0, 3).map(asRelated),
     badgesList: (a.badges || "").split(",").map((s) => s.trim()).filter(Boolean),
+    // A CTA to this same site (e.g. one of its own product pages) stays in the
+    // tab; only an external one opens a new tab.
+    ctaSameSite: isSameSiteUrl(a.cta_url, site.site_url),
     // Standard 200wpm estimate off the plain-text word count (same markdown
     // stripping the FAQ JSON-LD reuses) — derived from content, not authored,
     // so it can never drift from the actual article.
