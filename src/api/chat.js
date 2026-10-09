@@ -14,7 +14,9 @@ const chatLimiter = rateLimit({
   max: 30,
   message: "Demasiadas peticiones al asistente, espera un momento.",
 });
-const DEFAULT_AGENT_MODEL = "openai/gpt-oss-20b:free";
+// Paid by default (the client's own OpenRouter credit, a few cents per article); the free
+// models below are only the last resort when the paid one errors or the key has no credit.
+const DEFAULT_AGENT_MODEL = "openai/gpt-oss-120b";
 const FREE_MODELS_FALLBACK = [
   "openai/gpt-oss-20b:free",
   "nvidia/nemotron-nano-9b-v2:free",
@@ -361,7 +363,11 @@ router.post("/send", requireAuth, chatLimiter, asyncHandler(async (req, res) => 
         });
       }
 
-      if (!result.ok && result.status !== 429) {
+      // 429 (rate limit) and 402 (no credit on the client's key) both mean "this model
+      // can't answer right now": try the next one, which ends in the free models. Before
+      // the default became paid, 402 never happened; now a client with an empty OpenRouter
+      // balance must keep getting answers instead of a 502.
+      if (!result.ok && result.status !== 429 && result.status !== 402) {
         return res
           .status(502)
           .json({ error: "Error al contactar el agente de contenidos." });

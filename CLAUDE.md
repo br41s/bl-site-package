@@ -208,9 +208,16 @@ The pages state what the code does, so a code change can make them false:
 Per-customer setup runs through `/setup` and the panel, not through code. Company name,
 sector, OpenRouter key and panel password are wizard inputs.
 
-The agent defaults to `openai/gpt-oss-20b:free` on OpenRouter — free, so a customer deploy costs
-nothing to run. **Do not change the default to a paid model** without an explicit
-decision; it changes the unit economics of every deployment.
+The agent defaults to `openai/gpt-oss-120b` on OpenRouter (`DEFAULT_AGENT_MODEL` in
+`src/api/chat.js`; the panel's featured option posts the same id). It is paid: a few cents per
+article, billed to the customer's own OpenRouter key. Brais decided this on 2026-10-09 so the
+default works under OpenRouter's `data_collection: deny` policy (free models train on prompts
+and `deny` excludes every one of them) and answers better than the 20B. The free models in
+`FREE_MODELS_FALLBACK` are now only the last resort when the paid one is rate-limited (429) or the key has no
+credit (402); any other upstream error is still a 502. A customer who saved the old free default keeps it (it shows as their custom model).
+`CONTENT_AGENT_MODEL` is documented but never read; the model lives in the `ai_model` config
+row, set from the panel. **Do not change the default again** without an explicit decision; it
+changes the unit economics of every deployment.
 
 ## Client-facing documents — treat as published
 

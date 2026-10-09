@@ -145,3 +145,52 @@ describe("POST /api/chat/send — upstream deadlines", () => {
     stub.restore();
   });
 });
+
+describe("POST /api/chat/send — which model is asked first", () => {
+  test("with no model configured it asks for the paid gpt-oss-120b", async () => {
+    const stub = stubOpenRouter(() => completion("Hola"));
+
+    const res = await send();
+    assert.equal(res.status, 200);
+    assert.equal(JSON.parse(stub.calls[0].opts.body).model, "openai/gpt-oss-120b");
+
+    stub.restore();
+  });
+
+  test("a model the customer saved wins, including a free one", async () => {
+    setRawConfig("ai_model", "openai/gpt-oss-20b:free");
+    const stub = stubOpenRouter(() => completion("Hola"));
+
+    const res = await send();
+    assert.equal(res.status, 200);
+    assert.equal(JSON.parse(stub.calls[0].opts.body).model, "openai/gpt-oss-20b:free");
+
+    stub.restore();
+  });
+
+  test("a key with no credit (402 on the paid default) still gets an answer from a free model", async () => {
+    const stub = stubOpenRouter((call) => {
+      if (call === 1) {
+        return { ok: false, status: 402, text: async () => '{"error":{"message":"Insufficient credits"}}' };
+      }
+      return completion("Aquí tienes");
+    });
+
+    const res = await send();
+    assert.equal(res.status, 200);
+    assert.equal(JSON.parse(stub.calls[0].opts.body).model, "openai/gpt-oss-120b");
+    assert.match(JSON.parse(stub.calls[1].opts.body).model, /:free$/);
+
+    stub.restore();
+  });
+
+  test("any other upstream error is still a 502 and does not burn through every model", async () => {
+    const stub = stubOpenRouter(() => ({ ok: false, status: 500, text: async () => "{}" }));
+
+    const res = await send();
+    assert.equal(res.status, 502);
+    assert.equal(stub.calls.length, 1);
+
+    stub.restore();
+  });
+});
