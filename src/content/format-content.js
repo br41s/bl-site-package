@@ -85,8 +85,19 @@ const SVG_COMMON_ATTRS = [
 // path/origin, hence the explicit exclusiveFilter below instead.
 const UPLOADED_IMAGE_SRC = /^\/uploads\/[A-Za-z0-9._-]+\.(webp|jpe?g|png)$/;
 
-export function formatContent(text) {
+// `catalogueImages` (optional) is a Set of exact image URLs taken from this
+// site's own catalogue (products.image_url + product_images.url). An <img>
+// whose src is one of them is kept, so a product guide can show the photos of
+// the products it compares — the same hotlinked images the product pages
+// already show (CSP img-src allows the distributor's host, and /privacidad +
+// /cookies already disclose it). Exact membership, https only: nothing an
+// author types can widen it, and a site with no catalogue passes no set.
+// Downloading the photos into /uploads instead is not possible: the
+// distributor's CDN refuses any non-browser fetch (HTTP 403).
+export function formatContent(text, { catalogueImages } = {}) {
   if (!text) return "";
+  const isCatalogueImage = (src) =>
+    Boolean(catalogueImages && src.startsWith("https://") && catalogueImages.has(src));
   return sanitizeHtml(marked.parse(text), {
     allowedTags: [
       "p", "br", "h2", "h3", "h4", "ul", "ol", "li", "strong", "em",
@@ -95,7 +106,9 @@ export function formatContent(text) {
       ...SVG_TAGS,
     ],
     exclusiveFilter(frame) {
-      return frame.tag === "img" && !UPLOADED_IMAGE_SRC.test(frame.attribs.src || "");
+      if (frame.tag !== "img") return false;
+      const src = frame.attribs.src || "";
+      return !UPLOADED_IMAGE_SRC.test(src) && !isCatalogueImage(src);
     },
     allowedAttributes: {
       a: ["href", "rel", "target"],

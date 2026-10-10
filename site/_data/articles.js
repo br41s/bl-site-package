@@ -22,6 +22,18 @@ export default function () {
     )
     .all();
 
+  // Every image URL the catalogue knows, so a post may show the photos of the
+  // products it talks about (see formatContent). Empty for a site with no
+  // catalogue, which then keeps only /uploads/ images, as before.
+  const catalogueImages = new Set(
+    db
+      .prepare(
+        "SELECT image_url AS url FROM products WHERE image_url IS NOT NULL AND image_url != '' UNION SELECT url FROM product_images",
+      )
+      .all()
+      .map((r) => r.url),
+  );
+
   // Related posts: the 3 most recent OTHER published posts. Rows are already
   // sorted created_at DESC, so this needs no extra query or relevance model —
   // and unlike a hand-picked list, it can never point at a post that later
@@ -35,7 +47,7 @@ export default function () {
 
   return rows.map((a) => ({
     ...a,
-    contentHtml: formatContent(a.content),
+    contentHtml: formatContent(a.content, { catalogueImages }),
     dateEs: new Date(a.created_at).toLocaleDateString("es-ES"),
     // BlogPosting + (when the post has a FAQ section) FAQPage JSON-LD, emitted
     // per post in site/blog-post.njk. buildFaqLd returns null when no FAQ.
