@@ -68,7 +68,7 @@ es un paso obligatorio del alta, no una opción que el cliente descubre más tar
 4. Copia la **Site key** y la **Secret key**
 
 ### 2. Configurar las claves en el sitio del cliente
-Panel del cliente → **Mi sitio web** → pestaña **Notificaciones** → bloque
+Panel del cliente → **Mi sitio web** → pestaña **Integraciones** → bloque
 **Protección anti-spam (Turnstile)** → pega ambas claves → **Guardar configuración de
 Turnstile**.
 
