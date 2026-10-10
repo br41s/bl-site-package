@@ -508,6 +508,14 @@ body {
   color: var(--text-primary);
   margin: 1.4rem 0 0.5rem;
 }
+/* An inline image in a post body (a product guide's product photo): never
+   wider than the column, aspect ratio kept. Scoped to images marked wraps in a
+   <p>, so the infographic <figure> keeps its own layout. */
+.site-post-body p > img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
 .site-page-body ul,
 .site-page-body ol,
 .site-post-body ul,

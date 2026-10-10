@@ -81,6 +81,17 @@ through. The bug is invisible on desktop, where the min-content floor is never r
 - **`1rem` is 16px in this repo**, unlike biglobster's 62.5% root, and the fade cover uses
   `--bg`, not `--bg-base`. Neither is interchangeable between the two stylesheets.
 
+**Images in article bodies: `/uploads/` or the site's own catalogue photos, nothing
+else.** `formatContent` (`src/content/format-content.js`, the XSS boundary for all
+customer content) keeps an `<img>` only if its src is an uploaded file, or, for blog
+posts only, an `https://` URL that is **exactly** one of the catalogue's image URLs
+(`products.image_url` + `product_images.url`, passed as a Set by `site/_data/articles.js`).
+That is how the Product Guide agent shows the photos of the products it compares: the
+same hotlinked images the product pages use, already allowed by CSP and disclosed on
+`/privacidad` and `/cookies`. They cannot be copied into `/uploads` instead: the
+distributor's CDN (Akamai) answers 403 to any fetch that is not a real browser. Pages,
+the panel preview and sites without a catalogue pass no set and keep `/uploads/` only.
+
 ## Homepage game (`hero_game`)
 
 Opt-in per deploy (panel → Mi sitio → Apariencia → Animación de portada, default

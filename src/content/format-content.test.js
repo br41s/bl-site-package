@@ -234,6 +234,34 @@ describe("formatContent — pre-existing behaviour is unchanged", () => {
     assert.ok(!traversal.includes("<img"), `path traversal src survived: ${traversal}`);
   });
 
+  test("a catalogue image is allowed only when it is in the catalogue set", () => {
+    const photo = "https://img.distributor.example/products/170753g.jpg";
+    const catalogueImages = new Set([photo]);
+    const md = `<img src="${photo}" alt="Plastificadora A3" width="320" loading="lazy">`;
+
+    const kept = formatContent(md, { catalogueImages });
+    assert.ok(kept.includes(`src="${photo}"`), `catalogue photo stripped: ${kept}`);
+    assert.ok(kept.includes('width="320"') && kept.includes('loading="lazy"'), `size/lazy stripped: ${kept}`);
+
+    // Without the set (pages, the panel preview, a site with no catalogue) the
+    // same markup is stripped, exactly as before.
+    assert.ok(!formatContent(md).includes("<img"), "catalogue photo kept with no set");
+
+    // Membership is exact: another file on the same host, a query string, or an
+    // http:// copy of a listed URL are all refused.
+    const sameHost = formatContent('<img src="https://img.distributor.example/products/other.jpg" alt="x">', { catalogueImages });
+    assert.ok(!sameHost.includes("<img"), `unlisted same-host image survived: ${sameHost}`);
+    const withQuery = formatContent(`<img src="${photo}?x=1" alt="x">`, { catalogueImages });
+    assert.ok(!withQuery.includes("<img"), `query-string variant survived: ${withQuery}`);
+    const plainHttp = "http://img.distributor.example/products/170753g.jpg";
+    const httpOut = formatContent(`<img src="${plainHttp}" alt="x">`, { catalogueImages: new Set([plainHttp]) });
+    assert.ok(!httpOut.includes("<img"), `http catalogue image survived: ${httpOut}`);
+
+    // Event handlers are still stripped from an allowed catalogue image.
+    const handler = formatContent(`<img src="${photo}" alt="x" onerror="alert(1)">`, { catalogueImages });
+    assert.ok(handler.includes("<img") && !handler.includes("onerror"), `onerror survived: ${handler}`);
+  });
+
   test("empty and nullish input stay empty", () => {
     assert.equal(formatContent(""), "");
     assert.equal(formatContent(null), "");
