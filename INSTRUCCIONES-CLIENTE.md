@@ -34,7 +34,8 @@ Configura los textos de cada página de tu web:
 - **Páginas** — edita el título, subtítulo y descripción de cada página: Inicio, Quiénes somos, Servicios, Contacto y Blog
 - **Apariencia** — color, bordes, tema y portada de inicio. En **Animación de portada** puedes activar *Reparto de pedidos*: una animación de tu almacén sirviendo pedidos a oficinas detrás del texto de inicio, que tus visitantes pueden convertir en un minijuego con el botón **Jugar a repartir**
 - **Modelo IA** — selecciona el modelo de inteligencia artificial para el agente (por defecto: gratuito)
-- **Notificaciones** — configura tu email para recibir avisos cuando alguien te contacte, y activa el captcha anti-spam del formulario de contacto. Aquí están también tus **Datos legales**: razón social, NIF, domicilio, email, Registro Mercantil, tus formas de entrega y si estás adherido al arbitraje de consumo. Con ellos se escriben el Aviso legal, la Política de privacidad y las Condiciones de venta de tu web; si cambian, actualízalos aquí
+- **Notificaciones** — configura tu email para recibir avisos cuando alguien te contacte. Aquí están también tus **Datos legales**: razón social, NIF, domicilio, email, Registro Mercantil, tus formas de entrega y si estás adherido al arbitraje de consumo. Con ellos se escriben el Aviso legal, la Política de privacidad y las Condiciones de venta de tu web; si cambian, actualízalos aquí
+- **Integraciones** — conexiones de tu web con otros servicios: el captcha anti-spam del formulario de contacto (Turnstile), la dirección pública de tu web junto con la verificación de Google Search Console, y el botón flotante de WhatsApp
 
 ### Blog
 
@@ -82,7 +83,7 @@ Para recibir un aviso cada vez que alguien te envíe un mensaje desde tu web:
 Tu sitio ya incluye un captcha de Cloudflare Turnstile en el formulario de contacto y en el acceso al panel, configurado durante el alta. Si quieres usar tu propia cuenta de Cloudflare en su lugar:
 
 1. Crea una cuenta gratuita en [dash.cloudflare.com](https://dash.cloudflare.com/?to=/:account/turnstile) y da de alta tu dominio para conseguir una **Site key** y una **Secret key**
-2. Entra en el panel → **Mi sitio web** → pestaña **Notificaciones** → bloque **Protección anti-spam (Turnstile)**
+2. Entra en el panel → **Mi sitio web** → pestaña **Integraciones** → bloque **Protección anti-spam (Turnstile)**
 3. Pega ambas claves y haz click en **Guardar configuración de Turnstile**
 
 En cuanto guardes, el formulario de contacto de tu web y la pantalla de acceso al panel mostrarán el captcha con tus propias claves — las mismas claves protegen ambos sitios.

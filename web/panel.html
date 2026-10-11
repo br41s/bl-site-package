@@ -703,6 +703,9 @@
               <button class="misite-tab" data-tab="notificaciones">
                 Notificaciones
               </button>
+              <button class="misite-tab" data-tab="integraciones">
+                Integraciones
+              </button>
             </div>
 
             <!-- TAB: LOGO -->
@@ -1089,144 +1092,6 @@
               </div>
 
               <div class="misite-block">
-                <h3>Protección anti-spam (Turnstile)</h3>
-                <p class="misite-hint">
-                  Añade un captcha de Cloudflare Turnstile al formulario de
-                  contacto. Consigue las claves gratis en
-                  <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" rel="noopener">dash.cloudflare.com</a>.
-                  Deja los campos vacíos para no mostrar el captcha.
-                </p>
-
-                <div class="misite-page-form" style="max-width: 560px">
-                  <div>
-                    <label for="turnstile-sitekey-input">Site key</label>
-                    <input
-                      type="text"
-                      id="turnstile-sitekey-input"
-                      placeholder="0x4AAAAAAA..."
-                    />
-                  </div>
-                  <div>
-                    <label for="turnstile-secretkey-input">Secret key</label>
-                    <input
-                      type="password"
-                      id="turnstile-secretkey-input"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                </div>
-
-                <div
-                  style="
-                    margin-top: 1.5rem;
-                    display: flex;
-                    gap: 1rem;
-                    align-items: center;
-                  "
-                >
-                  <button class="btn-primary-sm" id="save-turnstile-settings">
-                    Guardar configuración de Turnstile
-                  </button>
-                  <span
-                    id="save-turnstile-msg"
-                    style="font-size: 0.8125rem; display: none"
-                  ></span>
-                </div>
-              </div>
-
-              <div class="misite-block">
-                <h3>Dirección del sitio (SEO)</h3>
-                <p class="misite-hint">
-                  La URL pública definitiva de tu web (por ejemplo
-                  <code>https://miempresa.com</code>). Se usa para generar las
-                  etiquetas canonical, Open Graph y el sitemap.xml, que evitan
-                  contenido duplicado y ayudan al posicionamiento. Sin barra
-                  final.
-                </p>
-
-                <div class="misite-page-form" style="max-width: 560px">
-                  <div>
-                    <label for="site-url-input">URL del sitio</label>
-                    <input
-                      type="url"
-                      id="site-url-input"
-                      placeholder="https://miempresa.com"
-                    />
-                  </div>
-                  <div>
-                    <label for="google-site-verification-input"
-                      >Verificación de Google Search Console</label
-                    >
-                    <input
-                      type="text"
-                      id="google-site-verification-input"
-                      placeholder='&lt;meta name="google-site-verification" content="…" /&gt;'
-                    />
-                    <p class="misite-hint">
-                      Opcional. Pega la etiqueta meta que te da Search Console
-                      (método «Etiqueta HTML») o solo su código.
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  style="
-                    margin-top: 1.5rem;
-                    display: flex;
-                    gap: 1rem;
-                    align-items: center;
-                  "
-                >
-                  <button class="btn-primary-sm" id="save-siteurl-btn">
-                    Guardar
-                  </button>
-                  <span
-                    id="save-siteurl-msg"
-                    style="font-size: 0.8125rem; display: none"
-                  ></span>
-                </div>
-              </div>
-
-              <div class="misite-block">
-                <h3>Botón de WhatsApp</h3>
-                <p class="misite-hint">
-                  Si lo rellenas, aparecerá un botón flotante de WhatsApp en
-                  tu web para que tus visitantes te escriban directamente.
-                  Déjalo vacío si no quieres mostrarlo.
-                </p>
-
-                <div class="misite-page-form" style="max-width: 560px">
-                  <div>
-                    <label for="whatsapp-number-input"
-                      >Número de WhatsApp</label
-                    >
-                    <input
-                      type="text"
-                      id="whatsapp-number-input"
-                      placeholder="34600000000 (sin espacios ni +)"
-                    />
-                  </div>
-                </div>
-
-                <div
-                  style="
-                    margin-top: 1.5rem;
-                    display: flex;
-                    gap: 1rem;
-                    align-items: center;
-                  "
-                >
-                  <button class="btn-primary-sm" id="save-whatsapp-btn">
-                    Guardar WhatsApp
-                  </button>
-                  <span
-                    id="save-whatsapp-msg"
-                    style="font-size: 0.8125rem; display: none"
-                  ></span>
-                </div>
-              </div>
-
-              <div class="misite-block">
                 <h3>Datos legales</h3>
                 <p class="misite-hint">
                   Aparecen en el Aviso legal, la Política de privacidad y las
@@ -1451,6 +1316,151 @@
                   </button>
                   <span
                     id="save-biz-msg"
+                    style="font-size: 0.8125rem; display: none"
+                  ></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB: INTEGRACIONES -->
+            <div
+              class="misite-panel"
+              id="misite-integraciones"
+              style="display: none"
+            >
+              <div class="misite-block">
+                <h3>Protección anti-spam (Turnstile)</h3>
+                <p class="misite-hint">
+                  Añade un captcha de Cloudflare Turnstile al formulario de
+                  contacto. Consigue las claves gratis en
+                  <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" rel="noopener">dash.cloudflare.com</a>.
+                  Deja los campos vacíos para no mostrar el captcha.
+                </p>
+
+                <div class="misite-page-form" style="max-width: 560px">
+                  <div>
+                    <label for="turnstile-sitekey-input">Site key</label>
+                    <input
+                      type="text"
+                      id="turnstile-sitekey-input"
+                      placeholder="0x4AAAAAAA..."
+                    />
+                  </div>
+                  <div>
+                    <label for="turnstile-secretkey-input">Secret key</label>
+                    <input
+                      type="password"
+                      id="turnstile-secretkey-input"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+
+                <div
+                  style="
+                    margin-top: 1.5rem;
+                    display: flex;
+                    gap: 1rem;
+                    align-items: center;
+                  "
+                >
+                  <button class="btn-primary-sm" id="save-turnstile-settings">
+                    Guardar configuración de Turnstile
+                  </button>
+                  <span
+                    id="save-turnstile-msg"
+                    style="font-size: 0.8125rem; display: none"
+                  ></span>
+                </div>
+              </div>
+
+              <div class="misite-block">
+                <h3>Dirección del sitio (SEO)</h3>
+                <p class="misite-hint">
+                  La URL pública definitiva de tu web (por ejemplo
+                  <code>https://miempresa.com</code>). Se usa para generar las
+                  etiquetas canonical, Open Graph y el sitemap.xml, que evitan
+                  contenido duplicado y ayudan al posicionamiento. Sin barra
+                  final.
+                </p>
+
+                <div class="misite-page-form" style="max-width: 560px">
+                  <div>
+                    <label for="site-url-input">URL del sitio</label>
+                    <input
+                      type="url"
+                      id="site-url-input"
+                      placeholder="https://miempresa.com"
+                    />
+                  </div>
+                  <div>
+                    <label for="google-site-verification-input"
+                      >Verificación de Google Search Console</label
+                    >
+                    <input
+                      type="text"
+                      id="google-site-verification-input"
+                      placeholder='&lt;meta name="google-site-verification" content="…" /&gt;'
+                    />
+                    <p class="misite-hint">
+                      Opcional. Pega la etiqueta meta que te da Search Console
+                      (método «Etiqueta HTML») o solo su código.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  style="
+                    margin-top: 1.5rem;
+                    display: flex;
+                    gap: 1rem;
+                    align-items: center;
+                  "
+                >
+                  <button class="btn-primary-sm" id="save-siteurl-btn">
+                    Guardar
+                  </button>
+                  <span
+                    id="save-siteurl-msg"
+                    style="font-size: 0.8125rem; display: none"
+                  ></span>
+                </div>
+              </div>
+
+              <div class="misite-block">
+                <h3>Botón de WhatsApp</h3>
+                <p class="misite-hint">
+                  Si lo rellenas, aparecerá un botón flotante de WhatsApp en
+                  tu web para que tus visitantes te escriban directamente.
+                  Déjalo vacío si no quieres mostrarlo.
+                </p>
+
+                <div class="misite-page-form" style="max-width: 560px">
+                  <div>
+                    <label for="whatsapp-number-input"
+                      >Número de WhatsApp</label
+                    >
+                    <input
+                      type="text"
+                      id="whatsapp-number-input"
+                      placeholder="34600000000 (sin espacios ni +)"
+                    />
+                  </div>
+                </div>
+
+                <div
+                  style="
+                    margin-top: 1.5rem;
+                    display: flex;
+                    gap: 1rem;
+                    align-items: center;
+                  "
+                >
+                  <button class="btn-primary-sm" id="save-whatsapp-btn">
+                    Guardar WhatsApp
+                  </button>
+                  <span
+                    id="save-whatsapp-msg"
                     style="font-size: 0.8125rem; display: none"
                   ></span>
                 </div>
