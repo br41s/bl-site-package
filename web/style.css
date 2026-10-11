@@ -999,7 +999,9 @@ body.infographic-lightbox-open {
   padding: 0.625rem 0.875rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  font-size: 0.9375rem;
+  /* 16px or more: iOS Safari zooms the page into any field smaller than that
+     on focus, and does not zoom back out. Same on every public field below. */
+  font-size: 1rem;
   font-family: var(--font);
   color: var(--text-primary);
   background: var(--bg);
@@ -1037,7 +1039,7 @@ body.infographic-lightbox-open {
   border-radius: var(--radius);
   background: var(--bg);
   color: var(--text-primary);
-  font-size: 0.9375rem;
+  font-size: 1rem; /* >= 16px, or iOS zooms on focus */
 }
 .category-pills-wrap {
   margin-bottom: 1.5rem;
@@ -1374,6 +1376,8 @@ body.infographic-lightbox-open {
   border-radius: var(--radius);
   background: var(--bg);
   color: var(--text-primary);
+  font: inherit;
+  font-size: 1rem; /* >= 16px, or iOS zooms on focus */
   text-align: center;
 }
 
@@ -1616,6 +1620,8 @@ body.infographic-lightbox-open {
   border-radius: var(--radius);
   background: var(--bg);
   color: var(--text-primary);
+  font: inherit;
+  font-size: 1rem; /* >= 16px, or iOS zooms on focus */
   text-align: center;
 }
 
