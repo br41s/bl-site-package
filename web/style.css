@@ -508,13 +508,27 @@ body {
   color: var(--text-primary);
   margin: 1.4rem 0 0.5rem;
 }
-/* An inline image in a post body (a product guide's product photo): never
-   wider than the column, aspect ratio kept. Scoped to images marked wraps in a
-   <p>, so the infographic <figure> keeps its own layout. */
-.site-post-body p > img {
+/* An inline image in a post body (a product guide's product photo, bare or
+   inside its link): never wider than the column, aspect ratio kept. Scoped to
+   images marked wraps in a <p>, so the infographic <figure> keeps its own
+   layout. */
+.site-post-body p img {
   display: block;
   max-width: 100%;
   height: auto;
+}
+/* A guide's buy button (src/content/guide-buttons.js). `.site-post-body a`
+   colours and underlines every body link and outranks `.site-btn`, which
+   would paint the button's text in its own background colour. */
+.site-post-body a.guide-buy {
+  margin: 0.25rem 0 0.5rem;
+  text-decoration: none;
+}
+.site-post-body a.guide-buy.site-btn {
+  color: #fff;
+}
+.site-post-body a.guide-buy.site-btn-ghost {
+  color: var(--text-primary);
 }
 .site-page-body ul,
 .site-page-body ol,
@@ -1326,6 +1340,49 @@ body.infographic-lightbox-open {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+/* "Aparece en estas guías" on a product page: same list as the documents. */
+.product-guides {
+  margin: 1.5rem 0;
+}
+.product-guides h2 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+.product-guides ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.product-guides a {
+  display: block;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+.product-guides a:hover {
+  background: var(--bg-subtle);
+}
+/* A category's buying guide(s), under its heading. */
+.category-guides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: -0.25rem 0 1.25rem;
+}
+.category-guides a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.category-guides span {
+  font-weight: 600;
+  color: var(--text-primary);
 }
 .product-documents a {
   display: flex;

@@ -79,6 +79,16 @@ eleventyComputed:
         </ul>
       </div>
       {%- endif %}
+      {%- if product.guides.length %}
+      <div class="product-guides">
+        <h2>Aparece en estas guías</h2>
+        <ul>
+          {%- for guide in product.guides %}
+          <li><a href="/blog/{{ guide.slug }}">{{ guide.title }}</a></li>
+          {%- endfor %}
+        </ul>
+      </div>
+      {%- endif %}
       <div class="product-detail-actions">
         <input type="number" min="1" value="1" class="product-qty-input" id="product-qty" {%- if not product.inStock %} disabled{% endif %}>
         <button

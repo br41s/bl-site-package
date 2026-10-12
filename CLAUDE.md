@@ -92,6 +92,24 @@ same hotlinked images the product pages use, already allowed by CSP and disclose
 distributor's CDN (Akamai) answers 403 to any fetch that is not a real browser. Pages,
 the panel preview and sites without a catalogue pass no set and keep `/uploads/` only.
 
+**Catalogue links in posts are rewritten at build time** (`src/content/guide-buttons.js`,
+applied in `site/_data/articles.js` after `formatContent`, which allows exactly one class
+on links: `guide-buy`):
+
+- `<a href="/productos/SLUG" class="guide-buy">` is the Product Guide agent's buy button.
+  The agent never writes a price; the build writes «Comprar · 69,95 €» from the catalogue
+  as of the last sync (the sync always ends in a rebuild), or «Agotado · ver
+  alternativas» to the product's category when it is out of stock or no longer sold. The
+  price is retail with VAT as plain text, deliberately not a `.product-price`: `cart.js`
+  would rewrite it for a trade account inside a button with no VAT note.
+- `guide-buy` on a link that is not one of this site's product pages loses the class, so
+  the button can only ever lead to the shop.
+- Any other link to a product no longer sold (its page is not built) goes to its category,
+  and so does the post's CTA button, so old posts do not pile up 404s.
+- A guide is a post whose `cta_url` is a product page (`src/content/guide-links.js`).
+  Product pages list the guides that link them («Aparece en estas guías») and category
+  pages the guides whose recommended product is theirs.
+
 ## Homepage game (`hero_game`)
 
 Opt-in per deploy (panel → Mi sitio → Apariencia → Animación de portada, default
