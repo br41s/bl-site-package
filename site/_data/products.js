@@ -1,6 +1,7 @@
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import db from "../../src/db/database.js";
+import { buildGuideLinks } from "../../src/content/guide-links.js";
 import { enrichProduct } from "./lib/enrichProduct.js";
 
 marked.setOptions({ breaks: true });
@@ -115,6 +116,15 @@ export default function () {
       .map((row) => [row.sku, row]),
   );
 
+  // "Aparece en estas guías": the buying guides that link each product.
+  const { byProduct: guidesByProduct } = buildGuideLinks(
+    db
+      .prepare(
+        "SELECT slug, title, content, cta_url FROM articles WHERE status = 'published' ORDER BY created_at DESC",
+      )
+      .all(),
+  );
+
   return rows.map((p) => {
     const own = content.get(p.sku);
 
@@ -143,6 +153,7 @@ export default function () {
         url: d.url,
         title: documentTitle(d.label),
       })),
+      guides: guidesByProduct.get(p.slug) || [],
     };
     return { ...enriched, jsonLd: productJsonLd(enriched, enriched) };
   });

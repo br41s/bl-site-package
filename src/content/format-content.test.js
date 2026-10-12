@@ -234,6 +234,14 @@ describe("formatContent — pre-existing behaviour is unchanged", () => {
     assert.ok(!traversal.includes("<img"), `path traversal src survived: ${traversal}`);
   });
 
+  test("links keep only the guide-buy class, and nothing else", () => {
+    const out = formatContent('<a href="/productos/x" class="guide-buy site-btn evil" onclick="x()">Comprar</a>');
+    assert.ok(out.includes('class="guide-buy"'), `guide-buy stripped: ${out}`);
+    assert.ok(!out.includes("site-btn") && !out.includes("evil") && !out.includes("onclick"), out);
+    const other = formatContent('<a href="/x" class="anything">x</a> <p class="guide-buy">p</p>');
+    assert.ok(!other.includes("class="), `a class survived: ${other}`);
+  });
+
   test("a catalogue image is allowed only when it is in the catalogue set", () => {
     const photo = "https://img.distributor.example/products/170753g.jpg";
     const catalogueImages = new Set([photo]);

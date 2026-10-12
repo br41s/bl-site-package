@@ -15,6 +15,13 @@ eleventyComputed:
 <main class="site-page"><div class="site-page-inner">
   <a href="/productos" class="site-back-link">← Volver al catálogo</a>
   <h1 class="reveal">{{ group.category }}</h1>
+  {%- if group.guides.length %}
+  <p class="category-guides">
+    {%- for guide in group.guides %}
+    <a href="/blog/{{ guide.slug }}"><span>Guía de compra:</span> {{ guide.title }}</a>
+    {%- endfor %}
+  </p>
+  {%- endif %}
 
   {% include "category-pills.njk" %}
 

@@ -110,6 +110,11 @@ export function formatContent(text, { catalogueImages } = {}) {
       const src = frame.attribs.src || "";
       return !UPLOADED_IMAGE_SRC.test(src) && !isCatalogueImage(src);
     },
+    // One class, on links only: the Product Guide agent's buy button. The build
+    // (src/content/guide-buttons.js) turns it into a styled button with the
+    // current price, and strips it from any link that is not one of this
+    // site's own product pages. No other class reaches published content.
+    allowedClasses: { a: ["guide-buy"] },
     allowedAttributes: {
       a: ["href", "rel", "target"],
       figure: ["class"],
