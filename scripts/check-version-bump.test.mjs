@@ -40,6 +40,16 @@ test("verdict: docs-only and empty diffs pass without bump", () => {
     verdict({ changedFiles: [], baseVersion: "1.0.1", headVersion: "1.0.1" }).reason,
     "no_changes",
   );
+  // .env.example is a template nobody loads (dotenv reads .env) — a docs PR
+  // that documents a new variable there must not force a release.
+  assert.equal(
+    verdict({
+      changedFiles: ["README.md", ".env.example"],
+      baseVersion: "1.0.1",
+      headVersion: "1.0.1",
+    }).reason,
+    "docs_only",
+  );
 });
 
 
