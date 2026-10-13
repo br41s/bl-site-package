@@ -31,6 +31,7 @@ En Zeabur → tu servicio → Variables:
 - [ ] `JWT_SECRET` → string aleatorio de 32+ caracteres (usa: `openssl rand -hex 32`)
 - [ ] `PORT` → `8080`
 - [ ] **NO** configures `OPENROUTER_API_KEY` aquí — el código la prioriza sobre la que el cliente introduce en `/setup`, así que si se pone aquí la del cliente queda ignorada en silencio. La API Key es BYOK: la introduce el cliente (o tú, temporalmente, ver paso 4).
+- [ ] Complemento WhatsApp (solo si está contratado): `KNOWLEDGE_API_TOKEN`, `CHATWOOT_BASE_URL`, `CHATWOOT_ACCOUNT_ID` y `CHATWOOT_API_TOKEN` según [`ONBOARDING-WHATSAPP.md`](ONBOARDING-WHATSAPP.md). Sin ellas `/api/knowledge` responde 404 y la pestaña WhatsApp de Mensajes avisa de que no está configurada. Además hay que poner `whatsapp_bot_enabled` a `1` en la tabla `config` (activa los avisos de `/uso-de-ia` y `/privacidad`; todavía no hay control en el panel)
 
 ### 3. Configurar volumen persistente
 

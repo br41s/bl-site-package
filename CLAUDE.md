@@ -248,6 +248,26 @@ credit (402); any other upstream error is still a 502. A customer who saved the 
 row, set from the panel. **Do not change the default again** without an explicit decision; it
 changes the unit economics of every deployment.
 
+## WhatsApp add-on (`whatsapp_bot_enabled`)
+
+Opt-in per deploy, off by default. The site's own part is small: `GET /api/knowledge`
+(`src/api/knowledge.js`, Bearer `KNOWLEDGE_API_TOKEN`, 404 while unset) feeds the central
+bot, and `src/api/conversations.js` proxies Chatwoot for the WhatsApp tab in Mensajes
+(`CHATWOOT_BASE_URL` / `CHATWOOT_ACCOUNT_ID` / `CHATWOOT_API_TOKEN`, 404 while unset). The
+browser never sees the Chatwoot token, and a reply is refused server-side unless the
+conversation is human-owned (`open`) and inside WhatsApp's 24 h window — the UI gate is not
+the boundary. Everything else lives elsewhere: Chatwoot CE (central, one Account per
+customer) and the bot service in `hermes-sandbox/scripts/whatsapp-lead-bot`. Onboarding
+checklist: `ONBOARDING-WHATSAPP.md`.
+
+- `whatsapp_bot_enabled` is in `PUBLIC_CONFIG_KEYS` and gates the WhatsApp sections of
+  `/uso-de-ia` and `/privacidad`. It is **not** in the `POST /api/site/texts` allow-list, so
+  today it is set directly in the `config` table — there is no panel control yet.
+- Visitor and lead content in the panel is built with `createElement`/`textContent`, never
+  string-built `innerHTML`. An explicit `display` on a class that is also used with
+  `[hidden]` needs a paired `.class[hidden] { display: none }` rule, or the element shows
+  regardless of the attribute (the unread-badge bug).
+
 ## Client-facing documents — treat as published
 
 Read by customers or handed over at onboarding. Never let internal notes or debugging
