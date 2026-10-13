@@ -118,6 +118,8 @@ descuento, menos el IVA.
 | `BL_SITE_DISABLE_REBUILD` | `1` desactiva la reconstrucción automática. **Solo para tests** | vacío       |
 | `TRUST_PROXY_HOPS`    | Nº de saltos de proxy inverso hasta esta app (activa `trust proxy` de Express para que el rate limiter use la IP real). En Zeabur son `1`; sin confirmar el nº de saltos, no la actives | vacío (desactivado) |
 | `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile (formulario de contacto y login del panel), o desde el panel. Detrás corre `src/spam.js` (campo trampa + texto aleatorio): el spam recibe `success` pero no se guarda ni se envía | vacío |
+| `KNOWLEDGE_API_TOKEN` | Complemento WhatsApp: token Bearer con el que el bot central (`hermes-sandbox/scripts/whatsapp-lead-bot`) lee `GET /api/knowledge` (empresa, páginas, artículos publicados y productos activos). Vacío = la ruta responde 404 | vacío |
+| `CHATWOOT_BASE_URL` / `CHATWOOT_ACCOUNT_ID` / `CHATWOOT_API_TOKEN` | Complemento WhatsApp: instancia central de Chatwoot, cuenta de este cliente y token de API de su usuario de integración (no el token del bot). Activan `/api/conversations` y la pestaña WhatsApp de Mensajes; vacíos = la pestaña avisa de que no está configurado. Alta en `ONBOARDING-WHATSAPP.md` | vacío |
 
 Si estas variables están vacías, el asistente de inicio en `/setup` guarda la configuración en SQLite.
 

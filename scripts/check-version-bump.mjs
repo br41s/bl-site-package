@@ -9,8 +9,9 @@
 // to be merged. It used to be local-only, which is how one release shipped
 // without a bump: CI was green, and nothing forced the script.
 // Changes that never run on an instance are exempt: docs (*.md), .github/*,
-// fleet/ (the manifest is read by fleet-check.mjs on a developer's machine)
-// and scripts/ (dev tooling — the smoke test, fleet-check, this gate).
+// fleet/ (the manifest is read by fleet-check.mjs on a developer's machine),
+// scripts/ (dev tooling — the smoke test, fleet-check, this gate) and
+// .env.example (a template nobody loads; dotenv reads .env).
 // Bumping for those made fleet-check report every instance as out of date
 // until it redeployed a change that could not affect it.
 //
@@ -37,7 +38,8 @@ export function isDocsOnly(files) {
       f.endsWith(".md") ||
       f.startsWith(".github/") ||
       f.startsWith("fleet/") ||
-      f.startsWith("scripts/"),
+      f.startsWith("scripts/") ||
+      f === ".env.example",
   );
 }
 

@@ -204,6 +204,8 @@ Aquí aparecen todos los mensajes que tus visitantes envían a través del formu
 
 Los mensajes se borran solos a los 24 meses, y los pedidos a los 6 años, tal como dice tu política de privacidad. Si alguien te pide que borres sus datos antes, usa el botón **Borrar** del mensaje.
 
+Si tienes contratado el asistente de WhatsApp, en esta misma sección aparece una pestaña **WhatsApp** con las conversaciones que el asistente de IA ha atendido. Desde ahí puedes tomar el control de una conversación, devolvérsela al asistente o darla por resuelta, y responder tú mientras esté bajo tu control. WhatsApp solo permite responder libremente durante las 24 horas siguientes al último mensaje del cliente; pasado ese plazo la pestaña te lo indica y habrá que esperar a que vuelva a escribir.
+
 ### Ajustes
 
 - **Ver mi sitio web** — abre tu web en una pestaña nueva
