@@ -107,7 +107,7 @@ export function run() {
   const result = verdict({ changedFiles, baseVersion, headVersion });
   const messages = {
     no_changes: "Sin cambios respecto a origin/main.",
-    docs_only: "Solo cambian documentos o herramientas de desarrollo (.md, .github/, fleet/, scripts/) — no hace falta bump.",
+    docs_only: "Solo cambian documentos o herramientas de desarrollo (.md, .github/, fleet/, scripts/, .env.example) — no hace falta bump.",
     bumped: `Bump presente: v${baseVersion} → v${headVersion}.`,
     not_bumped:
       `package.json sigue en v${headVersion} con cambios de código respecto a ` +
