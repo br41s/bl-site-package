@@ -36,6 +36,7 @@ beforeEach(() => {
   db.prepare("DELETE FROM config").run();
   db.prepare("DELETE FROM articles").run();
   db.prepare("DELETE FROM products").run();
+  db.prepare("DELETE FROM product_content").run();
 });
 
 function call(method, path, { token, body } = {}) {
@@ -337,6 +338,131 @@ describe("GET /api/knowledge", () => {
     assert.equal(body.products[0].in_stock, true);
     assert.equal(body.products[1].in_stock, false);
 
+    delete process.env.KNOWLEDGE_API_TOKEN;
+  });
+
+  // --- the offer: what the bot needs to answer "what do you sell / how" ---
+
+  test("a page's prose in page_*_desc survives a subtitle, as text", async () => {
+    process.env.KNOWLEDGE_API_TOKEN = "test-token-123";
+    const ins = db.prepare("INSERT INTO config (key, value) VALUES (?, ?)");
+    ins.run("page_servicios_title", "Servicios");
+    ins.run("page_servicios_subtitle", "Lo que hacemos");
+    ins.run("page_servicios_desc", "Reformas **integrales** y baños.");
+
+    const res = await call("GET", "/api/knowledge", { token: "test-token-123" });
+    const body = await res.json();
+
+    assert.equal(body.pages.servicios.description, "Lo que hacemos");
+    assert.equal(body.pages.servicios.text, "Lo que hacemos Reformas integrales y baños.");
+    assert.equal(body.pages.servicios.url, "/servicios");
+    delete process.env.KNOWLEDGE_API_TOKEN;
+  });
+
+  test("product and post URLs are the clean paths the server actually serves (no trailing slash)", async () => {
+    process.env.KNOWLEDGE_API_TOKEN = "test-token-123";
+    db.prepare("INSERT INTO products (sku, slug, name, category, price_cents, active, feed_active) VALUES (?, ?, ?, ?, ?, 1, 1)")
+      .run("SKU1", "grapadora-x", "Grapadora", "Grapadoras y Grapas", 1299);
+    db.prepare("INSERT INTO articles (title, slug, content, status) VALUES (?, ?, ?, 'published')")
+      .run("Post", "mi-post", "Texto", );
+
+    const res = await call("GET", "/api/knowledge", { token: "test-token-123" });
+    const body = await res.json();
+
+    assert.equal(body.products[0].url, "/productos/grapadora-x");
+    assert.equal(body.products[0].category_url, "/productos/categoria/grapadoras-y-grapas/");
+    assert.equal(body.products[0].vat_included, true);
+    assert.equal(body.articles[0].url, "/blog/mi-post");
+    delete process.env.KNOWLEDGE_API_TOKEN;
+  });
+
+  test("owned sheets replace the feed's copy and come first; in-stock before out-of-stock", async () => {
+    process.env.KNOWLEDGE_API_TOKEN = "test-token-123";
+    const ins = db.prepare("INSERT INTO products (sku, slug, name, description, stock_qty, active, feed_active) VALUES (?, ?, ?, ?, ?, 1, 1)");
+    ins.run("A", "a", "AAA feed name", "feed text", 0);
+    ins.run("B", "b", "BBB", "feed text", 5);
+    ins.run("C", "c", "CCC", "feed text", 0);
+    db.prepare("INSERT INTO product_content (sku, display_name, description_md, status) VALUES (?, ?, ?, ?)")
+      .run("A", "Nuestro nombre", "Nuestra **ficha** propia", "owned");
+    db.prepare("INSERT INTO product_content (sku, display_name, description_md, status) VALUES (?, ?, ?, ?)")
+      .run("C", "Borrador", "no publicado", "enriched");
+
+    const res = await call("GET", "/api/knowledge", { token: "test-token-123" });
+    const body = await res.json();
+
+    assert.deepEqual(body.products.map((p) => p.sku), ["A", "B", "C"]);
+    assert.equal(body.products[0].name, "Nuestro nombre");
+    assert.equal(body.products[0].description, "Nuestra ficha propia");
+    assert.equal(body.products[2].name, "CCC"); // a draft sheet never renders
+    delete process.env.KNOWLEDGE_API_TOKEN;
+  });
+
+  test("categories list the whole catalogue even though products are a sample", async () => {
+    process.env.KNOWLEDGE_API_TOKEN = "test-token-123";
+    const ins = db.prepare("INSERT INTO products (sku, slug, name, category, stock_qty, active, feed_active) VALUES (?, ?, ?, ?, ?, 1, 1)");
+    for (let i = 0; i < 70; i++) ins.run(`S${i}`, `s${i}`, `P${i}`, i % 2 ? "Papel" : "Bolígrafos", i % 3 ? 1 : 0);
+    ins.run("X", "x", "Inactivo", "Papel", 1);
+    db.prepare("UPDATE products SET active = 0 WHERE sku = 'X'").run();
+
+    const res = await call("GET", "/api/knowledge", { token: "test-token-123" });
+    const body = await res.json();
+
+    assert.equal(body.products.length, 60);
+    assert.equal(body.catalogue.product_count, 70);
+    assert.equal(body.catalogue.sample_size, 60);
+    assert.deepEqual(body.categories.map((c) => c.name).sort(), ["Bolígrafos", "Papel"]);
+    const papel = body.categories.find((c) => c.name === "Papel");
+    assert.equal(papel.products, 35);
+    assert.equal(papel.url, "/productos/categoria/papel/");
+    assert.ok(body.operational_facts.some((f) => f.includes("70 productos en 2 categorías")));
+    delete process.env.KNOWLEDGE_API_TOKEN;
+  });
+
+  test("FAQ pairs are lifted from the posts' FAQ blocks, deduplicated", async () => {
+    process.env.KNOWLEDGE_API_TOKEN = "test-token-123";
+    const md = "# T\n\n## Preguntas frecuentes\n\n### ¿Hacéis envíos?\n\nSí, a toda España.\n\n### ¿Cuánto tarda?\n\n48 h.\n";
+    db.prepare("INSERT INTO articles (title, slug, content, status) VALUES (?, ?, ?, 'published')").run("Uno", "uno", md);
+    db.prepare("INSERT INTO articles (title, slug, content, status) VALUES (?, ?, ?, 'published')").run("Dos", "dos", md);
+
+    const res = await call("GET", "/api/knowledge", { token: "test-token-123" });
+    const body = await res.json();
+
+    assert.equal(body.faq.es.length, 2);
+    assert.deepEqual(body.faq.es[0], { q: "¿Hacéis envíos?", a: "Sí, a toda España.", url: "/blog/dos" });
+    delete process.env.KNOWLEDGE_API_TOKEN;
+  });
+
+  test("operational facts follow the deployment's config; catalogue facts only with a catalogue", async () => {
+    process.env.KNOWLEDGE_API_TOKEN = "test-token-123";
+    let res = await call("GET", "/api/knowledge", { token: "test-token-123" });
+    let body = await res.json();
+    assert.equal(body.faq.es, undefined);
+    assert.ok(!body.operational_facts.some((f) => /IVA|transferencia|pedido/.test(f)));
+    assert.ok(!body.operational_facts.some((f) => /teléfono de contacto/.test(f)));
+
+    db.prepare("INSERT INTO products (sku, slug, name, active, feed_active) VALUES ('S', 's', 'P', 1, 1)").run();
+    db.prepare("INSERT INTO config (key, value) VALUES ('bank_iban', 'ES00 0000 0000 0000 0000 0000')").run();
+    db.prepare("INSERT INTO config (key, value) VALUES ('b2b_enabled', '1')").run();
+    db.prepare("INSERT INTO config (key, value) VALUES ('biz_hours', 'L-V 9-18')").run();
+    res = await call("GET", "/api/knowledge", { token: "test-token-123" });
+    body = await res.json();
+    assert.ok(body.operational_facts.some((f) => f.startsWith("Horario: L-V 9-18")));
+    assert.ok(body.operational_facts.some((f) => f.includes("IVA incluido")));
+    assert.ok(body.operational_facts.some((f) => f.includes("transferencia bancaria")));
+    assert.ok(body.operational_facts.some((f) => f.includes("/profesionales")));
+    assert.ok(body.operational_facts.some((f) => f.includes("el teléfono es opcional")));
+    delete process.env.KNOWLEDGE_API_TOKEN;
+  });
+
+  test("etag describes the content, not the clock", async () => {
+    process.env.KNOWLEDGE_API_TOKEN = "test-token-123";
+    const a = await (await call("GET", "/api/knowledge", { token: "test-token-123" })).json();
+    await new Promise((r) => setTimeout(r, 5));
+    const b = await (await call("GET", "/api/knowledge", { token: "test-token-123" })).json();
+    assert.equal(a.etag, b.etag);
+    db.prepare("INSERT INTO config (key, value) VALUES ('company_name', 'Otra')").run();
+    const c = await (await call("GET", "/api/knowledge", { token: "test-token-123" })).json();
+    assert.notEqual(a.etag, c.etag);
     delete process.env.KNOWLEDGE_API_TOKEN;
   });
 });
