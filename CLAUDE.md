@@ -287,6 +287,21 @@ the boundary. Everything else lives elsewhere: Chatwoot CE (central, one Account
 customer) and the bot service in `hermes-sandbox/scripts/whatsapp-lead-bot`. Onboarding
 checklist: `ONBOARDING-WHATSAPP.md`.
 
+- **The bot says nothing that is not in `/api/knowledge`**, so the payload is the offer:
+  `business` (+ `site_url`), `pages` (the four editable pages as plain `text` — the
+  prose of quienes/servicios/contacto lives in `page_*_desc`, which the first version
+  dropped whenever a subtitle was set), `products`, `categories`, `faq` (the FAQ blocks
+  of published posts, via `buildFaqLd`), `articles`, and `operational_facts` derived
+  from config (payment line from `bank_iban`, `sales_shipping_text`, `biz_hours`,
+  `b2b_enabled`, SMTP state) — never a promise the deploy cannot keep. A catalogue
+  client has ~14,500 products and the whole payload goes into one prompt per turn, so
+  `products` is a **sample of 60** — owned sheets (`product_content.status = 'owned'`,
+  our copy, not the feed's) first, then in stock — and `categories` lists the whole
+  catalogue with counts and URLs for everything the sample lacks. URLs are the clean
+  paths the server serves (`/productos/<slug>`, `/blog/<slug>`; a trailing slash 404s).
+  The `etag` hashes the content, not the clock. Tests: `src/api/knowledge.test.js`.
+- For a client whose prices are public (any catalogue client), set `answersPricing: true`
+  on its entry in the bot's registry, or the bot escalates every price question.
 - `whatsapp_bot_enabled` is in `PUBLIC_CONFIG_KEYS` and gates the WhatsApp sections of
   `/uso-de-ia` and `/privacidad`. It is **not** in the `POST /api/site/texts` allow-list, so
   today it is set directly in the `config` table — there is no panel control yet.
