@@ -2623,7 +2623,7 @@ document.addEventListener("DOMContentLoaded", function () {
   //   cfg.listId / cfg.searchId — the list container and its search box
   //   cfg.categories            — [{ category, total, <pctKey> }] from the API
   //   cfg.dirty                 — the edits map, mutated in place
-  //   cfg.pctKey, cfg.max, cfg.ariaLabel — what the row edits
+  //   cfg.pctKey, cfg.min, cfg.max, cfg.ariaLabel — what the row edits
   function renderCategoryPctList(cfg) {
     var list = document.getElementById(cfg.listId);
     var query = document.getElementById(cfg.searchId).value.trim().toLowerCase();
@@ -2658,7 +2658,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       var input = document.createElement("input");
       input.type = "number";
-      input.min = "0";
+      input.min = cfg.min || "0";
       input.max = cfg.max;
       input.step = "0.01";
       input.placeholder = "general";
@@ -2698,8 +2698,8 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ── PRODUCTOS → PRECIOS ─────────────────────────────────────────
-  // Categories come from GET /api/pricing/margins; edits are held in
-  // pricingDirty and saved by "Guardar márgenes" (see renderCategoryPctList).
+  // Categories come from GET /api/pricing/adjustments; edits are held in
+  // pricingDirty and saved by "Guardar ajustes" (see renderCategoryPctList).
   var pricingCategories = [];
   var pricingDirty = {};
 
@@ -2709,7 +2709,7 @@ document.addEventListener("DOMContentLoaded", function () {
     hint.textContent = pending
       ? pending + " producto" + (pending === 1 ? "" : "s") +
         " tomará" + (pending === 1 ? "" : "n") +
-        " el margen nuevo en la próxima sincronización (o pulsa «Sincronizar ahora»)."
+        " el ajuste nuevo en la próxima sincronización (o pulsa «Sincronizar ahora»)."
       : "";
   }
 
@@ -2719,14 +2719,15 @@ document.addEventListener("DOMContentLoaded", function () {
       searchId: "pricing-category-search",
       categories: pricingCategories,
       dirty: pricingDirty,
-      pctKey: "margin_pct",
-      max: "200",
-      ariaLabel: "Margen para",
+      pctKey: "adjust_pct",
+      min: "-50",
+      max: "100",
+      ariaLabel: "Ajuste para",
     });
   }
 
   function loadPricing() {
-    fetch("/api/pricing/margins", { headers: authHeaders() })
+    fetch("/api/pricing/adjustments", { headers: authHeaders() })
       .then(jsonOrError)
       .then(function (data) {
         document.getElementById("pricing-default-pct-input").value = String(data.default_pct);
@@ -2739,7 +2740,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function savePricing(body, msg, okText) {
-    fetch("/api/pricing/margins", {
+    fetch("/api/pricing/adjustments", {
       method: "PUT",
       headers: authHeaders(),
       body: JSON.stringify(body),
@@ -2766,7 +2767,7 @@ document.addEventListener("DOMContentLoaded", function () {
       savePricing(
         { default_pct: document.getElementById("pricing-default-pct-input").value.trim() },
         document.getElementById("pricing-default-msg"),
-        "✓ Margen guardado.",
+        "✓ Ajuste guardado.",
       );
     });
 
@@ -2774,12 +2775,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById("pricing-margins-save").addEventListener("click", function () {
       var msg = document.getElementById("pricing-margins-msg");
-      var margins = dirtyPayload(pricingDirty);
-      if (!Object.keys(margins).length) {
+      var adjustments = dirtyPayload(pricingDirty);
+      if (!Object.keys(adjustments).length) {
         flashMsg(msg, true, "No hay cambios que guardar.");
         return;
       }
-      savePricing({ margins: margins }, msg, "✓ Márgenes guardados.");
+      savePricing({ adjustments: adjustments }, msg, "✓ Ajustes guardados.");
     });
   }
 

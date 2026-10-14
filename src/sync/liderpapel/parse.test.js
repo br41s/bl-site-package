@@ -137,6 +137,10 @@ const PRICES = {
       {
         supplierCode: SUPPLIER,
         Product: [
+          // Quantity tiers come largest pack first, with the unit line last:
+          // 10 at 100.00, 1 at 120.00 (the below-pack supplement included).
+          // A second suggested price (suggestedSco, the school catalogue)
+          // rides along, as in the real feed — only suggestedCI is the PVO.
           {
             id: "78276",
             Prices: [
@@ -144,7 +148,16 @@ const PRICES = {
                 Price: [
                   {
                     priceType: "purchase",
-                    PriceLines: { PriceLine: [{ PriceExcTax: "100.00", MinQuantity: "1" }] },
+                    PriceLines: {
+                      PriceLine: [
+                        { PriceExcTax: "100.00", MinQuantity: "10" },
+                        { PriceExcTax: "120.00", MinQuantity: "1" },
+                      ],
+                    },
+                  },
+                  {
+                    priceType: "suggestedSco",
+                    PriceLines: { PriceLine: [{ PriceExcTax: "190.00" }] },
                   },
                   {
                     priceType: "suggestedCI",
@@ -153,7 +166,9 @@ const PRICES = {
                 ],
               },
             ],
+            VATRates: { VATRate: [{ country: "ES", Value: "21.0" }] },
           },
+          // No PVO, reduced VAT (a book): priced from cost at the fallback margin.
           {
             id: "28224",
             Prices: [
@@ -166,6 +181,7 @@ const PRICES = {
                 ],
               },
             ],
+            VATRates: { VATRate: [{ country: "ES", Value: "4.0" }] },
           },
         ],
       },
@@ -259,12 +275,8 @@ before(() => {
   };
 });
 
-function parse() {
-  return joinLiderpapelCatalog(paths, {
-    supplierCode: SUPPLIER,
-    marginFor: () => 40,
-    vatRate: 0.21,
-  });
+function parse(adjustFor = () => 0) {
+  return joinLiderpapelCatalog(paths, { supplierCode: SUPPLIER, adjustFor });
 }
 
 describe("joinLiderpapelCatalog", () => {
@@ -275,8 +287,8 @@ describe("joinLiderpapelCatalog", () => {
 
   test("keeps the existing row shape: price, stock and primary image", () => {
     const { row } = parse().get("78276");
-    // 100.00 purchase * 1.4 margin * 1.21 VAT = 169.40
-    assert.equal(row.price_cents, 16940);
+    // The PVO as is: 200.00 suggestedCI * 1.21 VAT = 242.00
+    assert.equal(row.price_cents, 24200);
     // Stock is summed across warehouses.
     assert.equal(row.stock_qty, 5);
     assert.equal(row.image_url, "https://cdn.test/78276g.jpg");
@@ -284,16 +296,27 @@ describe("joinLiderpapelCatalog", () => {
     assert.equal(row.slug, "78276-destructora-de-documentos-fellowes-99ci");
   });
 
-  test("prices each product with its category's margin and keeps the cost", () => {
-    const products = joinLiderpapelCatalog(paths, {
-      supplierCode: SUPPLIER,
-      marginFor: (category) => (category === "Destructoras de documentos" ? 60 : 40),
-      vatRate: 0.21,
-    });
+  test("prices from the PVO with the category's adjustment, at the product's VAT", () => {
+    const products = parse((category) => (category === "Destructoras de documentos" ? -5 : 0));
     const { row } = products.get("78276");
-    // 100.00 purchase * 1.6 margin * 1.21 VAT = 193.60
-    assert.equal(row.price_cents, 19360);
-    assert.equal(row.cost_ex_vat, 100);
+    // 200.00 PVO * 0.95 * 1.21 VAT = 229.90
+    assert.equal(row.price_cents, 22990);
+    assert.equal(row.pvo_ex_vat, 200);
+    assert.equal(row.vat_rate, 0.21);
+  });
+
+  test("the cost is the smallest quantity tier, not the first line", () => {
+    // 10 units at 100.00 is listed first; the shop buys singles at 120.00.
+    assert.equal(parse().get("78276").row.cost_ex_vat, 120);
+  });
+
+  test("without a PVO, prices from cost at the fallback margin and the product's VAT", () => {
+    const { row } = parse(() => -5).get("28224");
+    assert.equal(row.pvo_ex_vat, null);
+    assert.equal(row.vat_rate, 0.04);
+    // 2.00 cost * 1.4 fallback margin * 1.04 VAT = 2.912 → 291; the adjustment
+    // is over the PVO and does not apply here.
+    assert.equal(row.price_cents, 291);
   });
 
   test("extracts the unit EAN and the manufacturer reference", () => {

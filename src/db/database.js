@@ -423,14 +423,25 @@ db.exec(`
     updated_at TEXT DEFAULT (datetime('now'))
   );
 
-  -- Retail margin per catalogue category, as a whole-number percentage over
-  -- the feed's ex-VAT purchase price (products.cost_ex_vat). Keyed by
-  -- products.category verbatim, like b2b_category_discounts. A category with
-  -- no row falls back to the general margin (config key liderpapel_margin_pct).
-  -- Ours, not the feed's: the sync reads it to price, and never writes it.
+  -- Legacy (until v1.21): retail margin per category over the purchase cost,
+  -- with the general one in the liderpapel_margin_pct config key. Nothing reads
+  -- either any more — the public price is made from the distributor's PVO, see
+  -- category_price_adjust below. Kept, not dropped, so a downgrade finds it.
   CREATE TABLE IF NOT EXISTS category_margins (
     category TEXT PRIMARY KEY,
     margin_pct REAL NOT NULL,
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Retail price adjustment per catalogue category, as a percentage over the
+  -- distributor's suggested retail price (products.pvo_ex_vat); negative
+  -- undercuts it. Keyed by products.category verbatim, like
+  -- b2b_category_discounts. A category with no row falls back to the general
+  -- adjustment (config key liderpapel_pvo_adjust_pct, 0 = catalogue price).
+  -- Ours, not the feed's: the sync reads it to price, and never writes it.
+  CREATE TABLE IF NOT EXISTS category_price_adjust (
+    category TEXT PRIMARY KEY,
+    adjust_pct REAL NOT NULL,
     updated_at TEXT DEFAULT (datetime('now'))
   );
 `);
@@ -561,6 +572,13 @@ ensureColumn("products", "dimensions_mm", "TEXT");
 // synced before the column existed, until the next sync fills it — those keep
 // their price when a margin changes (src/api/pricing.js).
 ensureColumn("products", "cost_ex_vat", "REAL");
+// The distributor's suggested retail price for its general catalogue, ex VAT —
+// the PVO the public price is made from (src/sync/liderpapel/mapping.js) — and
+// the product's own VAT rate as a fraction (0.21, 0.10, 0.04). Both feed-owned,
+// in the feed's own precision like cost_ex_vat. NULL / 0.21 on rows synced
+// before the columns existed, until the next sync fills them.
+ensureColumn("products", "pvo_ex_vat", "REAL");
+ensureColumn("products", "vat_rate", "REAL NOT NULL DEFAULT 0.21");
 
 const productsNeedingSearchText = db
   .prepare("SELECT id, name, category FROM products WHERE search_text = ''")
