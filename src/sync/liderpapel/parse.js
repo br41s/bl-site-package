@@ -52,9 +52,27 @@ export function toSlug(text) {
     .replace(/-+/g, "-");
 }
 
-function supplierProducts(data, supplierCode) {
-  const block = data.root.Products.find((b) => b.supplierCode === supplierCode);
-  return block?.Product || [];
+// The configured supplier codes: one or several, comma-separated ("CSP, GC2"),
+// or already an array. Trimmed, deduplicated, empties dropped.
+export function parseSupplierCodes(value) {
+  const list = Array.isArray(value) ? value : String(value ?? "").split(",");
+  return [...new Set(list.map((c) => String(c).trim()).filter(Boolean))];
+}
+
+// Each feed file carries one block per supplier: Liderpapel's own catalogue
+// (CSP on Shoroban's account) plus the brands it distributes under codes of
+// their own (GC2 Safta, GC3 ACCO, GC4 printer consumables, GC5 Wondee —
+// 7,387 more sellable products, same warehouse, same terms; David confirmed
+// on 2026-10-14 he can order them). The configured codes say which blocks
+// are the shop's catalogue, in order. Ids are disjoint across blocks in
+// practice; if one ever repeats, the first configured block wins.
+function supplierProducts(data, supplierCodes) {
+  const out = [];
+  for (const code of supplierCodes) {
+    const block = data.root.Products.find((b) => b.supplierCode === code);
+    for (const product of block?.Product || []) out.push(product);
+  }
+  return out;
 }
 
 function textValue(descriptions, code) {
@@ -209,20 +227,23 @@ export function joinLiderpapelCatalog(
     adjustFor = () => DEFAULT_PVO_ADJUST_PCT,
   } = {},
 ) {
-  if (!supplierCode) {
+  const supplierCodes = parseSupplierCodes(supplierCode);
+  if (!supplierCodes.length) {
     throw new Error("Código de proveedor de Liderpapel no configurado");
   }
 
-  const catalog = supplierProducts(readJson(paths.catalog), supplierCode);
-  const descriptions = supplierProducts(readJson(paths.descriptions), supplierCode);
-  const prices = supplierProducts(readJson(paths.prices), supplierCode);
-  const multimedia = supplierProducts(readJson(paths.multimedia), supplierCode);
+  const catalog = supplierProducts(readJson(paths.catalog), supplierCodes);
+  const descriptions = supplierProducts(readJson(paths.descriptions), supplierCodes);
+  const prices = supplierProducts(readJson(paths.prices), supplierCodes);
+  const multimedia = supplierProducts(readJson(paths.multimedia), supplierCodes);
 
+  // Stocks is shaped differently (mapping.js): per-supplier blocks of
+  // warehouses. Every warehouse of every configured block counts.
   const stocksData = readJson(paths.stocks);
-  const warehouseBlock = stocksData.root.Storage.find(
-    (b) => b.supplierCode === supplierCode,
-  );
-  const stockByWarehouse = (warehouseBlock?.Stocks || []).map((wh) => {
+  const warehouses = stocksData.root.Storage.filter((b) =>
+    supplierCodes.includes(b.supplierCode),
+  ).flatMap((b) => b.Stocks || []);
+  const stockByWarehouse = warehouses.map((wh) => {
     const qtyById = new Map();
     for (const p of wh.Products?.Product || []) {
       qtyById.set(p.id, parseInt(p.Stock?.[0]?.AvailableQuantity, 10) || 0);
@@ -240,6 +261,7 @@ export function joinLiderpapelCatalog(
   for (const p of catalog) {
     if (p.Status !== SELLABLE_STATUS || !p.id) continue;
     const id = p.id;
+    if (products.has(id)) continue;
 
     const descs = descById.get(id);
     const name = textValue(descs, TITLE_DESC_CODE) || id;
@@ -250,6 +272,12 @@ export function joinLiderpapelCatalog(
       pvo_ex_vat: suggestedPvoExVat(priceEntry?.Prices),
       vat_rate: vatRateOf(priceEntry),
     };
+    // A sellable product the feed gives no price for at all (2 of 21,874 on
+    // Shoroban's feed, both out of stock) would be published at 0,00 € and
+    // could be reserved for nothing. Treat it like a product that is not in
+    // the feed: not published, and it drops to feed_active = 0 if it was.
+    const price_cents = retailPriceCents(pricing, adjustFor(category));
+    if (price_cents === null) continue;
 
     const links = linksById.get(id);
     const images = activeLinks(links, IMAGE_MML_TYPE);
@@ -286,7 +314,7 @@ export function joinLiderpapelCatalog(
         // Kept so an adjustment change can re-price the catalogue at once,
         // without waiting for the next feed (src/api/pricing.js).
         ...pricing,
-        price_cents: retailPriceCents(pricing, adjustFor(category)) ?? 0,
+        price_cents,
         stock_qty: sumStock(stockByWarehouse, id),
         image_url: images[0] || null,
         gtin,

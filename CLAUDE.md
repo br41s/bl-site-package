@@ -178,10 +178,13 @@ them would have put a 40 % margin on top of the catalogue price the day this shi
   pack first (10 units at 1.98 €, then 1 unit at 2.38 € with the 20 % below-pack supplement
   included; 2,631 products). The shop sells single units, so its cost is the unit-of-sale
   line (`AdditionalInfo.UVE`), never `PriceLine[0]`.
-- The feed carries five supplier blocks (`CSP` plus `GC2`–`GC5`: Safta, ACCO brands,
-  printer consumables, Wondee — 7,387 more sellable products, same warehouse). The sync
-  reads only the configured code; whether Shoroban can order the others is an open
-  question for the customer.
+- **The feed carries several supplier blocks, and the sync reads the configured ones.**
+  `liderpapel_supplier_code` is a comma-separated list (`parseSupplierCodes`); Shoroban's
+  feed has `CSP` plus `GC2`–`GC5` (Safta, ACCO brands, printer consumables, Wondee: 7,387
+  more sellable products, same warehouse, same terms, confirmed by the customer on
+  2026-10-14). Ids are disjoint across blocks; the first configured block wins if one ever
+  repeats. A block missing from a file (no prices, no descriptions) yields rows priced 0 and
+  named by id, never a throw.
 
 Three consequences worth holding on to:
 

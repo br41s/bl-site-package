@@ -62,7 +62,7 @@ En Zeabur → tu servicio → Variables:
 
 ### 5b. Catálogo del distribuidor (solo si el cliente vende de un feed)
 
-- [ ] Panel → Productos → Sincronización → rellenar host, puerto, usuario, contraseña y **código de proveedor** (se lo da el distribuidor; en Liderpapel es el que identifica su cuenta dentro del feed, p. ej. `CSP`)
+- [ ] Panel → Productos → Sincronización → rellenar host, puerto, usuario, contraseña y **códigos de proveedor** (se los da el distribuidor; en Liderpapel son los bloques del feed que forman el catálogo del cliente, separados por comas, p. ej. `CSP, GC2, GC3, GC4, GC5` — el feed trae varios y solo se publican los configurados; preguntar al cliente cuáles puede pedir)
 - [ ] Pulsar **Sincronizar ahora** y esperar: la primera pasada descarga el feed entero (~175 MB en Liderpapel) y puede tardar varios minutos. No pulsar dos veces
 - [ ] Verificar que Productos → Catálogo lista artículos y que una ficha se ve bien en la web pública
 - [ ] Productos → **Precios** → por defecto la web vende al precio de catálogo del proveedor (ajuste 0 %). Si el cliente quiere vender por encima o por debajo, poner el ajuste general y, si lo pide, uno distinto en categorías concretas. Comprobar el precio de una ficha en la web pública contra el catálogo impreso después del guardado
