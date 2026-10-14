@@ -6,11 +6,12 @@
 // blocks ({ supplierCode, date, Stocks: [...] }), each Stocks[] entry a
 // warehouse with its own Products.Product[].
 //
-// Liderpapel groups several brands under one sFTP account (e.g. CSP, GC2,
-// GC3, GC4, GC5 all appear in Shoroban's feed) — the right code is per
-// customer, not a package-wide constant. Read from the "liderpapel_supplier_code"
-// config key (see database.js / sync.js); this is only a last-resort fallback
-// for local/dev use, deliberately NOT Shoroban's own code ("CSP").
+// Liderpapel groups several suppliers under one sFTP account (CSP, GC2, GC3,
+// GC4, GC5 all appear in Shoroban's feed) — which ones are the shop's
+// catalogue is per customer, not a package-wide constant. Read from the
+// "liderpapel_supplier_code" config key, one or several codes separated by
+// commas (parseSupplierCodes in parse.js); this is only a last-resort
+// fallback for local/dev use, deliberately NOT Shoroban's own codes.
 export const DEFAULT_SUPPLIER_CODE = "";
 
 // Only "VAL" (currently valid/sellable) products are synced. "FUT" (upcoming,

@@ -75,9 +75,19 @@ const CATALOG = {
             Classifications: { Classification: [] },
             AdditionalInfo: {},
           },
+          // Sellable, but the feed gives it no price at all.
+          {
+            id: "77777",
+            Status: "VAL",
+            Validity: "1",
+            References: { Reference: [] },
+            Features: { Feature: [] },
+            Classifications: { Classification: [] },
+            AdditionalInfo: {},
+          },
         ],
       },
-      // A second supplier block that must be ignored entirely.
+      // A second supplier block, synced only when its code is configured.
       {
         supplierCode: "OTHER",
         date: "2026-08-19",
@@ -185,6 +195,24 @@ const PRICES = {
           },
         ],
       },
+      {
+        supplierCode: "OTHER",
+        Product: [
+          {
+            id: "99999",
+            Prices: [
+              {
+                Price: [
+                  {
+                    priceType: "purchase",
+                    PriceLines: { PriceLine: [{ PriceExcTax: "1.00" }] },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
     ],
   },
 };
@@ -283,6 +311,25 @@ describe("joinLiderpapelCatalog", () => {
   test("syncs only VAL products from the configured supplier block", () => {
     const products = parse();
     assert.deepEqual([...products.keys()].sort(), ["28224", "78276"]);
+  });
+
+  test("merges every configured supplier block, comma-separated", () => {
+    // Shoroban's feed carries CSP plus four brand blocks it can order from
+    // on the same terms; each is a block of its own in every file.
+    const products = joinLiderpapelCatalog(paths, { supplierCode: " TST, OTHER ," });
+    assert.deepEqual([...products.keys()].sort(), ["28224", "78276", "99999"]);
+    // A block with no descriptions or stocks still yields a row, not a throw.
+    assert.equal(products.get("99999").row.price_cents, 169); // 1.00 × 1.4 × 1.21
+    assert.equal(products.get("99999").row.stock_qty, 0);
+  });
+
+  test("a sellable product the feed gives no price for is not published", () => {
+    // It would otherwise go live at 0,00 € and could be reserved for nothing.
+    assert.equal(parse().has("77777"), false);
+  });
+
+  test("an empty code list is refused, not an empty catalogue", () => {
+    assert.throws(() => joinLiderpapelCatalog(paths, { supplierCode: " , " }), /no configurado/);
   });
 
   test("keeps the existing row shape: price, stock and primary image", () => {
