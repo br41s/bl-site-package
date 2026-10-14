@@ -8,6 +8,22 @@ import { toSlug } from "../sync/liderpapel/parse.js";
 
 const router = Router();
 
+// What a storefront visitor may know about a product. The row also carries
+// the distributor's figures the public price is made from — the purchase
+// cost and the suggested retail price (cost_ex_vat, pvo_ex_vat, plus any
+// column of that kind added later) — and those are the shop's business, not
+// the shopper's: a competitor reading cost_ex_vat off this endpoint knew the
+// shop's margin on every one of its 14,500 products. SELECT * is still right
+// for the panel and the agent, which are authenticated; only what leaves the
+// server unauthenticated passes through here.
+const CONFIDENTIAL_COLUMNS = ["cost_ex_vat", "pvo_ex_vat"];
+
+export function publicProduct(row) {
+  const copy = { ...row };
+  for (const column of CONFIDENTIAL_COLUMNS) delete copy[column];
+  return copy;
+}
+
 // GET /api/products — list (public: only active; authenticated: all)
 router.get("/", (req, res) => {
   const authHeader = req.headers["authorization"];
@@ -99,7 +115,7 @@ router.get("/", (req, res) => {
   // Our title wins wherever we have one, so a search result card and the
   // product page it links to never disagree about the product's name.
   const products = rows.map(({ owned_name, ...row }) => ({
-    ...row,
+    ...(isAuth ? row : publicProduct(row)),
     name: owned_name || row.name,
     feed_name: row.name,
   }));
@@ -161,13 +177,14 @@ router.get("/count", (req, res) => {
   res.json({ count });
 });
 
-// GET /api/products/:sku — single product by SKU (public, must be active)
+// GET /api/products/:sku — single product by SKU (public, must be active).
+// Never authenticated, so never the distributor's figures.
 router.get("/:sku", (req, res) => {
   const product = db
     .prepare("SELECT * FROM products WHERE sku = ? AND active = 1")
     .get(req.params.sku);
   if (!product) return res.status(404).json({ error: "Producto no encontrado" });
-  res.json(product);
+  res.json(publicProduct(product));
 });
 
 // PUT /api/products/:id — admin toggles visibility only. Price, stock, name,

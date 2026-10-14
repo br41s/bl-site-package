@@ -196,6 +196,11 @@ Three consequences worth holding on to:
   time, never stored as a flag.
 - **Writes are partial.** An absent field means leave alone; present-but-empty means clear.
   Sending a field the caller never meant to change used to erase it.
+- **The distributor's figures never leave the server unauthenticated.** `cost_ex_vat`
+  (what the shop pays) and `pvo_ex_vat` are stripped by `publicProduct()` in
+  `src/api/products.js` from every unauthenticated response; the panel and the agent get
+  the full row. The routes return `SELECT *`, so a new confidential column goes on that
+  list, not on a per-route allow-list someone has to remember.
 
 ## B2B area (trade prices)
 
