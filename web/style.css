@@ -530,6 +530,40 @@ body {
 .site-post-body a.guide-buy.site-btn-ghost {
   color: var(--text-primary);
 }
+/* A product guide's product block, on a desktop column: the photo and the
+   buy button under it sit in a 320px column on the left and the «Lo mejor» /
+   «A tener en cuenta» paragraphs flow to its right, instead of a 320px photo
+   with the rest of a 960px column empty. The body is customer HTML with no
+   wrapper per product, so the layout hangs off the shape the agent writes
+   (a photo paragraph followed by the button paragraph) and nothing else: a
+   hand-written post with a photo in a paragraph keeps its stacked layout. The
+   next heading clears the floats so each product starts on its own row.
+   `:has()` is supported in every current browser; one without it keeps the
+   stacked layout, which is the mobile one. */
+@media (min-width: 769px) {
+  .site-post-body p:has(> a > img):has(+ p > a.guide-buy) {
+    float: left;
+    clear: left;
+    width: 320px;
+    margin: 0 1.75rem 0.75rem 0;
+  }
+  .site-post-body p:has(> a > img) + p:has(> a.guide-buy) {
+    float: left;
+    clear: left;
+    width: 320px;
+    margin: 0 1.75rem 1rem 0;
+  }
+  .site-post-body h2,
+  .site-post-body h3,
+  .site-post-body h4,
+  .site-post-body .table-scroll,
+  .site-post-body figure {
+    clear: both;
+  }
+  .site-post-body {
+    display: flow-root;
+  }
+}
 .site-page-body ul,
 .site-page-body ol,
 .site-post-body ul,

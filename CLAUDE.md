@@ -109,6 +109,12 @@ on links: `guide-buy`):
 - A guide is a post whose `cta_url` is a product page (`src/content/guide-links.js`).
   Product pages list the guides that link them («Aparece en estas guías») and category
   pages the guides whose recommended product is theirs.
+- **On a desktop column each product block is two columns, by CSS alone**
+  (`web/style.css`, `@media (min-width: 769px)`): the photo paragraph and the button
+  paragraph float left at 320px and «Lo mejor» / «A tener en cuenta» flow beside them.
+  The body has no wrapper per product, so the rule hangs off the shape the hermes
+  prompt writes: `<p><a><img></a></p>` immediately followed by `<p><a class="guide-buy">`.
+  Change that order in the prompt and the layout silently falls back to stacked.
 
 ## Homepage game (`hero_game`)
 
