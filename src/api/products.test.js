@@ -56,6 +56,44 @@ const count = async () =>
 
 beforeEach(() => db.exec("DELETE FROM products; DELETE FROM product_content;"));
 
+describe("GET /api/products — the distributor's figures stay inside", () => {
+  // cost_ex_vat is what the shop pays its distributor. It was in every public
+  // response because the routes return SELECT * rows, so anyone could read
+  // the shop's margin on its whole catalogue. pvo_ex_vat (the distributor's
+  // suggested retail price, added by the PVO pricing) is the same kind of
+  // figure. The panel and the agent authenticate and still get the full row.
+  const seedWithCost = (sku) => {
+    seedProduct(sku);
+    db.prepare("UPDATE products SET cost_ex_vat = 5.9 WHERE sku = ?").run(sku);
+  };
+  const CONFIDENTIAL = ["cost_ex_vat", "pvo_ex_vat"];
+
+  test("the public listing and search carry no cost", async () => {
+    seedWithCost("100");
+    for (const path of ["/api/products", "/api/products?q=producto"]) {
+      const { products } = await (await fetch(`${baseUrl}${path}`)).json();
+      assert.equal(products.length, 1, path);
+      for (const column of CONFIDENTIAL) assert.ok(!(column in products[0]), `${column} in ${path}`);
+      assert.equal(products[0].price_cents, 1000);
+    }
+  });
+
+  test("the public product by sku carries no cost", async () => {
+    seedWithCost("100");
+    const product = await (await fetch(`${baseUrl}/api/products/100`)).json();
+    for (const column of CONFIDENTIAL) assert.ok(!(column in product), column);
+    assert.equal(product.sku, "100");
+  });
+
+  test("the panel and the agent still get the full row", async () => {
+    seedWithCost("100");
+    const { products } = await (
+      await fetch(`${baseUrl}/api/products`, { headers: { Authorization: `Bearer ${TOKEN}` } })
+    ).json();
+    assert.equal(products[0].cost_ex_vat, 5.9);
+  });
+});
+
 describe("GET /api/products — finding a rewritten sheet", () => {
   // Reported from the storefront: the agent renames a product, the page and
   // the panel both show the new title, and searching for that title returns
