@@ -12,16 +12,29 @@ import {
   BRAND_FEATURE_NAME,
   IMAGE_MML_TYPE,
   DOCUMENT_MML_TYPE,
+  DEFAULT_PVO_ADJUST_PCT,
   DEFAULT_MARGIN_PCT,
   DEFAULT_VAT_RATE,
 } from "./mapping.js";
 
-// Public price in cents, VAT included, from the ex-VAT purchase price and a
-// whole-number margin. The one formula for it: the sync prices every product
-// with it, and src/api/pricing.js re-prices the stored catalogue with it when
-// a margin changes, so the two can never disagree by a cent.
-export function pvpCents(costExVat, marginPct, vatRate = DEFAULT_VAT_RATE) {
-  return Math.round(costExVat * (1 + marginPct / 100) * (1 + vatRate) * 100);
+// Price in cents, VAT included, from an ex-VAT base and a percentage over it.
+// The one formula for it: the sync prices every product with it, and
+// src/api/pricing.js re-prices the stored catalogue with it when an adjustment
+// changes, so the two can never disagree by a cent.
+export function pvpCents(baseExVat, pct, vatRate = DEFAULT_VAT_RATE) {
+  return Math.round(baseExVat * (1 + pct / 100) * (1 + vatRate) * 100);
+}
+
+// The public price of one product row (see mapping.js): the distributor's PVO
+// with our adjustment on top or, when the feed gives no PVO, the purchase cost
+// at the fallback margin — either way at the product's own VAT rate. null when
+// there is nothing to price from (rows synced before these columns existed),
+// so a re-price leaves them alone.
+export function retailPriceCents(row, adjustPct) {
+  const vat = Number.isFinite(row.vat_rate) ? row.vat_rate : DEFAULT_VAT_RATE;
+  if (row.pvo_ex_vat > 0) return pvpCents(row.pvo_ex_vat, adjustPct, vat);
+  if (row.cost_ex_vat > 0) return pvpCents(row.cost_ex_vat, DEFAULT_MARGIN_PCT, vat);
+  return null;
 }
 
 function readJson(path) {
@@ -61,13 +74,48 @@ function mostSpecificCategory(classifications) {
 
 // Prices is an array of date-ranged blocks; take the first "purchase" entry
 // found (products in this feed only ever carry one active price block).
+//
+// The purchase price comes in quantity tiers, one PriceLine per MinQuantity,
+// and the feed lists the largest pack FIRST: 10 units at 1.98, then 1 unit at
+// 2.38 with the distributor's 20 % below-pack supplement already included
+// (2,631 of 19,045 products on 2026-08-19). The shop sells single units, so its
+// cost is the smallest tier — the unit of sale (AdditionalInfo.UVE) wherever the
+// feed states one. Taking PriceLine[0] used to record the pack price as the cost.
 function purchasePriceExVat(priceBlocks) {
   for (const block of priceBlocks || []) {
     const entry = block.Price?.find((p) => p.priceType === "purchase");
-    const line = entry?.PriceLines?.PriceLine?.[0];
+    const line = smallestTier(entry?.PriceLines?.PriceLine);
     if (line) return parseFloat(line.PriceExcTax) || 0;
   }
   return 0;
+}
+
+function smallestTier(lines) {
+  let best = null;
+  for (const line of lines || []) {
+    const parsed = parseInt(line.MinQuantity, 10);
+    const qty = Number.isFinite(parsed) ? parsed : 1;
+    if (!best || qty < best.qty) best = { qty, line };
+  }
+  return best?.line || null;
+}
+
+// The distributor's suggested retail price for its general catalogue, ex VAT
+// (priceType "suggestedCI", see mapping.js). null when the feed gives none.
+function suggestedPvoExVat(priceBlocks) {
+  for (const block of priceBlocks || []) {
+    const entry = block.Price?.find((p) => p.priceType === "suggestedCI");
+    const value = parseFloat(entry?.PriceLines?.PriceLine?.[0]?.PriceExcTax);
+    if (value > 0) return value;
+  }
+  return null;
+}
+
+// VATRates sits beside Prices on the product's entry in the prices file:
+// { VATRate: [{ country: "ES", Value: "21.0" }] }. Returned as a fraction.
+function vatRateOf(priceEntry) {
+  const value = parseFloat(priceEntry?.VATRates?.VATRate?.[0]?.Value);
+  return Number.isFinite(value) && value >= 0 ? value / 100 : DEFAULT_VAT_RATE;
 }
 
 // Every active link of one mmlType, in feed order, deduplicated. The feed
@@ -158,8 +206,7 @@ export function joinLiderpapelCatalog(
   paths,
   {
     supplierCode = DEFAULT_SUPPLIER_CODE,
-    marginFor = () => DEFAULT_MARGIN_PCT,
-    vatRate = DEFAULT_VAT_RATE,
+    adjustFor = () => DEFAULT_PVO_ADJUST_PCT,
   } = {},
 ) {
   if (!supplierCode) {
@@ -184,7 +231,7 @@ export function joinLiderpapelCatalog(
   });
 
   const descById = new Map(descriptions.map((p) => [p.id, p.Descriptions?.Description]));
-  const priceById = new Map(prices.map((p) => [p.id, p.Prices]));
+  const priceById = new Map(prices.map((p) => [p.id, p]));
   const linksById = new Map(
     multimedia.map((p) => [p.id, p.MultimediaLinks?.MultimediaLink]),
   );
@@ -197,7 +244,12 @@ export function joinLiderpapelCatalog(
     const descs = descById.get(id);
     const name = textValue(descs, TITLE_DESC_CODE) || id;
     const category = mostSpecificCategory(p.Classifications?.Classification);
-    const purchase = purchasePriceExVat(priceById.get(id));
+    const priceEntry = priceById.get(id);
+    const pricing = {
+      cost_ex_vat: purchasePriceExVat(priceEntry?.Prices),
+      pvo_ex_vat: suggestedPvoExVat(priceEntry?.Prices),
+      vat_rate: vatRateOf(priceEntry),
+    };
 
     const links = linksById.get(id);
     const images = activeLinks(links, IMAGE_MML_TYPE);
@@ -231,10 +283,10 @@ export function joinLiderpapelCatalog(
         search_text: normalizeForSearch(
           [name, category, mpn, gtin].filter(Boolean).join(" "),
         ),
-        // Kept so a margin change can re-price the catalogue at once,
+        // Kept so an adjustment change can re-price the catalogue at once,
         // without waiting for the next feed (src/api/pricing.js).
-        cost_ex_vat: purchase,
-        price_cents: pvpCents(purchase, marginFor(category), vatRate),
+        ...pricing,
+        price_cents: retailPriceCents(pricing, adjustFor(category)) ?? 0,
         stock_qty: sumStock(stockByWarehouse, id),
         image_url: images[0] || null,
         gtin,

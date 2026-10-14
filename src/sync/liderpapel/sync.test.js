@@ -24,6 +24,8 @@ function entry(sku, overrides = {}) {
       category: "Papelería",
       search_text: "nombre original papeleria",
       cost_ex_vat: 5.9,
+      pvo_ex_vat: 8.26,
+      vat_rate: 0.21,
       price_cents: 1000,
       stock_qty: 5,
       image_url: null,

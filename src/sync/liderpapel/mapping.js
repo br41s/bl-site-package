@@ -67,11 +67,19 @@ export const BRAND_FEATURE_NAME = "Marca";
 export const IMAGE_MML_TYPE = "IMG";
 export const DOCUMENT_MML_TYPE = "DOC"; // datasheets, safety sheets, manuals
 
-// price_cents = round(purchase_price_ex_vat * (1 + margin) * (1 + vat) * 100)
-// Margin is a whole-number percentage, set in the panel (Productos → Precios):
-// a general one in the "liderpapel_margin_pct" config key and an optional one
-// per category (src/api/pricing.js). This is only the fallback default. VAT is
-// fixed at the feed's documented Spanish rate (also present per-product under
-// Prices.VATRates).
+// price_cents = round(pvo_ex_vat * (1 + adjust) * (1 + vat) * 100)
+//
+// The public price is the distributor's suggested retail price for its general
+// catalogue — priceType "suggestedCI", the "catálogo integral" PVO, confirmed
+// as the general one by Liderpapel support on 2026-10-13 — at the product's
+// own VAT rate (VATRates in the prices file: 21 % on most of the catalogue,
+// 4 % on books, 10 % on a few). The adjustment is ours: a general percentage
+// over the PVO in the "liderpapel_pvo_adjust_pct" config key (0 = the
+// catalogue price, negative undercuts it) and an optional one per category
+// (src/api/pricing.js). A product the feed gives no PVO for (13 of Shoroban's
+// 14,487 on 2026-08-19) is priced from its purchase cost at DEFAULT_MARGIN_PCT
+// instead. Brais decided on 2026-10-14 that the site sells at the catalogue
+// price: a Calipage shop's customers compare against the printed catalogue.
+export const DEFAULT_PVO_ADJUST_PCT = 0;
 export const DEFAULT_MARGIN_PCT = 40;
 export const DEFAULT_VAT_RATE = 0.21;

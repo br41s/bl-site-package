@@ -3,7 +3,7 @@ import db, { getConfig } from "../db/database.js";
 import { getMailSettings, isNotifyEmailConfigured, isSmtpConfigured, sendMail } from "../mail/mailer.js";
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
-import { resolveB2bAccount, b2bPricing, b2bUnitPriceCents, vatCents, B2B_VAT_RATE } from "./b2b.js";
+import { resolveB2bAccount, b2bPricing, b2bUnitPriceCents, vatCentsByRate } from "./b2b.js";
 import { asyncHandler } from "../middleware/async-handler.js";
 import { formatIban } from "../utils/iban.js";
 
@@ -97,7 +97,7 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
   // client-sent prices. A signed-in B2B account is priced at its trade price
   // here, from its session cookie; the cart's own figures are display only.
   // Trade prices exclude VAT: unit prices and total_cents are then net, and
-  // the VAT is recorded on its own in vat_cents.
+  // the VAT — at each product's own rate — is recorded on its own in vat_cents.
   const b2bAccount = resolveB2bAccount(req);
   const pricing = b2bAccount ? b2bPricing() : null;
   const resolvedItems = [];
@@ -115,11 +115,16 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
       product_name: product.name,
       unit_price_cents: pricing ? b2bUnitPriceCents(product, pricing) : product.price_cents,
       quantity,
+      vat_rate: product.vat_rate,
     });
   }
   const total_cents = resolvedItems.reduce((sum, i) => sum + i.unit_price_cents * i.quantity, 0);
   const vat_included = b2bAccount ? 0 : 1;
-  const vat_cents = b2bAccount ? vatCents(total_cents) : null;
+  const vat_cents = b2bAccount
+    ? vatCentsByRate(
+        resolvedItems.map((i) => ({ netCents: i.unit_price_cents * i.quantity, vatRate: i.vat_rate })),
+      )
+    : null;
   const payment = paymentInstructions({
     amountCents: vat_included ? total_cents : total_cents + vat_cents,
     b2b: Boolean(b2bAccount),
@@ -161,7 +166,7 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
     .join("\n");
   const totals = vat_included
     ? `Total: ${eur(total_cents)}`
-    : `Total sin IVA: ${eur(total_cents)}\nIVA (${Math.round(B2B_VAT_RATE * 100)} %): ${eur(vat_cents)}\nTotal con IVA: ${eur(total_cents + vat_cents)}`;
+    : `Total sin IVA: ${eur(total_cents)}\nIVA: ${eur(vat_cents)}\nTotal con IVA: ${eur(total_cents + vat_cents)}`;
   const settings = getMailSettings();
 
   // Owner notification and customer copy go out together, not one after the

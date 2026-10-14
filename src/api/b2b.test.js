@@ -19,7 +19,7 @@ const db = (await import("../db/database.js")).default;
 const { getConfig } = await import("../db/database.js");
 const { requireAuth } = await import("../middleware/auth.js");
 const b2bRouter = (await import("./b2b.js")).default;
-const { b2bPriceCents, vatCents, hashPassword, verifyPassword } = await import("./b2b.js");
+const { b2bPriceCents, vatCents, vatCentsByRate, hashPassword, verifyPassword } = await import("./b2b.js");
 const reservationsRouter = (await import("./reservations.js")).default;
 
 const ADMIN = { Authorization: `Bearer ${jwt.sign({ role: "admin" }, process.env.JWT_SECRET)}` };
@@ -48,11 +48,11 @@ function setFlag(key, value) {
   db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)").run(key, value);
 }
 
-function seedProduct(sku, category, price_cents) {
+function seedProduct(sku, category, price_cents, vat_rate = 0.21) {
   db.prepare(
-    `INSERT INTO products (sku, slug, name, category, price_cents, stock_qty)
-     VALUES (?, ?, ?, ?, ?, 5)`,
-  ).run(sku, `p-${sku}`, `Producto ${sku}`, category, price_cents);
+    `INSERT INTO products (sku, slug, name, category, price_cents, vat_rate, stock_qty)
+     VALUES (?, ?, ?, ?, ?, ?, 5)`,
+  ).run(sku, `p-${sku}`, `Producto ${sku}`, category, price_cents, vat_rate);
 }
 
 function seedAccount(email = "compras@acme.es", password = "secreto-123", active = 1) {
@@ -117,6 +117,14 @@ describe("B2B pricing arithmetic", () => {
   test("VAT is rounded once on the total, half up", () => {
     assert.equal(vatCents(1000), 210);
     assert.equal(vatCents(4050), 851); // 850.5
+  });
+
+  test("mixed rates: grouped by rate, each group rounded once — as cartVatCents in web/cart.js", () => {
+    assert.equal(vatCentsByRate([{ netCents: 1600, vatRate: 0.21 }, { netCents: 900, vatRate: 0.04 }]), 336 + 36);
+    // Two lines at one rate round together, not each on its own.
+    assert.equal(vatCentsByRate([{ netCents: 2025, vatRate: 0.21 }, { netCents: 2025, vatRate: 0.21 }]), 851);
+    // A line without a rate (a row synced before vat_rate existed) is at 21 %.
+    assert.equal(vatCentsByRate([{ netCents: 1000, vatRate: undefined }]), 210);
   });
 
   test("an unusable discount means no discount, never NaN or below zero", () => {
@@ -287,6 +295,23 @@ describe("reservations are priced for whoever places them", () => {
       ["B2", 2000],
       ["C3", 450],
     ]);
+  });
+
+  test("a reduced-VAT product is quoted and taxed at its own rate", async () => {
+    // A book: 10,40 € public is 10,00 € + 4 %. The general −10 % leaves 9,00 €.
+    seedProduct("LIBRO", "Libros", 1040, 0.04);
+    seedAccount();
+    const { cookie } = await login();
+    const res = await reserve([{ sku: "A1", quantity: 2 }, { sku: "LIBRO", quantity: 1 }], { Cookie: cookie });
+    const data = await res.json();
+    assert.equal(res.status, 201);
+    assert.equal(data.total_cents, 1600 + 900);
+    // 21 % of 16,00 € plus 4 % of 9,00 € — not 21 % of the lot.
+    assert.equal(data.vat_cents, 336 + 36);
+    const lines = db
+      .prepare("SELECT sku, unit_price_cents FROM reservation_items WHERE reservation_id = ? ORDER BY sku")
+      .all(data.id);
+    assert.deepEqual(lines.map((l) => [l.sku, l.unit_price_cents]), [["A1", 800], ["LIBRO", 900]]);
   });
 
   // parsePct guards the API, but nothing stops a row being written some other

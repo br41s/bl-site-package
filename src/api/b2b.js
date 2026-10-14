@@ -155,10 +155,12 @@ export function getCategoryDiscounts() {
 }
 
 // B2B prices are quoted WITHOUT VAT, the way a business buys. products.price
-// _cents is the public price with VAT baked in by the sync, always at this one
-// rate (src/sync/liderpapel/parse.js), so dividing by it recovers the
-// pre-VAT price exactly. If the sync ever applies per-product rates, this has
-// to become per-product too — a single rate here would then be wrong.
+// _cents is the public price with the product's own VAT baked in by the sync
+// (products.vat_rate: 21, 10 or 4 %, src/sync/liderpapel/parse.js), so
+// dividing by that rate recovers the pre-VAT price exactly. This constant is
+// only the fallback — for rows synced before vat_rate existed, and for cart
+// items web/cart.js saved before it stored a rate (it reads it from
+// /api/b2b/me).
 export const B2B_VAT_RATE = DEFAULT_VAT_RATE;
 
 // Trade price in cents, EXCLUDING VAT: the public (VAT-included) price, less
@@ -179,6 +181,19 @@ export function vatCents(netCents, vatRate = B2B_VAT_RATE) {
   return Math.round(netCents * vatRate);
 }
 
+// VAT on a set of net lines at mixed rates: grouped by rate, each group
+// rounded once on its net total. Mirrors cartVatCents in web/cart.js.
+export function vatCentsByRate(lines) {
+  const netByRate = new Map();
+  for (const { netCents, vatRate } of lines) {
+    const rate = Number.isFinite(vatRate) ? vatRate : B2B_VAT_RATE;
+    netByRate.set(rate, (netByRate.get(rate) || 0) + netCents);
+  }
+  let total = 0;
+  for (const [rate, net] of netByRate) total += vatCents(net, rate);
+  return total;
+}
+
 export function discountFor(category, discounts, defaultPct) {
   return Object.prototype.hasOwnProperty.call(discounts, category || "")
     ? discounts[category || ""]
@@ -194,6 +209,7 @@ export function b2bUnitPriceCents(product, pricing) {
   return b2bPriceCents(
     product.price_cents,
     discountFor(product.category, pricing.discounts, pricing.defaultPct),
+    Number.isFinite(product.vat_rate) ? product.vat_rate : B2B_VAT_RATE,
   );
 }
 

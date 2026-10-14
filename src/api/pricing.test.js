@@ -17,8 +17,8 @@ const jwt = (await import("jsonwebtoken")).default;
 const db = (await import("../db/database.js")).default;
 const { getConfig } = await import("../db/database.js");
 const pricingRouter = (await import("./pricing.js")).default;
-const { parseMarginPct, marginPricing } = await import("./pricing.js");
-const { pvpCents } = await import("../sync/liderpapel/parse.js");
+const { parseAdjustPct, adjustPricing } = await import("./pricing.js");
+const { pvpCents, retailPriceCents } = await import("../sync/liderpapel/parse.js");
 
 const ADMIN = { Authorization: `Bearer ${jwt.sign({ role: "admin" }, process.env.JWT_SECRET)}` };
 
@@ -37,17 +37,17 @@ before(async () => {
 
 after(() => server?.close());
 
-function seedProduct(sku, category, cost, priceCents) {
+function seedProduct(sku, category, { cost = null, pvo = null, vat = 0.21, priceCents }) {
   db.prepare(
-    `INSERT INTO products (sku, slug, name, category, cost_ex_vat, price_cents, stock_qty)
-     VALUES (?, ?, ?, ?, ?, ?, 5)`,
-  ).run(sku, `p-${sku}`, `Producto ${sku}`, category, cost, priceCents);
+    `INSERT INTO products (sku, slug, name, category, cost_ex_vat, pvo_ex_vat, vat_rate, price_cents, stock_qty)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 5)`,
+  ).run(sku, `p-${sku}`, `Producto ${sku}`, category, cost, pvo, vat, priceCents);
 }
 
 const price = (sku) => db.prepare("SELECT price_cents FROM products WHERE sku = ?").get(sku).price_cents;
 
 function put(body, headers = ADMIN) {
-  return fetch(`${baseUrl}/api/pricing/margins`, {
+  return fetch(`${baseUrl}/api/pricing/adjustments`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
@@ -55,13 +55,15 @@ function put(body, headers = ADMIN) {
 }
 
 beforeEach(() => {
-  db.exec("DELETE FROM products; DELETE FROM category_margins;");
-  db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('liderpapel_margin_pct', '40')").run();
-  // 10.00 € cost at 40% + 21% VAT = 16.94 €, the sync's price for it.
-  seedProduct("A", "Papelería", 10, 1694);
-  seedProduct("B", "Mochilas", 10, 1694);
-  // Synced before cost_ex_vat existed: nothing to re-price from.
-  seedProduct("OLD", "Papelería", null, 999);
+  db.exec("DELETE FROM products; DELETE FROM category_price_adjust;");
+  db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('liderpapel_pvo_adjust_pct', '0')").run();
+  // 10.00 € PVO at 0 % + 21 % VAT = 12.10 €, the sync's price for it.
+  seedProduct("A", "Papelería", { cost: 5.5, pvo: 10, priceCents: 1210 });
+  seedProduct("B", "Mochilas", { cost: 5.5, pvo: 10, priceCents: 1210 });
+  // A book: no PVO in the feed, 4 % VAT. Priced from cost at the fallback margin.
+  seedProduct("LIBRO", "Papelería", { cost: 10, vat: 0.04, priceCents: 1456 });
+  // Synced before the columns existed: nothing to re-price from.
+  seedProduct("OLD", "Papelería", { priceCents: 999 });
 });
 
 describe("pvpCents", () => {
@@ -74,96 +76,129 @@ describe("pvpCents", () => {
   });
 });
 
-describe("parseMarginPct", () => {
-  test("accepts a Spanish decimal comma", () => {
-    assert.equal(parseMarginPct("12,5"), 12.5);
+describe("retailPriceCents", () => {
+  test("the PVO with the adjustment, at the product's VAT", () => {
+    assert.equal(retailPriceCents({ pvo_ex_vat: 10, cost_ex_vat: 5.5, vat_rate: 0.21 }, 0), 1210);
+    assert.equal(retailPriceCents({ pvo_ex_vat: 10, cost_ex_vat: 5.5, vat_rate: 0.21 }, -5), 1150);
+    assert.equal(retailPriceCents({ pvo_ex_vat: 10, cost_ex_vat: 5.5, vat_rate: 0.04 }, 10), 1144);
   });
 
-  test("allows 0 and up to 200%, rounded to two decimals", () => {
-    assert.equal(parseMarginPct(0), 0);
-    assert.equal(parseMarginPct("200"), 200);
-    assert.equal(parseMarginPct("33.3333"), 33.33);
+  test("without a PVO, the cost at the 40% fallback margin — the adjustment does not apply", () => {
+    assert.equal(retailPriceCents({ pvo_ex_vat: null, cost_ex_vat: 10, vat_rate: 0.04 }, -50), 1456);
   });
 
-  test("rejects what is not a margin", () => {
-    for (const bad of ["", "abc", -1, "-5", 200.01, "400", null, undefined, NaN, {}, []]) {
-      assert.equal(parseMarginPct(bad), null, `accepted ${JSON.stringify(bad)}`);
+  test("null when there is nothing to price from", () => {
+    assert.equal(retailPriceCents({ pvo_ex_vat: null, cost_ex_vat: null, vat_rate: 0.21 }, 0), null);
+    assert.equal(retailPriceCents({ pvo_ex_vat: 0, cost_ex_vat: 0, vat_rate: 0.21 }, 0), null);
+  });
+
+  test("a missing VAT rate means the default, never NaN", () => {
+    assert.equal(retailPriceCents({ pvo_ex_vat: 10, cost_ex_vat: null, vat_rate: null }, 0), 1210);
+  });
+});
+
+describe("parseAdjustPct", () => {
+  test("accepts a Spanish decimal comma, and a minus", () => {
+    assert.equal(parseAdjustPct("12,5"), 12.5);
+    assert.equal(parseAdjustPct("-7,5"), -7.5);
+  });
+
+  test("allows -50 to 100%, rounded to two decimals", () => {
+    assert.equal(parseAdjustPct(0), 0);
+    assert.equal(parseAdjustPct("-50"), -50);
+    assert.equal(parseAdjustPct("100"), 100);
+    assert.equal(parseAdjustPct("33.3333"), 33.33);
+  });
+
+  test("rejects what is not an adjustment", () => {
+    for (const bad of ["", "abc", -50.01, "-100", 100.01, "200", null, undefined, NaN, {}, []]) {
+      assert.equal(parseAdjustPct(bad), null, `accepted ${JSON.stringify(bad)}`);
     }
   });
 });
 
-describe("PUT /api/pricing/margins", () => {
+describe("PUT /api/pricing/adjustments", () => {
   test("requires the panel login", async () => {
-    const res = await put({ default_pct: 50 }, {});
+    const res = await put({ default_pct: 5 }, {});
     assert.equal(res.status, 401);
   });
 
-  test("a category margin re-prices only that category", async () => {
-    const res = await put({ margins: { Papelería: 60 } });
+  test("a category adjustment re-prices only that category", async () => {
+    const res = await put({ adjustments: { Papelería: -5 } });
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.repriced, 1);
-    assert.equal(price("A"), pvpCents(10, 60));
-    assert.equal(price("B"), 1694);
+    assert.equal(price("A"), 1150);
+    assert.equal(price("B"), 1210);
+    // No PVO: untouched by the adjustment, still cost-based.
+    assert.equal(price("LIBRO"), 1456);
   });
 
-  test("the general margin re-prices every category without its own", async () => {
-    await put({ margins: { Papelería: 60 } });
-    await put({ default_pct: 50 });
-    assert.equal(price("A"), pvpCents(10, 60));
-    assert.equal(price("B"), pvpCents(10, 50));
-    assert.equal(getConfig("liderpapel_margin_pct"), "50");
+  test("the general adjustment re-prices every category without its own", async () => {
+    await put({ adjustments: { Papelería: -5 } });
+    await put({ default_pct: 10 });
+    assert.equal(price("A"), 1150);
+    assert.equal(price("B"), 1331);
+    assert.equal(getConfig("liderpapel_pvo_adjust_pct"), "10");
   });
 
-  test("clearing a category margin falls back to the general one", async () => {
-    await put({ margins: { Papelería: 60 } });
-    await put({ margins: { Papelería: null } });
-    assert.equal(price("A"), 1694);
-    assert.deepEqual(marginPricing().margins, {});
+  test("clearing a category adjustment falls back to the general one", async () => {
+    await put({ adjustments: { Papelería: -5 } });
+    await put({ adjustments: { Papelería: null } });
+    assert.equal(price("A"), 1210);
+    assert.deepEqual(adjustPricing().adjustments, {});
   });
 
-  test("a product with no stored cost keeps its price, and is reported", async () => {
-    const body = await (await put({ default_pct: 50 })).json();
+  test("a product with neither PVO nor cost keeps its price, and is reported", async () => {
+    const body = await (await put({ default_pct: 10 })).json();
     assert.equal(price("OLD"), 999);
     assert.equal(body.pending, 1);
   });
 
   test("one bad value rejects the whole request", async () => {
-    const res = await put({ default_pct: 50, margins: { Papelería: 60, Mochilas: "abc" } });
+    const res = await put({ default_pct: 10, adjustments: { Papelería: -5, Mochilas: "abc" } });
     assert.equal(res.status, 400);
-    assert.equal(getConfig("liderpapel_margin_pct"), "40");
-    assert.deepEqual(marginPricing().margins, {});
-    assert.equal(price("A"), 1694);
+    assert.equal(getConfig("liderpapel_pvo_adjust_pct"), "0");
+    assert.deepEqual(adjustPricing().adjustments, {});
+    assert.equal(price("A"), 1210);
   });
 
   test("saving what is already there moves no price", async () => {
-    const body = await (await put({ default_pct: 40 })).json();
+    const body = await (await put({ default_pct: 0 })).json();
     assert.equal(body.repriced, 0);
+  });
+
+  test("the old cost margin is never read: 40 in liderpapel_margin_pct does not price anything", async () => {
+    db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('liderpapel_margin_pct', '40')").run();
+    db.prepare("INSERT INTO category_margins (category, margin_pct) VALUES ('Papelería', 60)").run();
+    const body = await (await put({ default_pct: 0 })).json();
+    assert.equal(body.repriced, 0);
+    assert.equal(adjustPricing().defaultPct, 0);
   });
 });
 
-describe("GET /api/pricing/margins", () => {
-  test("lists categories with their own margin, or null for the general one", async () => {
-    await put({ margins: { Papelería: 60, Retirada: 30 } });
-    const res = await fetch(`${baseUrl}/api/pricing/margins`, { headers: ADMIN });
+describe("GET /api/pricing/adjustments", () => {
+  test("lists categories with their own adjustment, or null for the general one", async () => {
+    await put({ adjustments: { Papelería: -5, Retirada: 3 } });
+    const res = await fetch(`${baseUrl}/api/pricing/adjustments`, { headers: ADMIN });
     const body = await res.json();
-    assert.equal(body.default_pct, 40);
+    assert.equal(body.default_pct, 0);
     assert.deepEqual(
-      body.categories.map((c) => [c.category, c.total, c.margin_pct]),
+      body.categories.map((c) => [c.category, c.total, c.adjust_pct]),
       [
         ["Mochilas", 1, null],
-        ["Papelería", 2, 60],
-        // Has a margin but no products: listed so the admin can clear it.
-        ["Retirada", 0, 30],
+        ["Papelería", 3, -5],
+        // Has an adjustment but no products: listed so the admin can clear it.
+        ["Retirada", 0, 3],
       ],
     );
   });
 
   test("a malformed stored value falls back to the default, never NaN", async () => {
-    db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('liderpapel_margin_pct', 'cuarenta')").run();
-    db.prepare("INSERT INTO category_margins (category, margin_pct) VALUES ('Mochilas', 'mucho')").run();
-    const { defaultPct, marginFor } = marginPricing();
-    assert.equal(defaultPct, 40);
-    assert.equal(marginFor("Mochilas"), 40);
+    db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('liderpapel_pvo_adjust_pct', 'cinco')").run();
+    db.prepare("INSERT INTO category_price_adjust (category, adjust_pct) VALUES ('Mochilas', 'mucho')").run();
+    const { defaultPct, adjustFor } = adjustPricing();
+    assert.equal(defaultPct, 0);
+    assert.equal(adjustFor("Mochilas"), 0);
   });
 });

@@ -61,7 +61,13 @@ function b2bDiscountFor(category) {
 // Trade prices are WITHOUT VAT: the public (VAT-included) price, less the
 // discount, less the VAT, rounded once. Same arithmetic as b2bPriceCents and
 // vatCents in src/api/b2b.js, which is what the reservation is actually
-// charged at — keep them identical. The rate comes from /api/b2b/me.
+// charged at — keep them identical. The rate is the product's own (21, 10 or
+// 4 %), carried in data-vat-rate and on each cart item; /api/b2b/me gives the
+// fallback for items saved before the cart stored one.
+function itemVatRate(rate) {
+  return typeof rate === "number" && Number.isFinite(rate) ? rate : b2b.vat_rate;
+}
+
 function b2bPriceCents(priceCents, discountPct, vatRate) {
   var pct =
     typeof discountPct === "number" && Number.isFinite(discountPct) && discountPct >= 0 && discountPct < 100
@@ -74,8 +80,21 @@ function vatCents(netCents, vatRate) {
   return Math.round(netCents * vatRate);
 }
 
-function effectivePriceCents(priceCents, category) {
-  return b2b ? b2bPriceCents(priceCents, b2bDiscountFor(category), b2b.vat_rate) : priceCents;
+// VAT on a trade cart: lines grouped by rate, each group's VAT rounded once on
+// its net total — the same grouping as vatCentsByRate in src/api/b2b.js.
+function cartVatCents(cart) {
+  var netByRate = {};
+  cart.forEach(function (i) {
+    var rate = itemVatRate(i.vatRate);
+    netByRate[rate] = (netByRate[rate] || 0) + effectivePriceCents(i.priceCents, i.category, i.vatRate) * i.quantity;
+  });
+  return Object.keys(netByRate).reduce(function (sum, rate) {
+    return sum + vatCents(netByRate[rate], Number(rate));
+  }, 0);
+}
+
+function effectivePriceCents(priceCents, category, vatRate) {
+  return b2b ? b2bPriceCents(priceCents, b2bDiscountFor(category), itemVatRate(vatRate)) : priceCents;
 }
 
 function formatPct(pct) {
@@ -99,13 +118,14 @@ function applyB2bPrices(root) {
     // Both figures without VAT: striking through the VAT-included public
     // price next to a net one would overstate the discount by the VAT.
     var pct = b2bDiscountFor(el.dataset.category);
+    var rate = itemVatRate(parseFloat(el.dataset.vatRate));
     if (pct > 0) {
       var was = document.createElement("s");
       was.className = "product-price-was";
-      was.textContent = formatEur(b2bPriceCents(retail, 0, b2b.vat_rate));
+      was.textContent = formatEur(b2bPriceCents(retail, 0, rate));
       el.insertBefore(was, amount);
     }
-    amount.textContent = formatEur(b2bPriceCents(retail, pct, b2b.vat_rate));
+    amount.textContent = formatEur(b2bPriceCents(retail, pct, rate));
     var note = el.querySelector(".price-vat-note");
     if (note) {
       note.textContent =
@@ -319,7 +339,7 @@ function saveCart(cart) {
   updateCartBadge();
 }
 
-function addToCart(sku, name, priceCents, qty, category) {
+function addToCart(sku, name, priceCents, qty, category, vatRate) {
   var cart = getCart();
   var existing = cart.find(function (i) {
     return i.sku === sku;
@@ -327,8 +347,9 @@ function addToCart(sku, name, priceCents, qty, category) {
   if (existing) {
     existing.quantity += qty;
     existing.category = category;
+    existing.vatRate = vatRate;
   } else {
-    cart.push({ sku: sku, name: name, priceCents: priceCents, quantity: qty, category: category });
+    cart.push({ sku: sku, name: name, priceCents: priceCents, quantity: qty, category: category, vatRate: vatRate });
   }
   saveCart(cart);
 }
@@ -359,7 +380,7 @@ function cartCount(cart) {
 
 function cartTotalCents(cart) {
   return cart.reduce(function (sum, i) {
-    return sum + effectivePriceCents(i.priceCents, i.category) * i.quantity;
+    return sum + effectivePriceCents(i.priceCents, i.category, i.vatRate) * i.quantity;
   }, 0);
 }
 
@@ -390,7 +411,7 @@ function initAddToCartButtons() {
       if (qtyInput) qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
     }
 
-    addToCart(sku, name, priceCents, qty, btn.dataset.category || "");
+    addToCart(sku, name, priceCents, qty, btn.dataset.category || "", parseFloat(btn.dataset.vatRate));
     var original = btn.textContent;
     btn.textContent = "Añadido ✓";
     setTimeout(function () {
@@ -430,6 +451,7 @@ function buildProductCardEl(p) {
   price.className = "product-price";
   price.dataset.priceCents = String(p.price_cents);
   price.dataset.category = p.category || "";
+  if (typeof p.vat_rate === "number") price.dataset.vatRate = String(p.vat_rate);
   var amount = document.createElement("span");
   amount.className = "product-price-amount";
   amount.textContent = formatEur(p.price_cents);
@@ -456,6 +478,7 @@ function buildProductCardEl(p) {
   btn.dataset.name = p.name;
   btn.dataset.priceCents = String(p.price_cents);
   btn.dataset.category = p.category || "";
+  if (typeof p.vat_rate === "number") btn.dataset.vatRate = String(p.vat_rate);
   btn.disabled = !inStock;
   btn.textContent = "Añadir";
   body.appendChild(btn);
@@ -575,7 +598,7 @@ function renderCartPage() {
     qtyCell.appendChild(qtyInput);
 
     var priceCell = document.createElement("td");
-    priceCell.textContent = formatEur(effectivePriceCents(item.priceCents, item.category) * item.quantity);
+    priceCell.textContent = formatEur(effectivePriceCents(item.priceCents, item.category, item.vatRate) * item.quantity);
 
     var actionCell = document.createElement("td");
     var removeBtn = document.createElement("button");
@@ -596,10 +619,9 @@ function renderCartPage() {
   var vatNote = table.querySelector("tfoot .price-vat-note");
   if (vatNote) {
     if (b2b) {
-      var vat = vatCents(total, b2b.vat_rate);
+      var vat = cartVatCents(cart);
       vatNote.textContent =
-        "Precios profesionales sin IVA · IVA (" + formatPct(b2b.vat_rate * 100) + "): " +
-        formatEur(vat) + " · Total con IVA: " + formatEur(total + vat);
+        "Precios profesionales sin IVA · IVA: " + formatEur(vat) + " · Total con IVA: " + formatEur(total + vat);
     } else {
       vatNote.textContent = "IVA incluido";
     }

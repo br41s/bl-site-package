@@ -156,14 +156,32 @@ Clients who sell from a distributor feed get a synced catalogue. Shoroban's is L
   poor. **The sync cannot reach this table.** Only `status = 'owned'` renders, so a draft
   never reaches a visitor, and it is what carries our copy through a change of distributor.
 
-**PVP is made by the sync, not at display time.** `price_cents` = cost × (1 + margin) ×
-1.21, through `pvpCents()` in `src/sync/liderpapel/parse.js`. The margin is ours: a general
-one (`liderpapel_margin_pct`) and an optional one per category (`category_margins`), set in
-panel → Productos → Precios (`src/api/pricing.js`). Saving one re-prices the stored catalogue
-from `cost_ex_vat` with the same `pvpCents()` and rebuilds once, so the sync and the panel
-can never disagree by a cent. Everything else (built pages, JSON-LD, cart, reservations,
-the B2B discount) reads `price_cents` and needs no change; never add a markup at read time.
-Rows synced before `cost_ex_vat` existed have it NULL and keep their price until the next sync.
+**PVP is made by the sync, not at display time.** `price_cents` = PVO × (1 + adjustment) ×
+(1 + VAT), through `retailPriceCents()` in `src/sync/liderpapel/parse.js`. The PVO is the
+distributor's suggested retail price for its general catalogue (`priceType` `suggestedCI`,
+confirmed as the general one by Liderpapel support on 2026-10-13; stored as `pvo_ex_vat`),
+and the VAT is the product's own (`vat_rate`, from `VATRates`: 21 % on most of the
+catalogue, 4 % on books, 10 % on a few). Brais decided on 2026-10-14 that the site sells at
+the catalogue price: a Calipage shop's customers compare against the printed catalogue, and
+the old cost × 1.4 published 12,403 of 14,487 products below it. The adjustment is ours: a
+general one (`liderpapel_pvo_adjust_pct`, 0 = catalogue price, negative undercuts it) and an
+optional one per category (`category_price_adjust`), set in panel → Productos → Precios
+(`src/api/pricing.js`). Saving one re-prices the stored catalogue with the same
+`retailPriceCents()` and rebuilds once, so the sync and the panel can never disagree by a
+cent. Everything else (built pages, JSON-LD, cart, reservations, the B2B discount) reads
+`price_cents` and needs no change; never add a markup at read time. A product the feed gives
+no PVO for (13 of 14,487) is priced from `cost_ex_vat` at the fixed 40 % fallback margin.
+The pre-PVO keys (`liderpapel_margin_pct`, `category_margins`) are read by nothing: reusing
+them would have put a 40 % margin on top of the catalogue price the day this shipped.
+
+- **`cost_ex_vat` is the smallest quantity tier.** The feed lists purchase tiers largest
+  pack first (10 units at 1.98 €, then 1 unit at 2.38 € with the 20 % below-pack supplement
+  included; 2,631 products). The shop sells single units, so its cost is the unit-of-sale
+  line (`AdditionalInfo.UVE`), never `PriceLine[0]`.
+- The feed carries five supplier blocks (`CSP` plus `GC2`–`GC5`: Safta, ACCO brands,
+  printer consumables, Wondee — 7,387 more sellable products, same warehouse). The sync
+  reads only the configured code; whether Shoroban can order the others is an open
+  question for the customer.
 
 Three consequences worth holding on to:
 
@@ -200,11 +218,14 @@ retail per catalogue category, with a general fallback. `src/api/b2b.js` holds a
   payment terms" instead (`paymentInstructions` in `src/api/reservations.js`). The
   bank keys are public config on purpose: every buyer is shown them, and the build words
   the cart and the terms page from them.
-- **Trade prices exclude VAT.** `price_cents` has the sync's single 21% rate baked in;
-  `b2bPriceCents` takes the discount off and divides it back out, rounding once. A B2B
-  reservation stores net unit prices and total with `vat_included = 0` and the VAT in
-  `vat_cents`; every other row keeps `vat_included = 1`. If the sync ever applies
-  per-product VAT rates, `B2B_VAT_RATE` has to become per-product too.
+- **Trade prices exclude VAT.** `price_cents` has the product's own rate baked in
+  (`products.vat_rate`, carried to the browser as `data-vat-rate` and on each cart item);
+  `b2bPriceCents` takes the discount off and divides that rate back out, rounding once. The
+  VAT on a cart is grouped by rate, each group rounded once (`vatCentsByRate` and
+  `cartVatCents` must agree). A B2B reservation stores net unit prices and total with
+  `vat_included = 0` and the VAT in `vat_cents`; every other row keeps `vat_included = 1`.
+  `B2B_VAT_RATE` (21 %) is only the fallback for rows and cart items from before `vat_rate`
+  existed.
 - **The B2B session is never signed with `jwt_secret`** — it uses a key derived from it.
   `requireAuth` and the inline checks in `products.js` / `blog.js` accept *any* token
   signed with `jwt_secret` as a panel admin, so a B2B token signed with it would be a
