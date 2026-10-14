@@ -8,7 +8,7 @@ Este documento es para el equipo de BigLobster. No compartir con el cliente (sal
 
 ## Resumen
 
-El servicio WhatsApp de IA permite que los clientes reciban consultas directas en WhatsApp, respondidas automáticamente por un modelo de lenguaje (OpenRouter) que lee el contenido publicado en su sitio web. Un operador humano toma el control para cualquier consulta que el IA no pueda resolver de forma segura o para reservas y compras.
+El servicio WhatsApp de IA permite que los clientes reciban consultas directas en WhatsApp, respondidas automáticamente por un modelo de lenguaje (OpenRouter) que lee el contenido publicado en su sitio web (`GET /api/knowledge`: empresa, páginas, FAQ, artículos, una muestra del catálogo con nuestras fichas propias primero, todas las categorías y los hechos operativos — precios con IVA, forma de pago, envíos, horario). Un operador humano toma el control para cualquier consulta que el IA no pueda resolver de forma segura o para reservas y compras.
 
 **Requiere:**
 - Cuenta de Meta Business verificada
@@ -150,6 +150,7 @@ Rellena esto por cada cliente que contraste WhatsApp:
 | **Chatwoot Inbox ID** | | ID del inbox de WhatsApp |
 | **URL del sitio web** | | Para que el IA lea el contenido |
 | **Knowledge Base Token** | | Token de acceso a la API del cliente para que el IA lea su sitio |
+| **answersPricing** | true / false | `true` si el cliente publica sus precios (todo cliente con catálogo): el bot los cita en vez de pasar cada pregunta de precio a una persona |
 | **Fecha de alta** | | |
 | **Estado** | Setup / Activo / Paused | |
 
