@@ -308,6 +308,12 @@ checklist: `ONBOARDING-WHATSAPP.md`.
   catalogue with counts and URLs for everything the sample lacks. URLs are the clean
   paths the server serves (`/productos/<slug>`, `/blog/<slug>`; a trailing slash 404s).
   The `etag` hashes the content, not the clock. Tests: `src/api/knowledge.test.js`.
+  **The sample is not the catalogue, so the payload advertises `catalogue.search_path`
+  (`GET /api/knowledge/search?q=`, same Bearer)**: the bot calls it on every turn with the
+  visitor's message and gets the real products (slug, price, owned name) and categories for
+  what was asked — every word first, then any word ranked by hits, in stock first. Before
+  it existed the model invented three pens with prices and 404 links on Shoroban's first
+  day (2026-10-15); the bot now also strips any site URL that is not in its reference.
 - For a client whose prices are public (any catalogue client), set `answersPricing: true`
   on its entry in the bot's registry, or the bot escalates every price question.
 - `whatsapp_bot_enabled` is in `PUBLIC_CONFIG_KEYS` and gates the AI sections of

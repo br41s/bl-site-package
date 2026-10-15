@@ -4,6 +4,7 @@ import db, { getConfig } from "../db/database.js";
 import { mdToPlain, buildFaqLd } from "../content/structured-data.js";
 import { toSlug } from "../sync/liderpapel/parse.js";
 import { isSmtpConfigured } from "../mail/mailer.js";
+import { normalizeForSearch } from "../utils/text.js";
 
 // GET /api/knowledge — everything the WhatsApp / web-chat lead bot
 // (hermes-sandbox/scripts/whatsapp-lead-bot) may answer a visitor from. The
@@ -246,7 +247,11 @@ export function buildKnowledge() {
     pages: buildPages(),
     products,
     categories,
-    catalogue: { product_count: total, sample_size: products.length },
+    // search_path: the bot queries it with the visitor's message on every
+    // turn, so the model sees the real products (slug, price) for what was
+    // asked instead of guessing from the sample -- it invented three pens
+    // with prices and 404 links on Shoroban's first day (2026-10-15).
+    catalogue: { product_count: total, sample_size: products.length, search_path: "/api/knowledge/search" },
     faq: buildFaq(articleRows),
     articles: buildArticles(articleRows),
   };
@@ -256,21 +261,78 @@ export function buildKnowledge() {
   return payload;
 }
 
-router.get("/", (req, res) => {
+function authorize(req, res) {
   const configured = (process.env.KNOWLEDGE_API_TOKEN || "").trim();
-
   // If no token is configured, the feature is off — return 404 to keep it invisible
   if (!configured) {
-    return res.status(404).json({ error: "not_found" });
+    res.status(404).json({ error: "not_found" });
+    return false;
   }
-
   const authHeader = (req.headers.authorization || "").trim();
   const tokenMatch = authHeader.match(/^Bearer\s+(.+)$/);
   if (!tokenMatch || !tokensMatch(tokenMatch[1], configured)) {
-    return res.status(401).json({ error: "unauthorized" });
+    res.status(401).json({ error: "unauthorized" });
+    return false;
   }
+  return true;
+}
 
+const MAX_SEARCH_TERMS = 8;
+const DEFAULT_SEARCH_LIMIT = 8;
+const MAX_SEARCH_LIMIT = 20;
+
+// Same matching as the storefront's GET /api/products?q= (every word, any
+// order, against the feed's text and ours), with one difference that matters
+// for a chat: a visitor writes "necesito una pluma de buena calidad", and
+// requiring every word kills the search. So: all words first; if nothing
+// matches, any word, ranked by how many matched, in stock first.
+export function searchCatalogue(q, limit = DEFAULT_SEARCH_LIMIT) {
+  const terms = normalizeForSearch(q || "").split(/\s+/).filter((t) => t.length > 1).slice(0, MAX_SEARCH_TERMS);
+  const n = Math.min(Math.max(Number(limit) || DEFAULT_SEARCH_LIMIT, 1), MAX_SEARCH_LIMIT);
+  if (!terms.length) return { terms, products: [], categories: [] };
+  const params = {};
+  terms.forEach((term, i) => {
+    params[`t${i}`] = `%${term}%`;
+  });
+  const hit = (i) => `(p.search_text LIKE @t${i} OR c.search_text LIKE @t${i})`;
+  const score = terms.map((_, i) => `(${hit(i)})`).join(" + ");
+  const select = `SELECT p.sku, p.slug, p.name, p.description, p.category, p.price_cents, p.stock_qty,
+                         c.display_name AS owned_name, c.description_md AS owned_description,
+                         (${score}) AS hits
+                    FROM products p
+                    LEFT JOIN product_content c ON c.sku = p.sku AND c.status = 'owned'
+                   WHERE p.active = 1 AND p.feed_active = 1`;
+  const order = `ORDER BY hits DESC, (p.stock_qty > 0) DESC, (c.sku IS NOT NULL) DESC, p.name COLLATE NOCASE LIMIT @limit`;
+  params.limit = n;
+  let rows = db.prepare(`${select} AND ${terms.map((_, i) => hit(i)).join(" AND ")} ${order}`).all(params);
+  if (!rows.length && terms.length > 1) {
+    rows = db.prepare(`${select} AND (${terms.map((_, i) => hit(i)).join(" OR ")}) ${order}`).all(params);
+  }
+  const categoryRows = db
+    .prepare(
+      `SELECT category, COUNT(*) AS n FROM products
+        WHERE active = 1 AND feed_active = 1 AND category != ''
+          AND (${terms.map((_, i) => `lower(category) LIKE @t${i}`).join(" OR ")})
+        GROUP BY category ORDER BY n DESC LIMIT 5`
+    )
+    .all(params);
+  return {
+    terms,
+    products: buildProducts(rows),
+    categories: categoryRows.map((c) => ({ name: c.category, url: categoryUrl(c.category), products: c.n })),
+  };
+}
+
+router.get("/", (req, res) => {
+  if (!authorize(req, res)) return;
   res.json(buildKnowledge());
+});
+
+// GET /api/knowledge/search?q=...&limit=8 — the bot's per-turn catalogue lookup.
+router.get("/search", (req, res) => {
+  if (!authorize(req, res)) return;
+  const q = typeof req.query.q === "string" ? req.query.q.slice(0, 300) : "";
+  res.json({ query: q, ...searchCatalogue(q, req.query.limit) });
 });
 
 export default router;
