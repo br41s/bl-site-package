@@ -26,7 +26,7 @@ permalink: "/uso-de-ia.html"
       {%- endif %}
       <li><strong>Imágenes ilustrativas.</strong> Algunas imágenes del sitio están generadas artificialmente{% if site.image_model %} con {{ site.image_model }}{% endif %}. No representan personas, lugares ni hechos reales, y no deben interpretarse como fotografías documentales.</li>
       {%- if site.whatsapp_bot_enabled == "1" %}
-      <li><strong>Conversaciones por WhatsApp.</strong> Las conversaciones se procesan mediante un sistema de inteligencia artificial (OpenRouter) que genera respuestas automáticas a partir de la información publicada en este sitio web. El sistema de IA se presenta a sí mismo al inicio de la conversación y transferirá automáticamente la consulta a una persona para responder a preguntas que no pueda resolver de forma segura o a solicitudes de compra o reserva.</li>
+      <li><strong>Conversaciones por WhatsApp{% if site.chat_widget_url and site.chat_widget_token %} y por el chat de la web{% endif %}.</strong> Las conversaciones se procesan mediante un sistema de inteligencia artificial (OpenRouter) que genera respuestas automáticas a partir de la información publicada en este sitio web. El sistema de IA se presenta a sí mismo al inicio de la conversación y transferirá automáticamente la consulta a una persona para responder a preguntas que no pueda resolver de forma segura o a solicitudes de compra o reserva.</li>
       {%- endif %}
       <li><strong>Formulario de contacto y pedidos.</strong> No intervienen sistemas de IA: los mensajes los recibe y responde una persona.</li>
     </ul>

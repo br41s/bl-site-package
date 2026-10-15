@@ -427,4 +427,32 @@ describe("POST /api/site/logo", () => {
     assert.deepEqual(readdirSync(uploads), []);
     assert.equal(logoExt(), undefined);
   });
+
+  test("the AI assistant keys save through texts and are validated (origin only, plain token, 0/1 flag)", async () => {
+    let res = await call("POST", "/api/site/texts", {
+      token: TOKEN,
+      body: { chat_widget_url: "https://chat.example.com", chat_widget_token: "nhSoM4giGmmMeVZgqPY9CgFb", whatsapp_bot_enabled: "1" },
+    });
+    assert.equal(res.status, 200);
+    let cfg = await (await call("GET", "/api/site/config")).json();
+    assert.equal(cfg.chat_widget_url, "https://chat.example.com");
+    assert.equal(cfg.chat_widget_token, "nhSoM4giGmmMeVZgqPY9CgFb");
+    assert.equal(cfg.whatsapp_bot_enabled, "1");
+
+    for (const body of [
+      { chat_widget_url: "http://chat.example.com" },
+      { chat_widget_url: "https://chat.example.com/widget" },
+      { chat_widget_url: "javascript:alert(1)" },
+      { chat_widget_token: "<script>" },
+      { whatsapp_bot_enabled: "yes" },
+    ]) {
+      res = await call("POST", "/api/site/texts", { token: TOKEN, body });
+      assert.equal(res.status, 400, JSON.stringify(body));
+    }
+    cfg = await (await call("GET", "/api/site/config")).json();
+    assert.equal(cfg.chat_widget_url, "https://chat.example.com", "a rejected value must not overwrite");
+
+    res = await call("POST", "/api/site/texts", { token: TOKEN, body: { chat_widget_url: "", chat_widget_token: "", whatsapp_bot_enabled: "0" } });
+    assert.equal(res.status, 200);
+  });
 });

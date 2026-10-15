@@ -41,8 +41,14 @@ export const PUBLIC_CONFIG_KEYS = [
   "ai_model",
   "image_model",
   "whatsapp_number",
-  // Feature flag for the rented WhatsApp AI chatbot add-on; "1" = on, default off.
+  // Feature flag for the rented AI assistant add-on (WhatsApp and/or web chat);
+  // "1" = on, default off. Gates the AI sections of the legal pages.
   "whatsapp_bot_enabled",
+  // Web-chat widget of the assistant (Chatwoot): the base URL of the chat
+  // platform and the inbox's public website token. Both empty = no widget.
+  // Public by design: they end up in every page's HTML and in the CSP header.
+  "chat_widget_url",
+  "chat_widget_token",
   "legal_name",
   "legal_id",
   "legal_address",

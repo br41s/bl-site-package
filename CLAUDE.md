@@ -310,9 +310,17 @@ checklist: `ONBOARDING-WHATSAPP.md`.
   The `etag` hashes the content, not the clock. Tests: `src/api/knowledge.test.js`.
 - For a client whose prices are public (any catalogue client), set `answersPricing: true`
   on its entry in the bot's registry, or the bot escalates every price question.
-- `whatsapp_bot_enabled` is in `PUBLIC_CONFIG_KEYS` and gates the WhatsApp sections of
-  `/uso-de-ia` and `/privacidad`. It is **not** in the `POST /api/site/texts` allow-list, so
-  today it is set directly in the `config` table — there is no panel control yet.
+- `whatsapp_bot_enabled` is in `PUBLIC_CONFIG_KEYS` and gates the AI sections of
+  `/uso-de-ia` and `/privacidad`; since v1.24.0 the panel sets it (Integraciones → "Asistente
+  de IA", the checkbox) through `POST /api/site/texts`.
+- **The web-chat widget is two public config keys**, `chat_widget_url` (the Chatwoot origin)
+  and `chat_widget_token` (the inbox's website token), set in the same panel block, which also
+  has a `?` button opening a `<dialog>` with the customer instructions. With both set,
+  `base.njk` loads the Chatwoot SDK (left side; WhatsApp owns the right), `/cookies` lists
+  `cw_conversation`, `/privacidad` and `/uso-de-ia` describe the chat, and `src/csp.js`
+  adds the origin (script, frame, img, connect + `wss:`) to the CSP header, which `server.js`
+  now builds per request from config. The URL validator accepts an https origin only — it is
+  interpolated into every page and into the header.
 - Visitor and lead content in the panel is built with `createElement`/`textContent`, never
   string-built `innerHTML`. An explicit `display` on a class that is also used with
   `[hidden]` needs a paired `.class[hidden] { display: none }` rule, or the element shows
