@@ -35,7 +35,7 @@ Configura los textos de cada página de tu web:
 - **Apariencia** — color, bordes, tema y portada de inicio. En **Animación de portada** puedes activar *Reparto de pedidos*: una animación de tu almacén sirviendo pedidos a oficinas detrás del texto de inicio, que tus visitantes pueden convertir en un minijuego con el botón **Jugar a repartir**
 - **Modelo IA** — selecciona el modelo de inteligencia artificial para el agente (por defecto: gratuito)
 - **Notificaciones** — configura tu email para recibir avisos cuando alguien te contacte. Aquí están también tus **Datos legales**: razón social, NIF, domicilio, email, Registro Mercantil, tus formas de entrega y si estás adherido al arbitraje de consumo. Con ellos se escriben el Aviso legal, la Política de privacidad y las Condiciones de venta de tu web; si cambian, actualízalos aquí
-- **Integraciones** — conexiones de tu web con otros servicios: el captcha anti-spam del formulario de contacto (Turnstile), la dirección pública de tu web junto con la verificación de Google Search Console, y el botón flotante de WhatsApp
+- **Integraciones** — conexiones de tu web con otros servicios: el captcha anti-spam del formulario de contacto (Turnstile), la dirección pública de tu web junto con la verificación de Google Search Console, el **asistente de IA** (chat en tu web, servicio contratado aparte) y el botón flotante de WhatsApp
 
 ### Blog
 
@@ -197,6 +197,18 @@ Si una empresa olvida su contraseña también puede pedir el enlace ella misma, 
 - **Eliminar** la cuenta. Sus reservas anteriores se conservan.
 
 > **Una empresa quiere darse de alta.** Las empresas no pueden registrarse solas: en la página de acceso se les invita a contactar contigo, y eres tú quien decide a quién das de alta.
+
+### Asistente de IA: chat en tu web
+
+Si tienes contratado el asistente, un chat flotante responde a tus visitantes al momento con la información publicada en tu web (páginas, productos, precios y artículos). Se presenta siempre como asistente de IA y pasa la conversación a tu equipo cuando el visitante pide hablar con una persona, deja sus datos o pregunta algo que no está en la web. Si nadie responde en 15 minutos, el asistente retoma la conversación.
+
+Para activarlo:
+
+1. Pide el alta a tu proveedor. Recibirás la **dirección de la plataforma de chat** y el **token del chat**.
+2. En el panel → **Mi sitio web** → pestaña **Integraciones** → bloque **Asistente de IA: chat en tu web**, pega los dos datos, marca la casilla **Tengo contratado el asistente de IA** y pulsa **Guardar chat**.
+3. El botón de chat aparece en tu web tras la siguiente publicación. El icono **?** del bloque explica el funcionamiento con detalle.
+
+Respondes a las conversaciones en la plataforma de chat (te damos acceso) o desde la pestaña **WhatsApp** de **Mensajes**. Con la casilla marcada, tu Política de privacidad, la Política de cookies y la página de Uso de IA describen el chat tal como funciona.
 
 ### Mensajes
 

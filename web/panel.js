@@ -1059,6 +1059,12 @@ document.addEventListener("DOMContentLoaded", function () {
         if (whatsappNumberInput) {
           whatsappNumberInput.value = cfg.whatsapp_number || "";
         }
+        var chatUrlInput = document.getElementById("chat-widget-url-input");
+        var chatTokenInput = document.getElementById("chat-widget-token-input");
+        var assistantEnabledInput = document.getElementById("assistant-enabled-input");
+        if (chatUrlInput) chatUrlInput.value = cfg.chat_widget_url || "";
+        if (chatTokenInput) chatTokenInput.value = cfg.chat_widget_token || "";
+        if (assistantEnabledInput) assistantEnabledInput.checked = cfg.whatsapp_bot_enabled === "1";
         var turnstileSitekeyInput = document.getElementById(
           "turnstile-sitekey-input",
         );
@@ -1418,6 +1424,52 @@ document.addEventListener("DOMContentLoaded", function () {
           msg.style.display = "inline";
         }
       });
+
+    // AI assistant: web-chat widget + the legal-pages flag
+    document
+      .getElementById("save-chat-widget-btn")
+      .addEventListener("click", async function () {
+        var msg = document.getElementById("save-chat-widget-msg");
+        var payload = {
+          chat_widget_url: document
+            .getElementById("chat-widget-url-input")
+            .value.trim()
+            .replace(/\/+$/, ""),
+          chat_widget_token: document
+            .getElementById("chat-widget-token-input")
+            .value.trim(),
+          whatsapp_bot_enabled: document.getElementById("assistant-enabled-input").checked ? "1" : "0",
+        };
+
+        try {
+          var res = await fetch("/api/site/texts", {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify(payload),
+          });
+          var data = await res.json();
+          msg.textContent = data.success ? "✓ Guardado" : data.error || "Error";
+          msg.style.color = data.success ? "var(--accent)" : "var(--error)";
+          msg.style.display = "inline";
+          if (data.success) {
+            siteConfig = Object.assign(siteConfig, payload);
+          }
+          setTimeout(function () {
+            msg.style.display = "none";
+          }, 2500);
+        } catch {
+          msg.textContent = "Error de conexión";
+          msg.style.color = "var(--error)";
+          msg.style.display = "inline";
+        }
+      });
+    var chatHelpDialog = document.getElementById("chat-help-dialog");
+    document.getElementById("chat-help-btn").addEventListener("click", function () {
+      chatHelpDialog.showModal();
+    });
+    document.getElementById("chat-help-close").addEventListener("click", function () {
+      chatHelpDialog.close();
+    });
 
     // WhatsApp button settings
     document

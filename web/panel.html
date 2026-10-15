@@ -1428,6 +1428,95 @@
               </div>
 
               <div class="misite-block">
+                <h3 style="display: flex; align-items: center; gap: 0.5rem">
+                  Asistente de IA: chat en tu web
+                  <button
+                    type="button"
+                    class="btn-ghost-sm"
+                    id="chat-help-btn"
+                    aria-haspopup="dialog"
+                    aria-controls="chat-help-dialog"
+                    title="Cómo funciona y cómo activarlo"
+                    style="padding: 0 0.55rem; line-height: 1.6; font-weight: 700"
+                  >
+                    ?
+                  </button>
+                </h3>
+                <p class="misite-hint">
+                  El asistente responde a tus visitantes desde un chat flotante
+                  en tu web, con la información publicada en ella, y pasa la
+                  conversación a tu equipo cuando hace falta. Es un servicio
+                  contratado aparte: los datos de conexión te los da tu
+                  proveedor. Pulsa <strong>?</strong> para ver las instrucciones.
+                </p>
+
+                <div class="misite-page-form" style="max-width: 560px">
+                  <div>
+                    <label for="chat-widget-url-input"
+                      >Dirección de la plataforma de chat</label
+                    >
+                    <input
+                      type="url"
+                      id="chat-widget-url-input"
+                      placeholder="https://chat.ejemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <label for="chat-widget-token-input"
+                      >Token del chat (website token)</label
+                    >
+                    <input
+                      type="text"
+                      id="chat-widget-token-input"
+                      placeholder="Lo encuentras en la configuración del inbox"
+                    />
+                  </div>
+                  <div>
+                    <label style="display: flex; gap: 0.5rem; align-items: center; cursor: pointer">
+                      <input type="checkbox" id="assistant-enabled-input" />
+                      Tengo contratado el asistente de IA (activa los apartados
+                      correspondientes de las páginas legales)
+                    </label>
+                  </div>
+                </div>
+
+                <div
+                  style="
+                    margin-top: 1.5rem;
+                    display: flex;
+                    gap: 1rem;
+                    align-items: center;
+                  "
+                >
+                  <button class="btn-primary-sm" id="save-chat-widget-btn">
+                    Guardar chat
+                  </button>
+                  <span
+                    id="save-chat-widget-msg"
+                    style="font-size: 0.8125rem; display: none"
+                  ></span>
+                </div>
+
+                <dialog
+                  id="chat-help-dialog"
+                  aria-labelledby="chat-help-title"
+                  style="max-width: 640px; max-height: 85vh; overflow: auto; border: 1px solid var(--border, #ddd); border-radius: 12px; padding: 1.5rem 1.75rem; line-height: 1.5"
+                >
+                  <h3 id="chat-help-title" style="margin-top: 0">Asistente de IA en tu web — cómo funciona</h3>
+                  <ol style="padding-left: 1.25rem">
+                    <li><strong>Qué hace.</strong> Un chat flotante responde a tus visitantes al momento con lo que hay publicado en tu web (páginas, productos, precios, artículos). Se presenta siempre como asistente de IA.</li>
+                    <li><strong>Cuándo interviene tu equipo.</strong> Si el visitante pide hablar con una persona, deja sus datos, pregunta algo que no está en la web o toca un tema delicado (quejas, cuestiones legales), el asistente pasa la conversación a tu equipo y avisa por Telegram, si lo tienes configurado.</li>
+                    <li><strong>Dónde respondes.</strong> En la plataforma de conversaciones (te damos acceso con tu usuario) o en la pestaña <strong>WhatsApp</strong> de <strong>Mensajes</strong> de este panel. Si nadie responde en 15 minutos, el asistente retoma la conversación para no dejar al visitante sin respuesta.</li>
+                    <li><strong>Cómo activarlo.</strong> Pide el alta del servicio a tu proveedor. Recibirás la <em>dirección de la plataforma</em> y el <em>token del chat</em>: pégalos en los dos campos de arriba, marca la casilla y pulsa <strong>Guardar chat</strong>. El botón aparece en tu web tras la siguiente publicación.</li>
+                    <li><strong>WhatsApp (opcional).</strong> El mismo asistente puede atender tu número de WhatsApp Business. Requiere una cuenta de Meta Business a tu nombre; tu proveedor te guía en el alta.</li>
+                    <li><strong>Datos y legal.</strong> Con la casilla marcada, tu Política de privacidad, la Política de cookies y la página de Uso de IA explican el chat tal como funciona. Las conversaciones se conservan como máximo 24 meses.</li>
+                  </ol>
+                  <div style="display: flex; justify-content: flex-end; margin-top: 1rem">
+                    <button type="button" class="btn-primary-sm" id="chat-help-close">Entendido</button>
+                  </div>
+                </dialog>
+              </div>
+              <div class="misite-block">
                 <h3>Botón de WhatsApp</h3>
                 <p class="misite-hint">
                   Si lo rellenas, aparecerá un botón flotante de WhatsApp en

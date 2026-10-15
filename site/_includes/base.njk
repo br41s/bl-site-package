@@ -141,5 +141,23 @@
   </div>
   <script src="/site.js"></script>
   <script src="/cart.js" defer></script>
+  {%- if site.chat_widget_url and site.chat_widget_token %}
+  {#- Chat widget of the AI assistant (Chatwoot). Left side: the WhatsApp
+      button owns the bottom-right corner. The origin is also in the CSP
+      header (src/csp.js) and the widget is disclosed on /cookies,
+      /privacidad and /uso-de-ia. #}
+  <script>
+    window.chatwootSettings = { position: "left", type: "standard", locale: "es", darkMode: "auto", launcherTitle: "Chat" };
+    (function (d, t) {
+      var g = d.createElement(t), s = d.getElementsByTagName(t)[0];
+      g.src = {{ site.chat_widget_url | dump | safe }} + "/packs/js/sdk.js";
+      g.defer = true; g.async = true;
+      s.parentNode.insertBefore(g, s);
+      g.onload = function () {
+        window.chatwootSDK.run({ websiteToken: {{ site.chat_widget_token | dump | safe }}, baseUrl: {{ site.chat_widget_url | dump | safe }} });
+      };
+    })(document, "script");
+  </script>
+  {%- endif %}
 </body>
 </html>

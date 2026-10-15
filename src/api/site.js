@@ -162,6 +162,9 @@ router.post("/texts", requireAuth, (req, res) => {
     "hero_game",
     "turnstile_site_key",
     "turnstile_secret_key",
+    "whatsapp_bot_enabled",
+    "chat_widget_url",
+    "chat_widget_token",
     "bank_holder",
     "bank_iban",
     "bank_bic",
@@ -184,6 +187,12 @@ router.post("/texts", requireAuth, (req, res) => {
     google_site_verification: (v) => /^[A-Za-z0-9_-]{0,100}$/.test(v),
     bank_iban: (v) => v === "" || isValidIban(v),
     bank_bic: (v) => v === "" || isValidBic(v),
+    whatsapp_bot_enabled: (v) => ["", "0", "1"].includes(v),
+    // Both are interpolated into every page's HTML and the chat URL also into
+    // the CSP header (src/csp.js): an origin only, https, no path or query;
+    // the token is Chatwoot's website token, a plain alphanumeric id.
+    chat_widget_url: (v) => v === "" || /^https:\/\/[a-z0-9.-]+(:[0-9]{2,5})?$/i.test(v),
+    chat_widget_token: (v) => /^[A-Za-z0-9_-]{0,64}$/.test(v),
     ...SHOP_BLOCK_VALIDATORS,
   };
   // Every value is checked before any is written: a rejected BIC must not

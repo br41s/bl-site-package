@@ -136,6 +136,10 @@ Si algo falla:
 
 ---
 
+## Chat en la web del cliente (sin Meta)
+
+El mismo bot atiende un inbox de tipo *website* de Chatwoot. Alta: en la Account del cliente crear un inbox **Website** (dominio de su web, sin recoger email, Agent Bot enganchado), copiar su *website token* y la URL base de Chatwoot, y pasárselos al cliente: los pega en panel → Mi sitio web → Integraciones → **Asistente de IA: chat en tu web** (bloque con icono **?** que contiene sus instrucciones), marca la casilla y guarda. El sitio añade el origen de Chatwoot a su CSP y carga el widget en la siguiente publicación. En el registro del bot, la entrada del cliente es la misma que para WhatsApp.
+
 ## Datos a registrar por cliente
 
 Rellena esto por cada cliente que contraste WhatsApp:

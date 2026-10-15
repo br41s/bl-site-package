@@ -11,6 +11,7 @@ permalink: "/privacidad.html"
 {%- set titular = site.legal_name or site.company_name or "El titular de este sitio web" %}
 {%- set contacto %}{% if site.legal_email %}<a href="mailto:{{ site.legal_email }}">{{ site.legal_email }}</a>{% else %}el <a href="/contacto">formulario de contacto</a>{% endif %}{% endset %}
 {%- set whatsapp = site.whatsapp_bot_enabled == "1" %}
+{%- set chat = site.chat_widget_url and site.chat_widget_token %}
 {%- set turnstile = site.turnstile_site_key %}
 <main class="site-page"><div class="site-page-inner">
   <h1 class="reveal">Política de privacidad</h1>
@@ -60,6 +61,16 @@ permalink: "/privacidad.html"
     </ul>
     {%- endif %}
 
+    {%- if chat %}
+    <h3>Chat de la web</h3>
+    <ul>
+      <li><strong>Datos:</strong> el contenido de la conversación, los datos que nos des en ella (por ejemplo, tu nombre, tu email o lo que necesitas), un identificador de conversación que se guarda en tu navegador, y datos técnicos de tu conexión (dirección IP, navegador, idioma, página desde la que escribes).</li>
+      <li><strong>Para qué:</strong> responder a tu consulta.{% if whatsapp %} Las primeras respuestas las genera un asistente de inteligencia artificial, que se presenta como tal y pasa la conversación a una persona cuando hace falta (ver <a href="/uso-de-ia">Uso de IA</a>).{% endif %}</li>
+      <li><strong>Base legal:</strong> tu propia solicitud al escribirnos (art. 6.1.b o, si no tiene que ver con una compra, 6.1.f RGPD).</li>
+      <li><strong>Plazo:</strong> el necesario para atender tu consulta, y como máximo 24 meses. Puedes pedirnos que borremos la conversación en cualquier momento.</li>
+    </ul>
+    {%- endif %}
+
     <h3>Seguridad del sitio</h3>
     <ul>
       <li>Para frenar el envío masivo de formularios, el servidor recuerda tu dirección IP solo en memoria y durante unos minutos; no la guarda.</li>
@@ -90,13 +101,16 @@ permalink: "/privacidad.html"
       {%- if whatsapp %}
       <li><strong>Meta Platforms</strong> (WhatsApp Business), por donde llegan y salen los mensajes; una plataforma de gestión de conversaciones; y <strong>OpenRouter, Inc.</strong> (Estados Unidos), que da acceso al modelo de inteligencia artificial que genera las respuestas automáticas. Actúan como encargados del tratamiento.</li>
       {%- endif %}
+      {%- if chat %}
+      <li><strong>Nuestro proveedor de alojamiento y mantenimiento técnico</strong>, que opera la plataforma de conversaciones del chat de la web en servidores de la Unión Europea{% if not whatsapp %}; y, si la conversación la atiende un asistente de inteligencia artificial, <strong>OpenRouter, Inc.</strong> (Estados Unidos), que da acceso al modelo que genera las respuestas automáticas{% endif %}. Actúan como encargados del tratamiento.</li>
+      {%- endif %}
     </ul>
     {%- if products.length %}
     <p>Algunas imágenes de producto se cargan desde los servidores de nuestro proveedor de catálogo; al verlas, tu navegador se conecta a ese servidor, que recibe tu dirección IP. No le comunicamos ningún otro dato.</p>
     {%- endif %}
 
     <h2>5. Transferencias internacionales</h2>
-    {%- if turnstile or whatsapp %}
+    {%- if turnstile or whatsapp or chat %}
     <p>Los proveedores establecidos en Estados Unidos indicados en el apartado anterior pueden tratar datos fuera del Espacio Económico Europeo. Lo hacen con las garantías previstas en el RGPD: el Marco de Privacidad de Datos UE-EE. UU. cuando la empresa está adherida a él o, en otro caso, las cláusulas contractuales tipo de la Comisión Europea.</p>
     {%- else %}
     <p>No realizamos transferencias internacionales de tus datos. Si alguno de nuestros proveedores tuviera que tratarlos fuera del Espacio Económico Europeo, lo haría con las garantías previstas en el RGPD.</p>
