@@ -210,6 +210,20 @@ Para activarlo:
 
 Respondes a las conversaciones en la plataforma de chat (te damos acceso) o desde la pestaña **WhatsApp** de **Mensajes**. Con la casilla marcada, tu Política de privacidad, la Política de cookies y la página de Uso de IA describen el chat tal como funciona.
 
+#### Responder a un cliente desde tu móvil (aviso por Telegram)
+
+Cada vez que el asistente pasa una conversación a tu equipo, puedes recibir un aviso en Telegram y responder desde el móvil en menos de un minuto. Así se activa y así funciona:
+
+1. Crea un grupo de Telegram con las personas que vayan a atender el chat (puede ser solo tú).
+2. Añade al grupo el bot **@b_l_hermes_bot** (en Telegram: miembros del grupo → añadir → busca ese nombre).
+3. Escribe cualquier mensaje en el grupo y dile a tu proveedor el nombre del grupo. En unos minutos queda conectado; no hay nada más que configurar.
+4. Desde entonces, cada traspaso llega al grupo como un aviso: tu empresa, el canal (chat de la web o WhatsApp), el motivo (el cliente pide hablar con una persona, ha dejado sus datos, pregunta algo que no está en la web…), su último mensaje y un enlace **Responder en Chatwoot**.
+5. Toca el enlace. Se abre la conversación en la plataforma de chat; la primera vez te pedirá entrar con el usuario y la contraseña que te hemos dado. Escribe en la caja de abajo y pulsa enviar: el cliente lo ve al instante en el chat de tu web (o en WhatsApp).
+6. Para no pasar por el navegador, instala la app **Chatwoot** (App Store o Google Play). En la pantalla de inicio indica la dirección de la plataforma que te hemos dado y entra con tu usuario: recibirás las notificaciones en el móvil y responderás desde ahí.
+7. Cuando termines, marca la conversación como **Resuelta**. Si vuelve a escribir, el asistente la atiende de nuevo y te avisa si hace falta.
+
+> Si nadie responde en 15 minutos, el asistente retoma la conversación para que el cliente no se quede sin respuesta; en cuanto una persona escribe, la conversación vuelve a ser suya.
+
 ### Mensajes
 
 Aquí aparecen todos los mensajes que tus visitantes envían a través del formulario de contacto de tu web. Si configuraste las notificaciones, también los recibirás por email.
