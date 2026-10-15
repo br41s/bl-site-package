@@ -504,7 +504,7 @@ describe("GET /api/knowledge", () => {
     ins.run("P5", "estuche-plano", "Estuche plano", "Para una pluma o un bolígrafo de calidad", "Estuches", 466, 9, "estuche plano para una pluma o un boligrafo de calidad");
     r = await (await call("GET", "/api/knowledge/search?q=" + encodeURIComponent("Hola, necesito una pluma de buena calidad, ¿qué tenéis?"), { token: "test-token-123" })).json();
     assert.deepEqual(r.terms, ["pluma"]);
-    assert.deepEqual(r.products.map((p) => p.sku).slice(0, 3), ["P4", "P1", "P2"], "name hits first (in stock, then owned), description mention last");
+    assert.deepEqual(r.products.map((p) => p.sku).slice(0, 3), ["P1", "P4", "P2"], "name hits first: in stock, then our owned sheet, then the rest; description mention last");
     assert.equal(r.products.at(-1).sku, "P5");
     assert.deepEqual(r.categories.map((c) => c.name), ["Plumas estilográficas"]);
 
