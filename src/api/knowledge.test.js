@@ -499,6 +499,15 @@ describe("GET /api/knowledge", () => {
     assert.deepEqual(r.categories.map((c) => c.name), ["Plumas estilográficas"]);
     assert.equal(r.categories[0].url, "/productos/categoria/plumas-estilograficas/");
 
+    // Sentence words are dropped; a name hit outranks a description mention.
+    ins.run("P4", "carton-pluma-blanco", "Cartón pluma blanco 5 mm", "Plancha ligera", "Papelería", 2577, 9, "carton pluma blanco 5 mm plancha ligera");
+    ins.run("P5", "estuche-plano", "Estuche plano", "Para una pluma o un bolígrafo de calidad", "Estuches", 466, 9, "estuche plano para una pluma o un boligrafo de calidad");
+    r = await (await call("GET", "/api/knowledge/search?q=" + encodeURIComponent("Hola, necesito una pluma de buena calidad, ¿qué tenéis?"), { token: "test-token-123" })).json();
+    assert.deepEqual(r.terms, ["pluma"]);
+    assert.deepEqual(r.products.map((p) => p.sku).slice(0, 3), ["P4", "P1", "P2"], "name hits first (in stock, then owned), description mention last");
+    assert.equal(r.products.at(-1).sku, "P5");
+    assert.deepEqual(r.categories.map((c) => c.name), ["Plumas estilográficas"]);
+
     r = await (await call("GET", "/api/knowledge/search?q=" + encodeURIComponent("grapadora"), { token: "test-token-123" })).json();
     assert.deepEqual(r.products, []);
     assert.deepEqual(r.categories, []);
