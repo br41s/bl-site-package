@@ -281,13 +281,36 @@ const MAX_SEARCH_TERMS = 8;
 const DEFAULT_SEARCH_LIMIT = 8;
 const MAX_SEARCH_LIMIT = 20;
 
+// A visitor writes sentences, not keywords. "necesito una pluma de buena
+// calidad" must search for "pluma": the first version matched "de" and "una"
+// against 20,000 products and ranked foam board and a pencil case above the
+// only fountain pen (Shoroban, 2026-10-15). Spanish and English, since the
+// bot answers both; chat-speak included, product words never.
+const SEARCH_STOPWORDS = new Set((
+  "a al algo algun alguna algunas alguno algunos ante articulo articulos aqui bien buen buena buenas bueno buenos busco buscando " +
+  "calidad como con cual cuales cuanto cuanta cuantos cuantas cuesta cuestan de del desde dias donde el ella ellas ellos en entre es esa ese " +
+  "eso esta estas este esto estos gracias hay hola la las le les lo los me mi mis muy necesitaria necesito nos o os otra otro para " +
+  "pero por porque precio precios que quien quiero quisiera se ser si sin sobre su sus tambien tardes te teneis tengo tiene tienen " +
+  "tu tus un una unas uno unos vendeis vende venden vosotros y ya yo " +
+  "an and any are as at be buy can could do does for from good have hello hi how i in is it its looking me much my need of on or " +
+  "please price prices quality sell some that the there this to want we what which with would you your"
+).split(/\s+/));
+
+export function searchTerms(q) {
+  // Punctuation is not part of a word: "hola," and "¿qué" are "hola" and "que".
+  return normalizeForSearch(String(q || "").replace(/[^\p{L}\p{N}\s]+/gu, " "))
+    .split(/\s+/)
+    .filter((t) => t.length > 2 && !SEARCH_STOPWORDS.has(t))
+    .slice(0, MAX_SEARCH_TERMS);
+}
+
 // Same matching as the storefront's GET /api/products?q= (every word, any
 // order, against the feed's text and ours), with one difference that matters
 // for a chat: a visitor writes "necesito una pluma de buena calidad", and
 // requiring every word kills the search. So: all words first; if nothing
 // matches, any word, ranked by how many matched, in stock first.
 export function searchCatalogue(q, limit = DEFAULT_SEARCH_LIMIT) {
-  const terms = normalizeForSearch(q || "").split(/\s+/).filter((t) => t.length > 1).slice(0, MAX_SEARCH_TERMS);
+  const terms = searchTerms(q);
   const n = Math.min(Math.max(Number(limit) || DEFAULT_SEARCH_LIMIT, 1), MAX_SEARCH_LIMIT);
   if (!terms.length) return { terms, products: [], categories: [] };
   const params = {};
@@ -295,14 +318,18 @@ export function searchCatalogue(q, limit = DEFAULT_SEARCH_LIMIT) {
     params[`t${i}`] = `%${term}%`;
   });
   const hit = (i) => `(p.search_text LIKE @t${i} OR c.search_text LIKE @t${i})`;
+  // A word in the product's name (ours or the feed's) is the product; a word
+  // in its description is a mention. Name hits rank first.
+  const nameHit = (i) => `(lower(p.name) LIKE @t${i} OR lower(coalesce(c.display_name, '')) LIKE @t${i})`;
   const score = terms.map((_, i) => `(${hit(i)})`).join(" + ");
+  const nameScore = terms.map((_, i) => `(${nameHit(i)})`).join(" + ");
   const select = `SELECT p.sku, p.slug, p.name, p.description, p.category, p.price_cents, p.stock_qty,
                          c.display_name AS owned_name, c.description_md AS owned_description,
-                         (${score}) AS hits
+                         (${score}) AS hits, (${nameScore}) AS name_hits
                     FROM products p
                     LEFT JOIN product_content c ON c.sku = p.sku AND c.status = 'owned'
                    WHERE p.active = 1 AND p.feed_active = 1`;
-  const order = `ORDER BY hits DESC, (p.stock_qty > 0) DESC, (c.sku IS NOT NULL) DESC, p.name COLLATE NOCASE LIMIT @limit`;
+  const order = `ORDER BY name_hits DESC, hits DESC, (p.stock_qty > 0) DESC, (c.sku IS NOT NULL) DESC, p.name COLLATE NOCASE LIMIT @limit`;
   params.limit = n;
   let rows = db.prepare(`${select} AND ${terms.map((_, i) => hit(i)).join(" AND ")} ${order}`).all(params);
   if (!rows.length && terms.length > 1) {
