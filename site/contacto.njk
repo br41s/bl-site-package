@@ -4,7 +4,10 @@ navActive: contacto
 permalink: "/contacto.html"
 ---
 <main class="site-page"><div class="site-page-inner">
-  <h1 class="reveal">{{ (site.page_contacto_title or "Contacto") | safe }}</h1>
+  {%- if site.calida %}
+  <span class="c-chip reveal">Contacto</span>
+  {%- endif %}
+  <h1 class="reveal">{{ (site.page_contacto_title or "Contacto") | accentWord | safe }}</h1>
   <p class="site-page-subtitle reveal">{{ (site.page_contacto_subtitle or "Escríbenos y te responderemos lo antes posible.") | safe }}</p>
   {%- if site.page_contacto_image %}
   <img src="{{ site.page_contacto_image }}" alt="{{ site.page_contacto_image_alt or site.page_contacto_title }}" class="site-page-image reveal" loading="lazy" decoding="async">
@@ -23,20 +26,23 @@ permalink: "/contacto.html"
   <div class="site-contact-info reveal">
     {%- if bizStreet or bizCity %}
     <p class="site-contact-info-item">
+      {%- if site.calida %}<span class="c-icon-circle">{% set icon = "pin" %}{% set iconSize = 20 %}{% include "icon.njk" %}</span>{% endif %}<span>
       <strong>Dónde estamos</strong><br>
-      {{ bizStreet }}{% if bizStreet and (bizPostal or bizCity) %}, {% endif %}{{ bizPostal }}{% if bizPostal and bizCity %} {% endif %}{{ bizCity }}
+      {{ bizStreet }}{% if bizStreet and (bizPostal or bizCity) %}, {% endif %}{{ bizPostal }}{% if bizPostal and bizCity %} {% endif %}{{ bizCity }}</span>
     </p>
     {%- endif %}
     {%- if bizPhone %}
     <p class="site-contact-info-item">
+      {%- if site.calida %}<span class="c-icon-circle">{% set icon = "phone" %}{% set iconSize = 20 %}{% include "icon.njk" %}</span>{% endif %}<span>
       <strong>Teléfono</strong><br>
-      <a href="tel:{{ bizPhone | replace(' ', '') }}">{{ bizPhone }}</a>
+      <a href="tel:{{ bizPhone | replace(' ', '') }}">{{ bizPhone }}</a></span>
     </p>
     {%- endif %}
     {%- if bizHours %}
     <p class="site-contact-info-item">
+      {%- if site.calida %}<span class="c-icon-circle">{% set icon = "clock" %}{% set iconSize = 20 %}{% include "icon.njk" %}</span>{% endif %}<span>
       <strong>Horario</strong><br>
-      {{ bizHours }}
+      {{ bizHours }}</span>
     </p>
     {%- endif %}
   </div>

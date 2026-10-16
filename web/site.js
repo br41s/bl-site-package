@@ -282,8 +282,21 @@ function initInfographicZoom() {
   });
 }
 
+// The Cálida nav pill gains its shadow once the page has scrolled a little
+// (web/style-calida.css, html.scrolled). One passive listener, no layout read
+// beyond scrollY; harmless in the original look, which ignores the class.
+function initScrolledClass() {
+  var root = document.documentElement;
+  function update() {
+    root.classList.toggle("scrolled", window.scrollY > 24);
+  }
+  window.addEventListener("scroll", update, { passive: true });
+  update();
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   initTheme();
+  initScrolledClass();
   initReveals();
   initContactForm();
   initTOC();

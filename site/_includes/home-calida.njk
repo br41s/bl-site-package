@@ -1,0 +1,172 @@
+{#-
+  Home page in the Cálida style (DESIGN.md §5.2 to §5.6). index.njk includes
+  it when site.calida and keeps the original home for Clásico.
+
+  Two blocks here mirror markup that lives elsewhere, on purpose:
+  - the hero game (canvas, HUD, hint, game-over dialog) mirrors index.njk's:
+    web/game/hero-game.js finds every piece by these classes;
+  - the post cards mirror site/blog.njk's, as CLAUDE.md requires, so the home
+    and the blog index stay visually identical. Restyle one, restyle both.
+
+  Every optional piece renders only when its data exists: chip from sector and
+  city, highlights from page_index_highlights, the phone card from biz_phone,
+  the hours chip from biz_hours (40 characters or fewer), the services band
+  and the about block from their pages' titles.
+-#}
+{%- set heroGame = site.hero_game == "1" -%}
+{%- set bizPhone = site.biz_phone | trim -%}
+{%- set bizHours = site.biz_hours | trim -%}
+{%- set hoursShort = bizHours if (bizHours | length) <= 40 else "" -%}
+{%- set sectorTxt = site.sector | trim -%}
+{%- set cityTxt = site.biz_city | trim -%}
+{%- set heroChip = (sectorTxt + " · " + cityTxt) if (sectorTxt and cityTxt) else (sectorTxt or cityTxt) -%}
+<main class="site-hero c-hero{% if site.hero_density == 'compact' %} site-hero-compact{% endif %}{% if heroGame %} site-hero-game{% endif %}"{% if heroGame %} data-hero-game data-company="{{ site.company_name | escape }}"{% endif %}>
+  {%- if heroGame %}
+  <canvas class="hero-game-canvas" aria-hidden="true"></canvas>
+  {%- else %}
+  <div class="c-glow c-glow-a" aria-hidden="true"></div>
+  <div class="c-glow c-glow-b" aria-hidden="true"></div>
+  {%- endif %}
+  <div class="site-hero-inner c-hero-grid{% if heroGame %} c-hero-grid-solo{% endif %}">
+    <div class="c-hero-copy">
+      {%- if heroChip %}
+      <span class="c-chip reveal">{{ heroChip }}</span>
+      {%- endif %}
+      <h1 class="reveal">{{ site.page_index_title | accentWord | safe }}</h1>
+      {%- if site.page_index_subtitle %}
+      <p class="site-hero-subtitle reveal">{{ site.page_index_subtitle | safe }}</p>
+      {%- endif %}
+      {%- if site.page_index_desc %}
+      <p class="site-hero-desc reveal">{{ site.page_index_desc | safe }}</p>
+      {%- endif %}
+      <div class="site-hero-actions reveal"><a href="/productos" class="site-btn">Ver catálogo {% set icon = "arrow" %}{% set iconSize = 16 %}{% include "icon.njk" %}</a><a href="/contacto" class="site-btn-ghost">Contactar</a>{% if heroGame %}<button type="button" class="site-btn-ghost hero-game-play" hidden>▶ Jugar a repartir</button>{% endif %}</div>
+      {%- if site.highlights.length %}
+      <ul class="c-highlights reveal">
+        {%- for h in site.highlights %}
+        <li><span class="c-check" aria-hidden="true">{% set icon = "check" %}{% set iconSize = 13 %}{% include "icon.njk" %}</span>{{ h }}</li>
+        {%- endfor %}
+      </ul>
+      {%- endif %}
+    </div>
+    {%- if not heroGame %}
+    <div class="c-hero-visual reveal">
+      <div class="c-blob-back" aria-hidden="true"></div>
+      {%- if site.page_index_image %}
+      <img src="{{ site.page_index_image }}" alt="{{ site.page_index_image_alt or (site.page_index_title | plainTitle) }}" class="c-blob-img" decoding="async" fetchpriority="high">
+      {%- else %}
+      <div class="c-blob-fill" aria-hidden="true"></div>
+      {%- endif %}
+      {%- if bizPhone %}
+      <a href="tel:{{ bizPhone | replace(' ', '') }}" class="c-float-card c-drift"><span class="c-icon-circle">{% set icon = "phone" %}{% set iconSize = 20 %}{% include "icon.njk" %}</span><span class="c-float-text"><small>Llámanos</small><b>{{ bizPhone }}</b></span></a>
+      {%- endif %}
+      {%- if hoursShort %}
+      <span class="c-float-chip c-drift-slow">{% set icon = "clock" %}{% set iconSize = 16 %}{% include "icon.njk" %}{{ hoursShort }}</span>
+      {%- endif %}
+    </div>
+    {%- endif %}
+  </div>
+  {%- if heroGame %}
+  <button type="button" class="hero-game-pause" aria-pressed="false" hidden>Pausar animación</button>
+  <div class="hero-game-hud" tabindex="-1" aria-label="Partida en curso" hidden>
+    <span class="hero-game-lives" role="img"></span>
+    <span>Pedidos <b class="hero-game-served">0</b></span>
+    <span>Récord <b class="hero-game-best">0</b></span>
+    <button type="button" class="site-btn-ghost hero-game-exit">Salir</button>
+  </div>
+  <p class="hero-game-hint" hidden>Arrastra cada producto hasta la oficina que lo pide (o tócalo y luego toca la oficina). Con teclado: 1-4 eligen producto, las flechas eligen oficina e Intro entrega.</p>
+  <p class="hero-game-live visually-hidden" aria-live="polite"></p>
+  <div class="hero-game-over" role="dialog" aria-labelledby="hero-game-over-text" hidden>
+    <p class="hero-game-over-text" id="hero-game-over-text"></p>
+    <div class="site-hero-actions"><button type="button" class="site-btn hero-game-again">Otra jornada</button><button type="button" class="site-btn-ghost hero-game-leave">Salir</button></div>
+  </div>
+  <script type="module" src="/game/hero-game.js"></script>
+  {%- endif %}
+</main>
+{%- if site.page_index_body_html %}
+<section class="site-page"><div class="site-page-inner">
+  <div class="site-page-body reveal">{{ site.page_index_body_html | safe }}</div>
+</div></section>
+{%- endif %}
+{%- if site.page_servicios_title %}
+<section class="site-page c-section"><div class="site-page-inner">
+  <div class="c-band reveal">
+    <div class="c-band-copy">
+      <span class="c-chip">Servicios</span>
+      <h2>{{ site.page_servicios_title | accentWord | safe }}</h2>
+      {%- if site.page_servicios_subtitle %}
+      <p>{{ site.page_servicios_subtitle | safe }}</p>
+      {%- endif %}
+    </div>
+    <a href="/servicios" class="site-btn">Ver servicios {% set icon = "arrow" %}{% set iconSize = 16 %}{% include "icon.njk" %}</a>
+  </div>
+</div></section>
+{%- endif %}
+{%- if site.page_quienes_title %}
+<section class="site-page c-section"><div class="site-page-inner c-about">
+  <div class="c-about-copy reveal">
+    <span class="c-chip">Quiénes somos</span>
+    <h2>{{ site.page_quienes_title | accentWord | safe }}</h2>
+    {%- if site.page_quienes_subtitle %}
+    <p class="c-lead">{{ site.page_quienes_subtitle | safe }}</p>
+    {%- endif %}
+    {{ site.page_quienes_desc_html | firstParagraph | safe }}
+    <a href="/quienes-somos" class="c-link">Conocer al equipo {% set icon = "arrow" %}{% set iconSize = 16 %}{% include "icon.njk" %}</a>
+  </div>
+  {%- if site.page_quienes_image %}
+  <div class="c-about-visual reveal">
+    <div class="c-blob-back c-blob-back-alt" aria-hidden="true"></div>
+    <img src="{{ site.page_quienes_image }}" alt="{{ site.page_quienes_image_alt or (site.page_quienes_title | plainTitle) }}" class="c-blob-img c-blob-img-alt" loading="lazy" decoding="async">
+  </div>
+  {%- endif %}
+</div></section>
+{%- endif %}
+{%- if articles.length %}
+<section class="site-page c-section"><div class="site-page-inner">
+  <div class="c-section-head reveal">
+    <div>
+      <span class="c-chip">Blog</span>
+      <h2>Últimas publicaciones</h2>
+    </div>
+    <a href="/blog" class="c-link">Ver todas {% set icon = "arrow" %}{% set iconSize = 16 %}{% include "icon.njk" %}</a>
+  </div>
+  <div class="c-post-grid">
+  {%- for post in articles.slice(0, 3) %}
+  <article class="site-post-card">
+    {%- if post.image_url %}
+    <a href="/blog/{{ post.slug }}" class="site-post-card-media"><img src="{{ post.image_url }}" alt="{{ post.image_alt or post.title }}" loading="lazy" decoding="async"></a>
+    {%- endif %}
+    {%- if post.badgesList.length %}
+    <span class="c-chip c-chip-sm">{{ post.badgesList[0] }}</span>
+    {%- endif %}
+    <h3><a href="/blog/{{ post.slug }}">{{ post.title }}</a></h3>
+    {%- if post.excerpt %}
+    <p>{{ post.excerpt }}</p>
+    {%- endif %}
+    <span class="site-post-date">{{ post.dateEs }}</span>
+  </article>
+  {%- endfor %}
+  </div>
+</div></section>
+{%- endif %}
+<section class="site-page c-section"><div class="site-page-inner">
+  <div class="c-cta reveal">
+    <div class="c-cta-copy">
+      <h2>¿Hablamos?</h2>
+      {%- if site.page_contacto_subtitle %}
+      <p>{{ site.page_contacto_subtitle | safe }}</p>
+      {%- endif %}
+    </div>
+    <div class="c-cta-actions">
+      <a href="/contacto" class="site-btn">Contactar {% set icon = "arrow" %}{% set iconSize = 16 %}{% include "icon.njk" %}</a>
+      {%- if site.whatsapp_number %}
+      <a href="https://wa.me/{{ site.whatsapp_number }}" class="site-btn-ghost" target="_blank" rel="noopener noreferrer">{% set icon = "whatsapp" %}{% set iconSize = 16 %}{% include "icon.njk" %} WhatsApp</a>
+      {%- endif %}
+      {%- if bizPhone %}
+      <a href="tel:{{ bizPhone | replace(' ', '') }}" class="site-btn-ghost">{% set icon = "phone" %}{% set iconSize = 16 %}{% include "icon.njk" %} {{ bizPhone }}</a>
+      {%- endif %}
+      {%- if bizHours %}
+      <p class="c-cta-hours">{{ bizHours }}</p>
+      {%- endif %}
+    </div>
+  </div>
+</div></section>

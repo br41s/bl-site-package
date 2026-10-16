@@ -14,12 +14,17 @@
   "blog": site.page_blog_subtitle or "",
   "productos": site.shop_payment_line
 } -%}
-{%- set resolvedTitle = title or pageTitleMap[navActive] or site.company_name -%}
+{#- Titles may carry an accent word as *word* (src/content/accent-word.js);
+    everything outside a heading wants the plain text. -#}
+{%- set resolvedTitle = (title or pageTitleMap[navActive] or site.company_name) | plainTitle -%}
 {%- set resolvedDesc = description or pageDescMap[navActive] or "" -%}
 {%- set fullTitle = (resolvedTitle + " | " + site.company_name) if (resolvedTitle and site.company_name and resolvedTitle != site.company_name) else (resolvedTitle or site.company_name) -%}
-{%- set radiusMap = {"sharp": "4px", "rounded": "16px"} -%}
+{#- radius_style: in Cálida it is the card radius (DESIGN.md §2), in the
+    original look the general one. The default of each is in its stylesheet. -#}
+{%- set radiusMap = ({"sharp": "12px", "rounded": "32px"} if site.calida else {"sharp": "4px", "rounded": "16px"}) -%}
+{%- set accentCss = site.accent_color or ("#1a7e6f" if site.calida else "") -%}
 <!DOCTYPE html>
-<html lang="es"{% if site.theme_default %} data-theme-default="{{ site.theme_default }}"{% endif %}>
+<html lang="es" data-style="{{ 'calida' if site.calida else 'clasico' }}"{% if site.theme_default %} data-theme-default="{{ site.theme_default }}"{% endif %}>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -56,10 +61,14 @@
   {%- endif %}
   <link rel="stylesheet" href="/fonts/fonts.css">
   <link rel="stylesheet" href="/style.css">
-  {%- if site.accent_color or radiusMap[site.radius_style] %}
+  {%- if site.calida %}
+  <link rel="stylesheet" href="/fonts/fonts-calida.css">
+  <link rel="stylesheet" href="/style-calida.css">
+  {%- endif %}
+  {%- if accentCss or radiusMap[site.radius_style] %}
   <style>
     :root, [data-theme="dark"] {
-      {%- if site.accent_color %} --accent: {{ site.accent_color }};{% endif %}
+      {%- if accentCss %} --accent: {{ accentCss }};{% endif %}
       {%- if radiusMap[site.radius_style] %} --radius: {{ radiusMap[site.radius_style] }};{% endif %}
     }
   </style>
@@ -67,6 +76,9 @@
 </head>
 <body>
   <div id="site-root">
+    {%- if site.calida %}
+    {% include "nav-calida.njk" %}
+    {%- else %}
     <nav class="site-nav">
       <div class="site-nav-inner">
         <a href="/" class="site-nav-brand">
@@ -97,9 +109,13 @@
         </div>
       </div>
     </nav>
+    {%- endif %}
 
     {{ content | safe }}
 
+    {%- if site.calida %}
+    {% include "footer-calida.njk" %}
+    {%- else %}
     <footer class="site-footer">
       <div class="site-footer-inner">
         <span>{% if site.company_name %}© {{ site.year }} {{ site.company_name }}{% endif %}</span>
@@ -131,6 +147,7 @@
         <p>Creado por <a href="https://biglobster.top/" target="_blank" rel="noopener noreferrer">Biglobster</a></p>
       </div>
     </footer>
+    {%- endif %}
     {#- No cookie banner: the site sets no cookie or storage that needs consent
         (only the B2B session and preferences the visitor asks for — see
         site/cookies.njk). A banner implying otherwise would itself mislead. #}

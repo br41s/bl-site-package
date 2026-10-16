@@ -1,3 +1,4 @@
+import { stripAccentWord } from "../content/accent-word.js";
 import { Router } from "express";
 import { createHash, timingSafeEqual } from "node:crypto";
 import db, { getConfig } from "../db/database.js";
@@ -90,7 +91,7 @@ export function buildBusiness() {
 export function buildPages() {
   const pages = {};
   for (const [name, url] of Object.entries(PAGE_URLS)) {
-    const title = getConfig(`page_${name}_title`);
+    const title = stripAccentWord(getConfig(`page_${name}_title`));
     const subtitle = getConfig(`page_${name}_subtitle`);
     const desc = getConfig(`page_${name}_desc`);
     const body = getConfig(`page_${name}_body`);

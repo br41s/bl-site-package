@@ -1,0 +1,38 @@
+{#-
+  Nav of the Cálida style (DESIGN.md §5.1): a floating pill. It keeps the ids
+  and classes of the original nav in base.njk on purpose: web/site.js wires
+  #theme-toggle, web/cart.js owns #cart-count-badge / .cart-icon-link, and the
+  menu button finds .site-nav-links through closest('nav').
+-#}
+{%- set brandInitial = (site.company_name or "M") | truncate(1, true, "") | upper -%}
+<nav class="site-nav c-nav">
+  <div class="site-nav-inner">
+    <a href="/" class="site-nav-brand">
+      {%- if site.logo_ext -%}
+      <img src="/uploads/logo.{{ site.logo_ext }}" alt="{{ site.company_name }}" class="site-logo-img">
+      {%- else -%}
+      <span class="c-logo-mark" aria-hidden="true">{{ brandInitial }}</span>
+      <span>{{ site.company_name or "Mi empresa" }}</span>
+      {%- endif -%}
+    </a>
+    <div class="site-nav-actions">
+      <a href="/carrito" class="site-nav-icon-btn cart-icon-link" aria-label="Carrito">
+        {%- set icon = "cart" %}{% set iconSize = 20 %}{% include "icon.njk" -%}
+        <span id="cart-count-badge" class="cart-count-badge" hidden>0</span>
+      </a>
+      <button id="theme-toggle" class="site-nav-icon-btn" aria-label="Cambiar tema"></button>
+      <a href="/contacto" class="site-btn c-nav-cta">Contactar</a>
+      <button class="site-nav-toggle" aria-label="Menú" onclick="this.closest('nav').querySelector('.site-nav-links').classList.toggle('open')">
+        {%- set icon = "menu" %}{% set iconSize = 24 %}{% include "icon.njk" -%}
+      </button>
+    </div>
+    <div class="site-nav-links">
+      <a href="/" class="site-nav-link{% if navActive == 'index' %} active{% endif %}">Inicio</a>
+      <a href="/quienes-somos" class="site-nav-link{% if navActive == 'quienes' %} active{% endif %}">Quiénes somos</a>
+      <a href="/servicios" class="site-nav-link{% if navActive == 'servicios' %} active{% endif %}">Servicios</a>
+      <a href="/contacto" class="site-nav-link{% if navActive == 'contacto' %} active{% endif %}">Contacto</a>
+      <a href="/blog" class="site-nav-link{% if navActive == 'blog' %} active{% endif %}">Blog</a>
+      <a href="/productos" class="site-nav-link{% if navActive == 'productos' %} active{% endif %}">Catálogo</a>
+    </div>
+  </div>
+</nav>

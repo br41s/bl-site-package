@@ -1,0 +1,967 @@
+/* «Cálida» — the look described in DESIGN.md.
+
+   base.njk links this sheet after style.css only when site_style is "calida",
+   so a deploy on the original look never downloads it. Every rule is scoped to
+   [data-style="calida"] (set on <html>), which also gives it the specificity
+   to win over style.css. Two things it does NOT override: the accent colour
+   and the radius a client picked in the panel, which base.njk writes in an
+   inline <style> after this sheet (same specificity, later, so it wins).
+
+   Dark tokens use [data-style="calida"][data-theme="dark"]: style.css's own
+   [data-theme="dark"] block has the same specificity as the light block below
+   and comes earlier, so without the double attribute the light values would
+   win in dark mode. */
+
+/* ---- Tokens (DESIGN.md §3) ---- */
+[data-style="calida"] {
+  --font: "Nunito", system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --bg: #fbf8f4;
+  --bg-elevated: #ffffff;
+  --bg-subtle: color-mix(in srgb, var(--accent) 6%, var(--bg));
+  --text-primary: #1d1b2a;
+  --text-secondary: #3a3850;
+  --text-muted: #5e5b70;
+  --border: #e8e2da;
+  /* Text in the accent hue is always this darker mix: the raw accent is for
+     fills. Keeps chips and links above 4.5:1 on the ground. */
+  --accent-ink: color-mix(in srgb, var(--accent) 80%, black);
+  --on-accent: #ffffff;
+  --tint: color-mix(in srgb, var(--accent) 11%, var(--bg));
+  --tint-2: #f6dfd0;
+  --accent-light: var(--tint);
+  --radius: 24px;
+  --radius-pill: 999px;
+  --radius-band: 32px;
+  --shadow-card: 0 30px 50px -30px rgba(20, 18, 40, 0.35);
+  --shadow-float: 0 24px 50px -24px rgba(20, 18, 40, 0.35);
+  --max-w: 1120px;
+}
+[data-style="calida"][data-theme="dark"] {
+  --bg: #17161f;
+  --bg-elevated: #211f2c;
+  --text-primary: #f2effb;
+  --text-secondary: #cfcbe0;
+  --text-muted: #aaa6bd;
+  --border: #2f2d3d;
+  --accent-ink: color-mix(in srgb, var(--accent) 65%, white);
+  --tint-2: #3a2f33;
+  --shadow-card: 0 30px 50px -30px rgba(0, 0, 0, 0.65);
+  --shadow-float: 0 24px 50px -24px rgba(0, 0, 0, 0.6);
+}
+
+/* ---- Base type (§4) ---- */
+[data-style="calida"] body {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+[data-style="calida"] h1,
+[data-style="calida"] h2,
+[data-style="calida"] h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+[data-style="calida"] .accent-word {
+  color: var(--accent-ink);
+}
+[data-style="calida"] a:focus-visible,
+[data-style="calida"] button:focus-visible,
+[data-style="calida"] input:focus-visible,
+[data-style="calida"] textarea:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+/* ---- Chips, buttons, links (§5.4) ---- */
+[data-style="calida"] .c-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-pill);
+  background: var(--tint);
+  color: var(--accent-ink);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+[data-style="calida"] .c-chip-sm {
+  font-size: 0.75rem;
+  padding: 0.3rem 0.7rem;
+  align-self: flex-start;
+}
+[data-style="calida"] .site-btn,
+[data-style="calida"] .site-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: var(--radius-pill);
+  font-family: var(--font);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.2;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s,
+    background 0.15s,
+    border-color 0.15s;
+}
+[data-style="calida"] .site-btn {
+  color: var(--on-accent);
+}
+[data-style="calida"] .site-btn:hover {
+  background: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -12px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+[data-style="calida"] .site-btn-ghost {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+[data-style="calida"] .site-btn-ghost:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+[data-style="calida"] .c-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--accent-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+[data-style="calida"] .c-icon-arrow {
+  transition: transform 0.2s;
+}
+[data-style="calida"] .site-btn:hover .c-icon-arrow,
+[data-style="calida"] .c-link:hover .c-icon-arrow {
+  transform: translateX(4px);
+}
+[data-style="calida"] .c-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--tint);
+  color: var(--accent-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+/* ---- Nav (§5.1): a floating pill ---- */
+[data-style="calida"] .site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: transparent;
+  border-bottom: 0;
+  padding: 0.875rem 1rem 0;
+}
+[data-style="calida"] .site-nav-inner {
+  height: auto;
+  max-width: var(--max-w);
+  background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+  gap: 1rem;
+  transition: box-shadow 0.25s;
+}
+[data-style="calida"].scrolled .site-nav-inner {
+  box-shadow: var(--shadow-float);
+}
+[data-style="calida"] .site-nav-brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.15rem;
+  gap: 0.6rem;
+}
+[data-style="calida"] .site-logo-img {
+  height: 36px;
+  max-width: 160px;
+}
+[data-style="calida"] .c-logo-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  flex: none;
+}
+[data-style="calida"] .site-nav-links {
+  order: 2;
+  gap: 0.25rem;
+}
+[data-style="calida"] .site-nav-actions {
+  order: 3;
+  gap: 0.5rem;
+}
+[data-style="calida"] .site-nav-link {
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+[data-style="calida"] .site-nav-link:hover,
+[data-style="calida"] .site-nav-link.active {
+  background: var(--tint);
+  color: var(--accent-ink);
+}
+[data-style="calida"] .site-nav-icon-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--tint);
+  color: var(--accent-ink);
+}
+[data-style="calida"] .site-nav-icon-btn:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+[data-style="calida"] .c-nav-cta {
+  padding: 0.6rem 1.1rem;
+  font-size: 0.875rem;
+}
+
+/* ---- Hero (§5.2) ---- */
+[data-style="calida"] .site-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: auto;
+  padding: 4.5rem 1.5rem 5rem;
+}
+[data-style="calida"] .site-hero-compact {
+  padding: 2.5rem 1.5rem 3rem;
+}
+[data-style="calida"] .c-hero-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 3.5rem;
+  align-items: center;
+}
+[data-style="calida"] .c-hero-grid-solo {
+  grid-template-columns: 1fr;
+}
+[data-style="calida"] .c-hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.25rem;
+  min-width: 0;
+}
+[data-style="calida"] .site-hero-inner h1 {
+  font-size: clamp(2.5rem, 6vw, 4.75rem);
+  line-height: 1.08;
+  margin: 0;
+}
+[data-style="calida"] .site-hero-subtitle {
+  font-size: clamp(1.1rem, 2vw, 1.3rem);
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 48ch;
+}
+[data-style="calida"] .site-hero-desc {
+  margin: 0;
+  max-width: 50ch;
+}
+[data-style="calida"] .site-hero-actions {
+  margin-top: 0.25rem;
+  gap: 0.75rem;
+}
+[data-style="calida"] .c-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.75;
+  pointer-events: none;
+}
+[data-style="calida"] .c-glow-a {
+  width: 560px;
+  height: 560px;
+  left: -160px;
+  top: -140px;
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+[data-style="calida"] .c-glow-b {
+  width: 480px;
+  height: 480px;
+  right: -140px;
+  top: 120px;
+  background: var(--tint-2);
+}
+[data-style="calida"] .c-highlights {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+[data-style="calida"] .c-highlights li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+[data-style="calida"] .c-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--tint);
+  color: var(--accent-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+[data-style="calida"] .c-check .c-icon {
+  stroke-width: 3;
+}
+
+/* The visual: a photo (or a generated fill) in an organic mask, a warm blob
+   offset behind it, and the two floating pieces built from phone and hours. */
+[data-style="calida"] .c-hero-visual {
+  position: relative;
+  padding: 1.5rem 1.5rem 2.5rem 2rem;
+  min-width: 0;
+}
+[data-style="calida"] .c-blob-back {
+  position: absolute;
+  inset: 14% -3% 2% 14%;
+  background: var(--tint-2);
+  border-radius: 45% 55% 40% 60% / 55% 45% 60% 40%;
+  z-index: 0;
+}
+[data-style="calida"] .c-blob-img,
+[data-style="calida"] .c-blob-fill {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 58% 42% 55% 45% / 48% 60% 40% 52%;
+}
+[data-style="calida"] .c-blob-fill {
+  background: linear-gradient(
+    140deg,
+    var(--tint) 0%,
+    var(--tint-2) 55%,
+    color-mix(in srgb, var(--accent) 38%, var(--bg)) 100%
+  );
+}
+[data-style="calida"] .c-blob-back-alt {
+  inset: 0 10% 10% 0;
+  background: var(--tint);
+  border-radius: 58% 42% 55% 45% / 48% 60% 40% 52%;
+}
+[data-style="calida"] .c-blob-img-alt {
+  border-radius: 45% 55% 40% 60% / 55% 45% 60% 40%;
+  aspect-ratio: 4 / 4.4;
+}
+[data-style="calida"] .c-float-card {
+  position: absolute;
+  left: -0.25rem;
+  bottom: 0.75rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1.1rem 0.8rem 0.8rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-float);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+[data-style="calida"] .c-float-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+[data-style="calida"] .c-float-text small {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+[data-style="calida"] .c-float-text b {
+  font-size: 1rem;
+  font-weight: 700;
+}
+[data-style="calida"] .c-float-chip {
+  position: absolute;
+  right: 0;
+  top: 0.5rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-float);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+[data-style="calida"] .c-float-chip .c-icon {
+  color: var(--accent-ink);
+}
+
+/* ---- Home sections (§5.3, §5.5, §5.6) ---- */
+[data-style="calida"] .c-section {
+  padding: 2rem 1.5rem;
+}
+[data-style="calida"] .c-section:last-of-type {
+  padding-bottom: 5rem;
+}
+[data-style="calida"] .c-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.75rem;
+}
+[data-style="calida"] .c-section-head > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+[data-style="calida"] .c-section-head h2,
+[data-style="calida"] .c-band h2,
+[data-style="calida"] .c-about h2 {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  line-height: 1.15;
+  margin: 0;
+}
+[data-style="calida"] .c-band {
+  background: var(--tint);
+  border-radius: var(--radius-band);
+  padding: 2.5rem 2.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+[data-style="calida"] .c-band-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  max-width: 60ch;
+}
+[data-style="calida"] .c-band-copy p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+[data-style="calida"] .c-about {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 4rem;
+  align-items: center;
+}
+[data-style="calida"] .c-about-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  min-width: 0;
+}
+[data-style="calida"] .c-about-copy p {
+  margin: 0;
+  color: var(--text-secondary);
+  max-width: 56ch;
+}
+[data-style="calida"] .c-about-copy .c-lead {
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
+[data-style="calida"] .c-about-visual {
+  position: relative;
+  padding: 1.5rem;
+  min-width: 0;
+}
+[data-style="calida"] .c-post-grid,
+[data-style="calida"] #blog-posts-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+[data-style="calida"] #blog-posts-list > .pager,
+[data-style="calida"] #blog-posts-list > .site-empty {
+  grid-column: 1 / -1;
+}
+[data-style="calida"] .site-post-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.625rem 0.625rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition:
+    transform 0.25s,
+    box-shadow 0.25s;
+}
+[data-style="calida"] .site-post-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-card);
+}
+[data-style="calida"] .site-post-card-media {
+  margin: 0;
+}
+[data-style="calida"] .site-post-card-media img {
+  aspect-ratio: 16 / 10;
+  border: 0;
+  border-radius: calc(var(--radius) - 6px);
+}
+[data-style="calida"] .site-post-card .c-chip {
+  margin: 0.25rem 0.75rem 0;
+}
+[data-style="calida"] .site-post-card h2,
+[data-style="calida"] .site-post-card h3 {
+  font-size: 1.3rem;
+  line-height: 1.25;
+  margin: 0;
+  padding: 0 0.75rem;
+}
+[data-style="calida"] .site-post-card p {
+  margin: 0;
+  padding: 0 0.75rem;
+  font-size: 0.9375rem;
+}
+[data-style="calida"] .site-post-card .site-post-date {
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  margin-top: auto;
+}
+[data-style="calida"] .c-cta {
+  background: var(--tint);
+  border-radius: var(--radius-band);
+  padding: 4rem 4.5rem;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 3rem;
+  align-items: center;
+}
+[data-style="calida"] .c-cta-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+[data-style="calida"] .c-cta-copy h2 {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.1;
+  margin: 0;
+}
+[data-style="calida"] .c-cta-copy p {
+  margin: 0;
+  color: var(--text-secondary);
+  max-width: 46ch;
+}
+[data-style="calida"] .c-cta-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+[data-style="calida"] .c-cta-hours {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* ---- Interior pages (§5.8) ---- */
+[data-style="calida"] .site-page {
+  padding: 4rem 1.5rem;
+}
+[data-style="calida"] .site-page-inner h1 {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.1;
+  margin: 0.9rem 0 0.75rem;
+}
+[data-style="calida"] .site-page-subtitle {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+}
+[data-style="calida"] .site-page-image,
+[data-style="calida"] .site-post-cover {
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+[data-style="calida"] .site-page-body h3,
+[data-style="calida"] .site-post-body h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.35rem;
+}
+[data-style="calida"] .site-post-toc {
+  background: var(--tint);
+  border: 0;
+  border-radius: var(--radius);
+}
+[data-style="calida"] .site-post-badge {
+  background: var(--tint);
+  color: var(--accent-ink);
+  text-transform: none;
+  letter-spacing: 0;
+}
+[data-style="calida"] .pager-link,
+[data-style="calida"] .brand-chip {
+  border-radius: var(--radius-pill);
+}
+[data-style="calida"] .site-contact-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+[data-style="calida"] .site-contact-info-item {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 1rem 1.1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.9375rem;
+}
+[data-style="calida"] .site-contact-form {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  max-width: 560px;
+  box-shadow: var(--shadow-card);
+}
+[data-style="calida"] .site-contact-form input,
+[data-style="calida"] .site-contact-form textarea {
+  border-radius: 14px;
+  padding: 0.8rem 1rem;
+  background: var(--bg);
+}
+[data-style="calida"] .construction-icon {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--tint);
+  color: var(--accent-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Catalogue (§5.9): tokens do the work, markup and ids are untouched ---- */
+[data-style="calida"] .shop-hero {
+  background: var(--tint);
+  border-bottom: 0;
+  border-radius: 0 0 var(--radius-band) var(--radius-band);
+  padding: 3.5rem 1.5rem 3rem;
+}
+[data-style="calida"] .shop-hero h1 {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+}
+[data-style="calida"] .product-search-input {
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  padding: 0.8rem 1.25rem;
+}
+[data-style="calida"] .product-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition:
+    transform 0.25s,
+    box-shadow 0.25s;
+}
+[data-style="calida"] .product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card);
+}
+[data-style="calida"] .category-pill {
+  background: var(--bg-elevated);
+  font-weight: 700;
+}
+[data-style="calida"] .category-pill:hover {
+  background: var(--tint);
+  color: var(--accent-ink);
+  border-color: transparent;
+}
+[data-style="calida"] .category-pill.active {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+[data-style="calida"] .b2b-banner {
+  background: var(--tint);
+  border: 0;
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+}
+[data-style="calida"] .category-card,
+[data-style="calida"] .product-detail-image img,
+[data-style="calida"] .product-detail-image-main {
+  border-radius: var(--radius);
+}
+[data-style="calida"] .shop-block-title {
+  font-weight: 600;
+}
+
+/* ---- Footer (§5.7) ---- */
+[data-style="calida"] .c-footer {
+  background: var(--bg-elevated);
+  border-top: 0;
+  border-radius: var(--radius-band) var(--radius-band) 0 0;
+  padding: 4rem 1.5rem 1.75rem;
+  margin-top: 2rem;
+}
+[data-style="calida"] .c-footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+[data-style="calida"] .c-footer-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+[data-style="calida"] .c-footer .site-nav-brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.15rem;
+  gap: 0.6rem;
+}
+[data-style="calida"] .c-footer-meta {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.8;
+  color: var(--text-muted);
+}
+[data-style="calida"] .c-footer-meta a {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 700;
+}
+[data-style="calida"] .c-footer-title {
+  margin: 0 0 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+[data-style="calida"] .c-footer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+[data-style="calida"] .c-footer-list a {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+[data-style="calida"] .c-footer-list a:hover {
+  color: var(--accent-ink);
+}
+[data-style="calida"] .c-socials {
+  display: flex;
+  gap: 0.6rem;
+}
+[data-style="calida"] .c-social {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--tint);
+  color: var(--accent-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+[data-style="calida"] .c-social:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+[data-style="calida"] .c-footer-bottom {
+  margin-top: 2.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+[data-style="calida"] .c-footer-bottom p {
+  margin: 0;
+}
+[data-style="calida"] .c-footer-bottom a {
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ---- Motion (§7): only when the visitor has not asked for less ---- */
+@keyframes c-drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-style="calida"] .c-drift {
+    animation: c-drift 7s ease-in-out infinite;
+  }
+  [data-style="calida"] .c-drift-slow {
+    animation: c-drift 9s ease-in-out infinite reverse;
+  }
+  [data-style="calida"] .c-hero-copy > .reveal:nth-child(2) {
+    transition-delay: 60ms;
+  }
+  [data-style="calida"] .c-hero-copy > .reveal:nth-child(3) {
+    transition-delay: 120ms;
+  }
+  [data-style="calida"] .c-hero-copy > .reveal:nth-child(4) {
+    transition-delay: 180ms;
+  }
+  [data-style="calida"] .c-hero-copy > .reveal:nth-child(5) {
+    transition-delay: 240ms;
+  }
+  [data-style="calida"] .c-hero-copy > .reveal:nth-child(6) {
+    transition-delay: 300ms;
+  }
+}
+
+/* ---- Narrow screens ---- */
+@media (min-width: 769px) and (max-width: 1000px) {
+  [data-style="calida"] .c-post-grid,
+  [data-style="calida"] #blog-posts-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  [data-style="calida"] .c-footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 768px) {
+  [data-style="calida"] .site-nav-links {
+    top: calc(100% + 0.5rem);
+    left: 1rem;
+    right: 1rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-float);
+    padding: 0.75rem;
+    gap: 0.25rem;
+  }
+  [data-style="calida"] .site-nav-toggle {
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--tint);
+    color: var(--accent-ink);
+  }
+  [data-style="calida"] .site-hero {
+    padding: 2.5rem 1rem 3rem;
+  }
+  [data-style="calida"] .site-hero-inner h1 {
+    font-size: clamp(2.25rem, 9vw, 3rem);
+  }
+  [data-style="calida"] .c-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  [data-style="calida"] .c-hero-visual {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 1rem 1rem 2.25rem 1.25rem;
+  }
+  [data-style="calida"] .c-float-card {
+    left: 0;
+  }
+  [data-style="calida"] .site-page {
+    padding: 2.5rem 1rem;
+  }
+  [data-style="calida"] .c-section {
+    padding: 1.25rem 1rem;
+  }
+  [data-style="calida"] .c-band {
+    padding: 2rem 1.5rem;
+  }
+  [data-style="calida"] .c-about {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  [data-style="calida"] .c-about-visual {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  [data-style="calida"] .c-post-grid,
+  [data-style="calida"] #blog-posts-list {
+    grid-template-columns: 1fr;
+  }
+  [data-style="calida"] .c-cta {
+    grid-template-columns: 1fr;
+    padding: 2.5rem 1.5rem;
+    gap: 1.75rem;
+  }
+  [data-style="calida"] .c-footer {
+    padding: 3rem 1.25rem 1.5rem;
+  }
+  [data-style="calida"] .c-footer-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+@media (max-width: 480px) {
+  [data-style="calida"] .c-nav-cta {
+    display: none;
+  }
+}

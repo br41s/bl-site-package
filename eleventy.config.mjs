@@ -7,6 +7,7 @@
 // a symlink to the build slot src/build/rebuild.js last completed.
 
 import tableScroll from "./lib/table-scroll.mjs";
+import { renderAccentWord, stripAccentWord } from "./src/content/accent-word.js";
 
 export default function (eleventyConfig) {
   // Envuelve cada <table> en un contenedor con scroll propio. Una tabla no
@@ -17,6 +18,9 @@ export default function (eleventyConfig) {
   eleventyConfig.addPlugin(tableScroll);
 
   eleventyConfig.addPassthroughCopy({ "web/style.css": "style.css" });
+  // The Cálida style (DESIGN.md) lives in its own sheet, linked by base.njk
+  // only when site_style is "calida", so the original look's CSS is untouched.
+  eleventyConfig.addPassthroughCopy({ "web/style-calida.css": "style-calida.css" });
   eleventyConfig.addPassthroughCopy({ "web/site.js": "site.js" });
   eleventyConfig.addPassthroughCopy({ "web/cart.js": "cart.js" });
   // The homepage game, file by file: web/game/ holds no tests today, but a
@@ -45,6 +49,19 @@ export default function (eleventyConfig) {
   eleventyConfig.addFilter("jsonLd", (obj) =>
     JSON.stringify(obj).replace(/</g, "\\u003c"),
   );
+
+  // Page titles: `*word*` marks the accent word (src/content/accent-word.js).
+  // Headings render it with `| accentWord | safe` (the filter escapes the
+  // rest); <title>, meta and anything plain-text use `| plainTitle`.
+  eleventyConfig.addFilter("accentWord", (text) => renderAccentWord(text));
+  eleventyConfig.addFilter("plainTitle", (text) => stripAccentWord(text));
+
+  // The first paragraph of a rendered page body, for the home page's
+  // «Quiénes somos» teaser. Empty when the body has no <p> at all.
+  eleventyConfig.addFilter("firstParagraph", (html) => {
+    const m = /<p\b[^>]*>[\s\S]*?<\/p>/i.exec(String(html ?? ""));
+    return m ? m[0] : "";
+  });
 
   // No dir.output on purpose. A value here overrides the output directory a
   // programmatic caller passes to `new Eleventy(input, output)`, and
