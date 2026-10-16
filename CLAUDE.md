@@ -116,6 +116,43 @@ on links: `guide-buy`):
   prompt writes: `<p><a><img></a></p>` immediately followed by `<p><a class="guide-buy">`.
   Change that order in the prompt and the layout silently falls back to stacked.
 
+## Site styles (`site_style`)
+
+Two looks, one content model. `DESIGN.md` is the spec and the reference.
+
+- `calida` — the designed look: Fraunces + Nunito, cream ground, surfaces tinted with
+  the accent, 24 px radii, blob hero. The setup wizard writes it on every new install.
+- `""` / `clasico` — the original look. Existing deploys have no value stored and keep
+  it until the admin switches in panel → Mi sitio → Apariencia → Estilo, so a release
+  never changes a live site's look.
+
+How it is wired, and what must stay true:
+
+- `base.njk` sets `data-style` on `<html>` and links `fonts-calida.css` and
+  `style-calida.css` **only** in Cálida. Every Cálida rule is scoped to
+  `[data-style="calida"]`; dark tokens need the double attribute
+  `[data-style="calida"][data-theme="dark"]`, or style.css's own dark block (same
+  specificity, earlier) loses to the light tokens. The accent and radius a client picked
+  still win: base.njk writes them inline after both sheets.
+- Cálida has its own nav, footer and home partials (`nav-calida.njk`,
+  `footer-calida.njk`, `home-calida.njk`); the Clásico markup in `base.njk` and
+  `index.njk` is untouched. Two mirrors to keep: the hero game block in
+  `home-calida.njk` mirrors `index.njk`'s (hero-game.js finds it by class), and the post
+  cards mirror `blog.njk`'s. The nav partial keeps the original ids and classes
+  (`#theme-toggle`, `#cart-count-badge`, `.cart-icon-link`, `.site-nav-links`) because
+  `site.js` and `cart.js` own them.
+- Nothing renders without its data: the hero chip from `sector` + `biz_city`, the phone
+  card from `biz_phone`, the hours chip from `biz_hours` (40 characters or fewer), the
+  highlights from `page_index_highlights` (three lines at most), the services band and
+  the about block from their pages' titles. Catalogue pages change by tokens only; ids
+  and classes stay.
+- `*word*` in a page title is the accent word (`src/content/accent-word.js`): headings
+  render it through the `accentWord` filter, which escapes the rest; `<title>`, Open
+  Graph and `/api/knowledge` go through `plainTitle` / `stripAccentWord`. Never render a
+  title raw again.
+- Fonts are self-hosted (`web/fonts/`, OFL notices beside them), so the legal pages
+  needed no change; the style adds no storage key and no third-party request.
+
 ## Homepage game (`hero_game`)
 
 Opt-in per deploy (panel → Mi sitio → Apariencia → Animación de portada, default
