@@ -71,6 +71,10 @@
   <link rel="stylesheet" href="/fonts/fonts-calida.css">
   <link rel="stylesheet" href="/style-calida.css">
   {%- endif %}
+  {#- A sheet for one page only, named in its front matter (site/404.njk). -#}
+  {%- if pageStylesheet %}
+  <link rel="stylesheet" href="{{ pageStylesheet }}">
+  {%- endif %}
   {%- if accentCss or radiusMap[site.radius_style] %}
   <style>
     :root, [data-theme="dark"] {

@@ -11,7 +11,7 @@
 import { test, describe, before } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -102,6 +102,7 @@ function seed(style) {
 // production, without touching the repo's _site.
 function build() {
   const out = mkdtempSync(join(tmpdir(), "bl-site-calida-out-"));
+  build.lastOut = out;
   const r = spawnSync(process.execPath, [join(root, "src/build/eleventy-child.js"), out], {
     cwd: root,
     env: { ...process.env },
@@ -187,6 +188,17 @@ describe("Cálida build", () => {
     assert.equal(faqLd(html), 1);
   });
 
+  test("the 404 page is built in the site's style, with its sheet, and kept out of the sitemap", () => {
+    const html = read("404.html");
+    assert.ok(html.includes('<html lang="es" data-style="calida"'), html.slice(0, 200));
+    assert.ok(html.includes("<h1 class=\"site-404-title\">Página no encontrada</h1>"));
+    assert.ok(html.includes('<link rel="stylesheet" href="/404.css">'));
+    assert.ok(html.includes('class="c-footer'), "the Cálida footer is there");
+    assert.ok(html.includes("<title>Página no encontrada | Taller Prueba</title>"));
+    assert.ok(existsSync(join(build.lastOut, "404.css")));
+    assert.ok(!read("sitemap.xml").includes("/404"), read("sitemap.xml"));
+  });
+
   test("a Servicios body without ### keeps the band on the home and the plain body on /servicios", () => {
     db.prepare("INSERT OR REPLACE INTO config (key, value) VALUES ('page_servicios_desc', 'Solo un párrafo.')").run();
     const readPlain = build();
@@ -215,4 +227,10 @@ describe("Clásico build of the same content", () => {
     assert.equal(faqLd(home), 0, "home");
   });
 
+  test("the 404 page is built in Clásico too", () => {
+    const html = read("404.html");
+    assert.ok(html.includes('<html lang="es" data-style="clasico"'), html.slice(0, 200));
+    assert.ok(html.includes('class="site-footer"'), "the Clásico footer is there");
+    assert.ok(!html.includes("style-calida.css"));
+  });
 });

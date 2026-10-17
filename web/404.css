@@ -1,0 +1,32 @@
+/* The not-found page: site/404.njk once built, web/404.html as the fallback
+   before a first build. Linked by that page alone (base.njk's pageStylesheet),
+   not folded into style.css, so the sheet every other page loads does not
+   change. Colours and fonts are the site's tokens, from style.css and, when it
+   is on, the Cálida sheet, so the page follows the style like any other. */
+.site-404 {
+  min-height: calc(100dvh - 18rem);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 4rem 1.5rem;
+}
+.site-404-inner {
+  display: grid;
+  gap: 1.25rem;
+  justify-items: center;
+  max-width: 40rem;
+}
+.site-404-code {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(5rem, 14vw, 9rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--accent);
+}
+.site-404-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  color: var(--text-primary);
+}

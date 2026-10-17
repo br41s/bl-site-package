@@ -21,6 +21,9 @@ export default function (eleventyConfig) {
   // The Cálida style (DESIGN.md) lives in its own sheet, linked by base.njk
   // only when site_style is "calida", so the original look's CSS is untouched.
   eleventyConfig.addPassthroughCopy({ "web/style-calida.css": "style-calida.css" });
+  // The not-found page's own sheet (site/404.njk links it through base.njk's
+  // pageStylesheet), kept out of style.css so no other page's bytes change.
+  eleventyConfig.addPassthroughCopy({ "web/404.css": "404.css" });
   eleventyConfig.addPassthroughCopy({ "web/site.js": "site.js" });
   eleventyConfig.addPassthroughCopy({ "web/cart.js": "cart.js" });
   // The homepage game, file by file: web/game/ holds no tests today, but a
