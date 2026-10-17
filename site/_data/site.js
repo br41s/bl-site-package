@@ -25,6 +25,15 @@ export default function () {
   // secrets like PANEL_PASSWORD; trailing slashes are stripped so templates
   // can concatenate absolute URLs without doubling the separator.
   config.site_url = (process.env.SITE_URL || config.site_url || "").replace(/\/+$/, "");
+  // The look of the site (DESIGN.md §2). Templates branch on this boolean;
+  // anything else than "calida" is the original look.
+  config.calida = config.site_style === "calida";
+  // Hero highlights (DESIGN.md §5.2): one per line, at most three, trimmed.
+  config.highlights = String(config.page_index_highlights || "")
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 3);
   // Staging (X-Robots-Tag noindex in src/server.js) gates whether SEO
   // artifacts advertise the site — robots.txt/sitemap.xml consult this.
   config.staging = process.env.STAGING === "true";

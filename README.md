@@ -40,6 +40,7 @@ Modelo de campos por página:
 | ----- | --- | ------- |
 | `page_index_desc` | Blurb corto del héroe de la portada (y meta-descripción SEO) | Texto corto |
 | `page_index_body` | Cuerpo rico de la portada, se muestra **debajo** del héroe y los botones | Markdown |
+| `page_index_highlights` | Hasta tres frases cortas bajo los botones de la portada, una por línea (solo con el estilo Cálida) | Texto corto |
 | `page_quienes_desc` / `page_servicios_desc` | Cuerpo completo de la página | Markdown |
 | `page_contacto_desc` | Intro sobre el formulario de contacto | Markdown |
 | `page_*_subtitle` | Subtítulo (en páginas interiores alimenta la meta-descripción SEO) | Texto corto |
@@ -48,11 +49,30 @@ Modelo de campos por página:
 > corto (una o dos frases de gancho) y escribe el contenido extenso y estructurado
 > de la home en `page_index_body`.
 
+En los títulos de página puedes resaltar una palabra escribiéndola entre asteriscos
+(`Sonríe con *tranquilidad*`): el estilo Cálida la pinta con el color destacado y en
+todo lo demás (pestaña del navegador, redes sociales, bot de WhatsApp) se muestra sin
+los asteriscos.
+
+## Estilos
+
+El aspecto de la web se elige en el panel (Mi sitio → Apariencia → **Estilo**) y se
+guarda en `site_style`:
+
+- **Cálida** (`calida`): Fraunces + Nunito, fondo crema, superficies teñidas con el
+  color destacado, esquinas de 24 px, portada con imagen en forma orgánica. Es el estilo
+  con el que arranca toda instalación nueva (lo escribe el asistente de `/setup`).
+- **Clásico** (vacío o `clasico`): el aspecto original. Las instalaciones existentes no
+  tienen valor guardado y conservan su aspecto hasta que el administrador cambie.
+
+La especificación completa está en `DESIGN.md`.
+
 ## Funcionalidades del panel
 
 - Gestión de blog: crear, editar, publicar y eliminar artículos.
 - Agente de marketing con IA mediante OpenRouter.
 - Configuración de páginas, textos y logo.
+- Apariencia: estilo de la web (Cálida o Clásico), color destacado, bordes, tema y portada de inicio.
 - Bandeja de mensajes enviados desde el formulario de contacto.
 - Catálogo: visibilidad por producto, reservas, fichas propias y estado de la sincronización.
 - Portada de la tienda: bloques de merchandising sobre el catálogo, automáticos o curados a mano.

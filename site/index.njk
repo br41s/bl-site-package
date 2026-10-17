@@ -3,7 +3,11 @@ layout: base.njk
 navActive: index
 ---
 {%- if not site.page_index_title %}
-<div class="construction-wrap"><div class="construction-icon">🚧</div><h1>Página en construcción</h1><p>Estamos preparando esta página. Vuelve pronto.</p><a href="/" class="site-btn">Volver al inicio</a></div>
+<div class="construction-wrap"><div class="construction-icon">{% set icon = "sparkle" %}{% set iconSize = 48 %}{% include "icon.njk" %}</div><h1>Página en construcción</h1><p>Estamos preparando esta página. Vuelve pronto.</p><a href="/" class="site-btn">Volver al inicio</a></div>
+{%- elif site.calida %}
+{#- The Cálida home (DESIGN.md) lives in its own partial; the markup below is
+    the original look and stays as it is. -#}
+{% include "home-calida.njk" %}
 {%- else %}
 {#
   hero_game == "1": the "Pedido a pedido" canvas (web/game/) plays behind the
@@ -16,7 +20,7 @@ navActive: index
   <canvas class="hero-game-canvas" aria-hidden="true"></canvas>
   {%- endif %}
   <div class="site-hero-inner">
-  <h1 class="reveal">{{ site.page_index_title | safe }}</h1>
+  <h1 class="reveal">{{ site.page_index_title | accentWord | safe }}</h1>
   {%- if site.page_index_subtitle %}
   <p class="site-hero-subtitle reveal">{{ site.page_index_subtitle | safe }}</p>
   {%- endif %}

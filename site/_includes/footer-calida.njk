@@ -1,0 +1,78 @@
+{#-
+  Footer of the Cálida style (DESIGN.md §5.7): four columns from data the site
+  already has. The social column renders only when the admin has set the links
+  in the panel; the AI transparency line and the Biglobster credit stay.
+-#}
+{%- set brandInitial = (site.company_name or "M") | truncate(1, true, "") | upper -%}
+{%- set fStreet = site.biz_street | trim -%}
+{%- set fCity = site.biz_city | trim -%}
+{%- set fPostal = site.biz_postal_code | trim -%}
+{%- set fPhone = site.biz_phone | trim -%}
+{%- set fHours = site.biz_hours | trim -%}
+<footer class="site-footer c-footer">
+  <div class="site-footer-inner c-footer-grid">
+    <div class="c-footer-brand">
+      <a href="/" class="site-nav-brand">
+        {%- if site.logo_ext -%}
+        <img src="/uploads/logo.{{ site.logo_ext }}" alt="{{ site.company_name }}" class="site-logo-img">
+        {%- else -%}
+        <span class="c-logo-mark" aria-hidden="true">{{ brandInitial }}</span>
+        <span>{{ site.company_name or "Mi empresa" }}</span>
+        {%- endif -%}
+      </a>
+      {%- if fStreet or fCity or fHours or fPhone %}
+      <p class="c-footer-meta">
+        {%- if fStreet or fCity %}{{ fStreet }}{% if fStreet and (fPostal or fCity) %}, {% endif %}{{ fPostal }}{% if fPostal and fCity %} {% endif %}{{ fCity }}<br>{% endif -%}
+        {%- if fHours %}{{ fHours }}<br>{% endif -%}
+        {%- if fPhone %}<a href="tel:{{ fPhone | replace(' ', '') }}">{{ fPhone }}</a>{% endif -%}
+      </p>
+      {%- endif %}
+    </div>
+    <div>
+      <p class="c-footer-title">Navegación</p>
+      <ul class="c-footer-list">
+        <li><a href="/">Inicio</a></li>
+        <li><a href="/quienes-somos">Quiénes somos</a></li>
+        <li><a href="/servicios">Servicios</a></li>
+        <li><a href="/contacto">Contacto</a></li>
+        <li><a href="/blog">Blog</a></li>
+        <li><a href="/productos">Catálogo</a></li>
+        {%- if site.b2b_enabled == "1" %}
+        <li><a href="/profesionales">Área de profesionales</a></li>
+        {%- endif %}
+      </ul>
+    </div>
+    <div>
+      <p class="c-footer-title">Legal</p>
+      <ul class="c-footer-list">
+        <li><a href="/aviso-legal">Aviso legal</a></li>
+        {%- if products.length %}
+        <li><a href="/condiciones">Condiciones de venta</a></li>
+        {%- endif %}
+        <li><a href="/privacidad">Privacidad</a></li>
+        <li><a href="/cookies">Cookies</a></li>
+        <li><a href="/uso-de-ia">Uso de IA</a></li>
+      </ul>
+    </div>
+    {%- if site.biz_instagram or site.biz_facebook %}
+    <div>
+      <p class="c-footer-title">Síguenos</p>
+      <div class="c-socials">
+        {%- if site.biz_instagram %}
+        <a href="{{ site.biz_instagram }}" class="c-social" aria-label="Instagram" target="_blank" rel="noopener noreferrer">{% set icon = "instagram" %}{% set iconSize = 18 %}{% include "icon.njk" %}</a>
+        {%- endif %}
+        {%- if site.biz_facebook %}
+        <a href="{{ site.biz_facebook }}" class="c-social" aria-label="Facebook" target="_blank" rel="noopener noreferrer">{% set icon = "facebook" %}{% set iconSize = 18 %}{% include "icon.njk" %}</a>
+        {%- endif %}
+      </div>
+    </div>
+    {%- endif %}
+  </div>
+  <div class="site-footer-inner c-footer-bottom">
+    <span>{% if site.company_name %}© {{ site.year }} {{ site.company_name }}{% endif %}</span>
+    {# Transparencia del art. 50 del Reglamento (UE) 2024/1689: el aviso viaja en
+       la plantilla y aparece en todas las páginas, igual que en el pie original. #}
+    <p class="c-footer-ai">Parte de los contenidos de este sitio se generan con asistencia de inteligencia artificial. <a href="/uso-de-ia">Más información</a>.</p>
+    <p class="c-footer-credit">Creado por <a href="https://biglobster.top/" target="_blank" rel="noopener noreferrer">Biglobster</a></p>
+  </div>
+</footer>

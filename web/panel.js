@@ -1105,6 +1105,7 @@ document.addEventListener("DOMContentLoaded", function () {
           "theme_default",
           "hero_density",
           "hero_game",
+          "site_style",
         ].forEach(function (key) {
           var input = document.getElementById(key.replace(/_/g, "-") + "-input");
           if (input) input.value = cfg[key] || "";
@@ -1114,7 +1115,8 @@ document.addEventListener("DOMContentLoaded", function () {
         // instead of the browser's black fallback.
         var accentColorInput = document.getElementById("accent-color-input");
         if (accentColorInput) {
-          accentColorInput.value = cfg.accent_color || "#b8391c";
+          accentColorInput.value =
+            cfg.accent_color || (cfg.site_style === "calida" ? "#1a7e6f" : "#b8391c");
         }
 
         if (cfg.logo_ext) {
@@ -1603,6 +1605,7 @@ document.addEventListener("DOMContentLoaded", function () {
           theme_default: document.getElementById("theme-default-input").value,
           hero_density: document.getElementById("hero-density-input").value,
           hero_game: document.getElementById("hero-game-input").value,
+          site_style: document.getElementById("site-style-input").value,
         };
 
         try {
@@ -1797,6 +1800,11 @@ document.addEventListener("DOMContentLoaded", function () {
       { key: "page_index_title", label: "Título principal", type: "input" },
       { key: "page_index_subtitle", label: "Subtítulo", type: "input" },
       { key: "page_index_desc", label: "Descripción (héroe, texto corto)", type: "textarea" },
+      {
+        key: "page_index_highlights",
+        label: "Destacados (una línea por punto, máximo tres; solo con el estilo Cálida)",
+        type: "textarea",
+      },
       {
         key: "page_index_image",
         altKey: "page_index_image_alt",

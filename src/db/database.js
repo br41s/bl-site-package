@@ -18,6 +18,9 @@ export const PUBLIC_CONFIG_KEYS = [
   "page_index_subtitle",
   "page_index_desc",
   "page_index_body",
+  // Up to three short lines shown as check chips under the hero buttons; only
+  // the Cálida style renders them (DESIGN.md §5.2). Optional.
+  "page_index_highlights",
   "page_index_image",
   "page_index_image_alt",
   "page_quienes_title",
@@ -83,6 +86,11 @@ export const PUBLIC_CONFIG_KEYS = [
   "hero_density",
   // "1" puts the "Pedido a pedido" animation + game in the homepage hero.
   "hero_game",
+  // Look of the public site: "calida" (DESIGN.md) or "" / "clasico" (the
+  // original look). The wizard writes "calida" on a new install; an existing
+  // deploy keeps the empty value, and with it its look, until the admin
+  // switches in the panel.
+  "site_style",
   // Cloudflare Turnstile site key — public by design, it's meant to be
   // embedded in the page. The paired secret key (turnstile_secret_key) is
   // deliberately NOT in this list; see src/turnstile.js.

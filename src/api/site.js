@@ -160,6 +160,8 @@ router.post("/texts", requireAuth, (req, res) => {
     "theme_default",
     "hero_density",
     "hero_game",
+    "site_style",
+    "page_index_highlights",
     "turnstile_site_key",
     "turnstile_secret_key",
     "whatsapp_bot_enabled",
@@ -182,6 +184,7 @@ router.post("/texts", requireAuth, (req, res) => {
     theme_default: (v) => ["", "light", "dark"].includes(v),
     hero_density: (v) => ["", "compact", "spacious"].includes(v),
     hero_game: (v) => ["", "1"].includes(v),
+    site_style: (v) => ["", "clasico", "calida"].includes(v),
     // Goes into a meta attribute in every page's <head>; Google's tokens are
     // base64url, so anything else is a paste error or an injection attempt.
     google_site_verification: (v) => /^[A-Za-z0-9_-]{0,100}$/.test(v),

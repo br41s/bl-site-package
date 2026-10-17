@@ -11,7 +11,10 @@ eleventyComputed:
   title: "{% if pagination.pageNumber > 0 %}{{ site.page_blog_title or 'Blog' }} (página {{ pagination.pageNumber + 1 }}){% else %}{{ site.page_blog_title or 'Blog' }}{% endif %}"
 ---
 <main class="site-page"><div class="site-page-inner">
-  <h1 class="reveal">{{ (site.page_blog_title or "Blog") | safe }}</h1>
+  {%- if site.calida %}
+  <span class="c-chip reveal">Blog</span>
+  {%- endif %}
+  <h1 class="reveal">{{ (site.page_blog_title or "Blog") | accentWord | safe }}</h1>
   {%- if site.page_blog_subtitle %}
   <p class="site-page-subtitle reveal">{{ site.page_blog_subtitle | safe }}</p>
   {%- endif %}
@@ -23,6 +26,9 @@ eleventyComputed:
     <article class="site-post-card">
       {%- if post.image_url %}
       <a href="/blog/{{ post.slug }}" class="site-post-card-media"><img src="{{ post.image_url }}" alt="{{ post.image_alt or post.title }}" loading="lazy" decoding="async"></a>
+      {%- endif %}
+      {%- if site.calida and post.badgesList.length %}
+      <span class="c-chip c-chip-sm">{{ post.badgesList[0] }}</span>
       {%- endif %}
       <h2><a href="/blog/{{ post.slug }}">{{ post.title }}</a></h2>
       {%- if post.excerpt %}

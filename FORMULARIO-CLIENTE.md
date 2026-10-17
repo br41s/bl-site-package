@@ -106,6 +106,7 @@ _Página de inicio:_
 - Título principal:
 - Subtítulo:
 - Descripción:
+- Destacados (opcional: hasta tres frases cortas, una por línea, p. ej. «Cita en el día»):
 
 _Quiénes somos:_
 

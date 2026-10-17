@@ -1926,3 +1926,16 @@ body.infographic-lightbox-open {
     display: none;
   }
 }
+
+/* A title's accent word (src/content/accent-word.js, marked *word* by the
+   author). The Cálida sheet repaints it with its own accent ink. */
+.accent-word {
+  color: var(--accent);
+}
+/* The construction page's icon (site/_includes/icon.njk replaced the emoji,
+   which rendered differently on every device). */
+.construction-icon svg {
+  width: 48px;
+  height: 48px;
+  color: var(--accent);
+}

@@ -43,6 +43,9 @@ router.post("/complete", (req, res) => {
 
   setConfig("company_name", companyName);
   setConfig("sector", sector);
+  // New installs get the Cálida look (DESIGN.md §2). Existing deploys never
+  // run this, so they stay on the original look until the admin switches.
+  setConfig("site_style", "calida");
   setConfig("panel_password", panelPassword);
   if (openrouterApiKey) setConfig("openrouter_api_key", openrouterApiKey);
 
