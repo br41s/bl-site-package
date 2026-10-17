@@ -1,7 +1,7 @@
 # DESIGN.md — the look of the base site
 
-Status: **slice 1 implemented** (branch `feat/estilo-calida`, 2026-10-17); slices 2
-and 3 of §9 are pending. Brais chose direction C, «Cálida», from the look-and-feel
+Status: **slices 1 and 2 implemented** (slice 1 on branch `feat/estilo-calida`, slice 2
+stacked on it, both 2026-10-17); slice 3 of §9 is pending. Brais chose direction C, «Cálida», from the look-and-feel
 board (https://claude.ai/artifact/MzSrwrJqE9FcPta3gnE77d, artboard "C · Cálida"). This
 file is what the implementation is checked against; where the code settled on
 something other than the first draft, the text below says so. Read it before touching
@@ -126,9 +126,10 @@ behind everything: `--tint` top-left, `--tint-2` right.
 hero → highlights (inside hero) → `page_index_body` (if any, in a 68ch column) →
 **services teaser** → **about** → latest posts → CTA band → footer.
 
-- **Services teaser:** three cards from the `###` blocks of `page_servicios_desc`
-  (slice 2, see §9). Until then, and whenever the body has no `###` headings, a tint
-  band with the Servicios subtitle and a «Ver servicios» pill.
+- **Services teaser:** the first three cards from the `###` blocks of
+  `page_servicios_desc` (the same cards /servicios shows, §5.8), under the Servicios
+  title and subtitle, with a «Ver todos los servicios» link. Whenever the body has no
+  `###` headings, a tint band with the Servicios subtitle and a «Ver servicios» pill.
 - **About:** chip «Quiénes somos», `page_quienes_subtitle` as h2, the first paragraph
   of `page_quienes_desc_html`, a «Conocer al equipo» link, and `page_quienes_image` in
   the second blob shape (`45% 55% 40% 60% / 55% 45% 60% 40%`) with a tint blob behind.
@@ -153,7 +154,11 @@ hero → highlights (inside hero) → `page_index_body` (if any, in a 68ch colum
 `--bg-elevated`, 1 px `--border`, `--radius-card`, hover: `translateY(-6px)` and
 `--shadow-card`. Post card: 10 px padding with the cover inset at 18 px radius and a
 16:10 ratio, then a tag chip (first entry of `badgesList`, when any), Fraunces title,
-date and reading time. Service card: 56 px icon circle, Fraunces title, text, link.
+date and reading time. Content card (a `###` block of Servicios or Quiénes somos,
+§5.8): the block's first image as media at 4:3, or a 56 px circle with the card's
+number (services) or the first letter of the name (team); Fraunces title; the block's
+text, lists and links. 1.5 rem padding, 3 / 2 / 1 columns at the post grid's
+breakpoints.
 
 ### 5.6 CTA band
 
@@ -179,6 +184,27 @@ Fraunces h1 with the optional accent word, subtitle, image at `--radius-card`, b
 cards, the form sits in an elevated card with pill inputs; the privacy note and
 Turnstile slot are unchanged. Blog post: unchanged layout, Cálida type, TOC in a tint
 card. Legal pages: type and colour only.
+
+Two content-shaped pieces come out of the build, in Cálida only (slice 2; Clásico
+renders every body exactly as before, byte for byte):
+
+- **Cards from `###` blocks** (`src/content/content-cards.js`). On Servicios and
+  Quiénes somos every `###` heading and what follows it, up to the next `###` or
+  `##`, is a card (§5.5); the text before the first `###` stays prose above them, and
+  an `##` ends a run of cards, so a body can go prose → cards → prose → cards. A team
+  member's photo is the first image of their block. The home teaser (§5.3) shows the
+  first three services cards.
+- **FAQ accordions** (`src/content/faq-accordion.js`). The FAQ block the blog already
+  marks up for `buildFaqLd` — a `## Preguntas frecuentes` (or «FAQ», «Preguntas y
+  respuestas») heading, each question as `###` with its answer beneath, two or more
+  answered — renders on any of the four page bodies as `<details>` with a tinted,
+  rounded summary and a chevron, and the page emits its FAQPage JSON-LD like a post
+  does. Fewer than two answered questions and the block stays plain headings, so the
+  accordion and the data never disagree. Run before the cards transform, so the
+  questions are never mistaken for services.
+
+The not-found page is built like any other (`site/404.njk`, served with a 404 by
+`src/not-found.js`), so it carries the nav, footer and tokens of the site's style.
 
 ### 5.9 Catalogue
 
@@ -218,9 +244,10 @@ targets ≥ 44 px; decorative SVG `aria-hidden`; hero floating cards are real li
    motion; `page_index_highlights`; docs (`README.md`, `INSTRUCCIONES-CLIENTE.md` + PDF,
    `FORMULARIO-CLIENTE.md`); agent prompt note for the accent word and highlights
    (hermes repo, separate PR).
-2. **Content-shaped sections:** build-time transform that turns the `###` blocks of
-   Servicios and Quiénes somos into cards (services teaser on home, team cards), FAQ
-   accordions with FAQPage data on pages.
+2. **Content-shaped sections** (done, stacked on slice 1, 2026-10-17): build-time
+   transforms that turn the `###` blocks of Servicios and Quiénes somos into cards
+   (services teaser on home, team cards) and the FAQ block of any page body into
+   accordions with FAQPage data; the 404 page built in the site's style (§5.8).
 3. **More styles:** A «Editorial» and B «Studio» as token bundles plus the few
    style-specific rules each needs (hairlines and numbering; marquee and stickers).
 
@@ -231,4 +258,8 @@ targets ≥ 44 px; decorative SVG `aria-hidden`; hero floating cards are real li
 - One optional new field, `page_index_highlights`; everything else derives from
   existing data.
 - The accent word is marked by the author (`*word*`), never guessed.
-- Services cards from `###` blocks wait for slice 2; slice 1 ships the band fallback.
+- Services cards come from `###` blocks (slice 2); the tint band stays as the
+  fallback for a body without them.
+- Slice 2 is Cálida-only, the page-level FAQPage data included, so a Clásico build
+  stays byte-identical to the one before it. Emitting the data in both styles is a
+  one-line change in `site/_data/site.js` (`page_faq_ld`), should it ever be wanted.

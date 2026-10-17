@@ -1,0 +1,18 @@
+{#-
+  A page body as the sequence of segments src/content/content-cards.js
+  produces: prose in the usual 68ch column, each run of `###` blocks as a
+  card grid. Expects `sections` (the splitCards result) and `cardFallback`
+  (see card-calida.njk). Servicios and Quiénes somos include it in Cálida
+  when the body has at least one card; otherwise they render the plain body.
+-#}
+{%- for seg in sections.segments %}
+{%- if seg.cards %}
+<div class="c-card-grid reveal">
+  {%- for card in seg.cards %}
+  {% include "card-calida.njk" %}
+  {%- endfor %}
+</div>
+{%- else %}
+<div class="site-page-body reveal">{{ seg.html | safe }}</div>
+{%- endif %}
+{%- endfor %}

@@ -54,6 +54,23 @@ En los títulos de página puedes resaltar una palabra escribiéndola entre aste
 todo lo demás (pestaña del navegador, redes sociales, bot de WhatsApp) se muestra sin
 los asteriscos.
 
+Con el estilo Cálida, la estructura del Markdown también da forma a la página:
+
+- En **Servicios** y **Quiénes somos**, cada encabezado `###` y lo que le sigue (hasta
+  el siguiente `###` o `##`) se muestra como una tarjeta, en una rejilla de tres
+  columnas (dos en tablet, una en móvil). Lo escrito antes del primer `###` queda como
+  texto corrido encima; un `##` cierra la serie de tarjetas. La portada enseña las tres
+  primeras tarjetas de Servicios con un enlace «Ver todos los servicios». En Quiénes
+  somos, la primera imagen de cada bloque es la foto de la tarjeta (sin foto, la
+  inicial del nombre; en Servicios, el número de la tarjeta).
+- Un bloque de **preguntas frecuentes** — un encabezado `## Preguntas frecuentes` (o
+  «FAQ», «Preguntas y respuestas») seguido de cada pregunta como `###` con su respuesta
+  debajo, al menos dos — se muestra como preguntas desplegables y la página lleva los
+  datos estructurados FAQPage, igual que los artículos del blog. Vale en cualquiera de
+  las cuatro páginas.
+
+Con el estilo Clásico el cuerpo se muestra tal cual, como hasta ahora.
+
 ## Estilos
 
 El aspecto de la web se elige en el panel (Mi sitio → Apariencia → **Estilo**) y se

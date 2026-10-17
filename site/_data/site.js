@@ -1,6 +1,8 @@
 import { getConfig, PUBLIC_CONFIG_KEYS } from "../../src/db/database.js";
 import { formatContent } from "../../src/content/format-content.js";
-import { buildLocalBusinessLd } from "../../src/content/structured-data.js";
+import { renderFaqAccordions } from "../../src/content/faq-accordion.js";
+import { splitCards } from "../../src/content/content-cards.js";
+import { buildLocalBusinessLd, buildFaqLd } from "../../src/content/structured-data.js";
 import { isSmtpConfigured } from "../../src/mail/mailer.js";
 import {
   CONTACT_RETENTION_MONTHS,
@@ -28,6 +30,27 @@ export default function () {
   // The look of the site (DESIGN.md §2). Templates branch on this boolean;
   // anything else than "calida" is the original look.
   config.calida = config.site_style === "calida";
+  // Content-shaped sections of the Cálida style (DESIGN.md §5.5, §5.8, slice
+  // 2): build-time transforms over the sanitized HTML above, never over the
+  // Markdown, so formatContent stays the only XSS boundary. Only in Cálida —
+  // Clásico keeps the HTML byte for byte, so a release never changes a live
+  // site's look. FAQ blocks first, so their ### questions are inside <details>
+  // before the ### blocks of Servicios and Quiénes somos become cards. The
+  // FAQPage data of a page rides with its accordions (same block, same gate),
+  // keyed by the template's navActive for base.njk to emit.
+  if (config.calida) {
+    for (const k of ["index_body", "quienes_desc", "servicios_desc", "contacto_desc"]) {
+      config[`page_${k}_html`] = renderFaqAccordions(config[`page_${k}_html`]);
+    }
+    config.page_servicios_cards = splitCards(config.page_servicios_desc_html);
+    config.page_quienes_cards = splitCards(config.page_quienes_desc_html);
+    config.page_faq_ld = {
+      index: buildFaqLd(config.page_index_body),
+      quienes: buildFaqLd(config.page_quienes_desc),
+      servicios: buildFaqLd(config.page_servicios_desc),
+      contacto: buildFaqLd(config.page_contacto_desc),
+    };
+  }
   // Hero highlights (DESIGN.md §5.2): one per line, at most three, trimmed.
   config.highlights = String(config.page_index_highlights || "")
     .split(/\r?\n/)

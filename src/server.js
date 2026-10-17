@@ -24,6 +24,7 @@ import { startLiderpapelScheduler } from "./sync/liderpapel/scheduler.js";
 import { startUploadsCleanupScheduler } from "./media/cleanup-uploads.js";
 import { startRetentionScheduler } from "./privacy/retention.js";
 import { apiErrorHandler } from "./middleware/async-handler.js";
+import { notFoundHandler } from "./not-found.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -120,6 +121,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// The not-found page is built with the site (site/404.njk → _site/404.html),
+// so it follows site_style; web/404.html stands in until a first build exists.
+// Its own URLs answer 404 as well: left to the static mount below they would
+// be a 200, at /404.html and, through `extensions`, at /404.
+const notFound = notFoundHandler({
+  siteDir: join(__dirname, "../_site"),
+  webDir: join(__dirname, "../web"),
+});
+app.get(["/404", "/404.html"], notFound);
+
 // Public site pages — Eleventy-built static HTML (site/ -> _site/), rebuilt
 // on every content write (see src/build/rebuild.js). `extensions: ["html"]`
 // keeps clean URLs (/servicios, /blog/:slug) without redirects.
@@ -130,12 +141,8 @@ app.use(
 // Panel/setup assets (panel.js, setup.js, style-panel.css, etc.)
 app.use(express.static(join(__dirname, "../web")));
 
-// 404
-app.use((req, res) => {
-  res.status(404).sendFile(join(__dirname, "../web/404.html"), (err) => {
-    if (err) res.status(404).json({ error: "Not found" });
-  });
-});
+// 404 (src/not-found.js)
+app.use(notFound);
 
 // Last, so it sees every error a route passes on — a sync throw, or a
 // rejection forwarded by asyncHandler. Without it Express answers with an

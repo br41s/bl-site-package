@@ -172,6 +172,12 @@ export function buildArticleLd(article, site) {
   return ld;
 }
 
+// The FAQ convention the content agents follow: a heading whose text names the
+// section. Shared with src/content/faq-accordion.js, which renders the same
+// block as <details> on the Cálida pages, so the data and the accordion can
+// never disagree on what counts as an FAQ.
+export const FAQ_HEADING_TEXT = /\b(preguntas\s+frecuentes|preguntas\s+y\s+respuestas|faq)\b/i;
+
 // FAQPage JSON-LD parsed from an article's raw markdown. Keys off the FAQ
 // convention the content agents emit: an H2 whose text matches "preguntas
 // frecuentes"/"FAQ", followed by each question as an H3 with its answer in the
@@ -180,7 +186,7 @@ export function buildArticleLd(article, site) {
 export function buildFaqLd(content) {
   if (!content) return null;
 
-  const faqHeading = /^#{2,3}\s+.*\b(preguntas\s+frecuentes|preguntas\s+y\s+respuestas|faq)\b/i;
+  const faqHeading = new RegExp(`^#{2,3}\\s+.*${FAQ_HEADING_TEXT.source}`, "i");
   const lines = String(content).split(/\r?\n/);
   const items = [];
   let inFaq = false;

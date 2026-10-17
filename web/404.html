@@ -6,59 +6,20 @@
     <title>Página no encontrada</title>
     <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="stylesheet" href="/style.css" />
-    <style>
-      .site-404 {
-        min-height: calc(100dvh - 18rem);
-        display: grid;
-        place-items: center;
-        text-align: center;
-        padding: 4rem 1.5rem;
-      }
-      .site-404-inner {
-        max-width: 64rem;
-        display: grid;
-        gap: 1.2rem;
-        justify-items: center;
-      }
-      .site-404-code {
-        font-size: clamp(6.4rem, 12vw, 14rem);
-        line-height: 1;
-        letter-spacing: -0.05em;
-        color: var(--accent, #b8391c);
-        margin: 0;
-      }
-      .site-404-title {
-        margin: 0;
-        font-size: clamp(2.2rem, 4vw, 3.4rem);
-        color: var(--text-primary, #1f2328);
-      }
-    </style>
+    <link rel="stylesheet" href="/404.css" />
   </head>
   <body>
-    <div id="site-root"></div>
+    <!--
+      Fallback only. src/not-found.js sends the page Eleventy builds from
+      site/404.njk (nav, footer and the site's style) and falls back to this
+      file while no build exists yet. There is no config to draw a nav from
+      here, so it keeps to the message. Same markup as site/404.njk.
+    -->
+    <main class="site-404"><section class="site-404-inner">
+      <p class="site-404-code">404</p>
+      <h1 class="site-404-title">Página no encontrada</h1>
+      <a href="/" class="site-btn">Volver al inicio</a>
+    </section></main>
     <script src="/site.js"></script>
-    <script>
-      getConfig(function (cfg) {
-        var root = document.getElementById("site-root");
-        document.title =
-          "Página no encontrada" +
-          (cfg.company_name ? " — " + cfg.company_name : "");
-
-        var html = navHTML("", cfg);
-        html +=
-          '<main class="site-404">' +
-          '<section class="site-404-inner">' +
-          '<p class="site-404-code">404</p>' +
-          '<h1 class="site-404-title">Página no encontrada</h1>' +
-          '<a href="/" class="site-btn">Volver al inicio</a>' +
-          "</section>" +
-          "</main>";
-        html += footerHTML(cfg) + whatsappHTML(cfg);
-
-        root.innerHTML = html;
-        initTheme();
-        initReveals();
-      });
-    </script>
   </body>
 </html>

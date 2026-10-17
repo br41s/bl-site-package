@@ -152,6 +152,27 @@ How it is wired, and what must stay true:
   title raw again.
 - Fonts are self-hosted (`web/fonts/`, OFL notices beside them), so the legal pages
   needed no change; the style adds no storage key and no third-party request.
+- **Page bodies are reshaped at build time, in Cálida only** (DESIGN.md §5.8, slice
+  2). `site/_data/site.js` runs two transforms over the *sanitized* HTML — never the
+  Markdown, so `formatContent` stays the one XSS boundary — and only when
+  `site.calida`: `src/content/faq-accordion.js` turns the FAQ block `buildFaqLd`
+  reads (`## Preguntas frecuentes` + `###` questions, two or more answered) into
+  `<details class="c-faq">`, and `base.njk` emits the page's FAQPage JSON-LD from
+  `site.page_faq_ld[navActive]`; then `src/content/content-cards.js` turns every
+  other `###` block of Servicios and Quiénes somos into a card
+  (`site.page_servicios_cards` / `page_quienes_cards`, rendered by
+  `content-sections-calida.njk` and `card-calida.njk`; the home teaser shows the
+  first three). FAQ first, so its questions are never cards. `details` and
+  `summary` are written by the transform with fixed attributes; an author's
+  `<details>` is still stripped. In Clásico none of it runs and `page_*_desc_html`
+  is byte-identical: `src/build/calida-sections.test.js` builds both styles from
+  one database and checks.
+- **The 404 page is built with the site** (`site/404.njk` → `_site/404.html`, out of
+  collections so the sitemap never lists it) and `src/not-found.js` sends it with a
+  404 — as the catch-all and for `GET /404` and `/404.html`, which `express.static`
+  would otherwise answer with a 200. `web/404.html` is the fallback until a first
+  build exists; `web/404.css` is the page's own sheet, linked through `base.njk`'s
+  `pageStylesheet` front-matter key, so `style.css` did not change.
 
 ## Homepage game (`hero_game`)
 

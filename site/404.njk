@@ -1,0 +1,17 @@
+---
+layout: base.njk
+permalink: "/404.html"
+eleventyExcludeFromCollections: true
+title: "Página no encontrada"
+description: "Esta página no existe o ha cambiado de dirección."
+pageStylesheet: "/404.css"
+---
+{#- The not-found page, built like any other so it follows site_style: nav,
+    footer, fonts and tokens come from base.njk. src/not-found.js sends it with
+    a 404 status (and web/404.html stands in until a first build exists).
+    Excluded from collections so the sitemap never lists it. -#}
+<main class="site-404"><section class="site-404-inner">
+  <p class="site-404-code">404</p>
+  <h1 class="site-404-title">Página no encontrada</h1>
+  <a href="/" class="site-btn">Volver al inicio</a>
+</section></main>

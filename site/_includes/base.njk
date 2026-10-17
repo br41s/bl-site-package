@@ -59,11 +59,21 @@
   {%- if site.local_business_ld %}
   <script type="application/ld+json">{{ site.local_business_ld | jsonLd | safe }}</script>
   {%- endif %}
+  {#- FAQPage data for the page's own FAQ block (site/_data/site.js), the way
+      blog-post.njk emits it per post. Keyed by navActive; a page body without
+      the block has none. -#}
+  {%- if site.page_faq_ld and site.page_faq_ld[navActive] %}
+  <script type="application/ld+json">{{ site.page_faq_ld[navActive] | jsonLd | safe }}</script>
+  {%- endif %}
   <link rel="stylesheet" href="/fonts/fonts.css">
   <link rel="stylesheet" href="/style.css">
   {%- if site.calida %}
   <link rel="stylesheet" href="/fonts/fonts-calida.css">
   <link rel="stylesheet" href="/style-calida.css">
+  {%- endif %}
+  {#- A sheet for one page only, named in its front matter (site/404.njk). -#}
+  {%- if pageStylesheet %}
+  <link rel="stylesheet" href="{{ pageStylesheet }}">
   {%- endif %}
   {%- if accentCss or radiusMap[site.radius_style] %}
   <style>
