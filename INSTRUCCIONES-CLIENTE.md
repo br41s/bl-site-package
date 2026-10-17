@@ -35,7 +35,7 @@ Configura los textos de cada página de tu web:
 - **Apariencia** — **Estilo** de la web (*Cálida*, el estilo con el que se entregan las webs nuevas, o *Clásico*, el original), color destacado, bordes, tema y portada de inicio. En **Animación de portada** puedes activar *Reparto de pedidos*: una animación de tu almacén sirviendo pedidos a oficinas detrás del texto de inicio, que tus visitantes pueden convertir en un minijuego con el botón **Jugar a repartir**
 - **Modelo IA** — selecciona el modelo de inteligencia artificial para el agente (por defecto: gratuito)
 - **Notificaciones** — configura tu email para recibir avisos cuando alguien te contacte. Aquí están también tus **Datos legales**: razón social, NIF, domicilio, email, Registro Mercantil, tus formas de entrega y si estás adherido al arbitraje de consumo. Con ellos se escriben el Aviso legal, la Política de privacidad y las Condiciones de venta de tu web; si cambian, actualízalos aquí
-- **Integraciones** — conexiones de tu web con otros servicios: el captcha anti-spam del formulario de contacto (Turnstile), la dirección pública de tu web junto con la verificación de Google Search Console, y el botón flotante de WhatsApp
+- **Integraciones** — conexiones de tu web con otros servicios: el captcha anti-spam del formulario de contacto (Turnstile), la dirección pública de tu web junto con la verificación de Google Search Console, el **asistente de IA** (chat en tu web, servicio contratado aparte) y el botón flotante de WhatsApp
 
 ### Blog
 
@@ -197,6 +197,32 @@ Si una empresa olvida su contraseña también puede pedir el enlace ella misma, 
 - **Eliminar** la cuenta. Sus reservas anteriores se conservan.
 
 > **Una empresa quiere darse de alta.** Las empresas no pueden registrarse solas: en la página de acceso se les invita a contactar contigo, y eres tú quien decide a quién das de alta.
+
+### Asistente de IA: chat en tu web
+
+Si tienes contratado el asistente, un chat flotante responde a tus visitantes al momento con la información publicada en tu web (páginas, productos, precios y artículos). Se presenta siempre como asistente de IA y pasa la conversación a tu equipo cuando el visitante pide hablar con una persona, deja sus datos o pregunta algo que no está en la web. Si nadie responde en 15 minutos, el asistente retoma la conversación.
+
+Para activarlo:
+
+1. Pide el alta a tu proveedor. Recibirás la **dirección de la plataforma de chat** y el **token del chat**.
+2. En el panel → **Mi sitio web** → pestaña **Integraciones** → bloque **Asistente de IA: chat en tu web**, pega los dos datos, marca la casilla **Tengo contratado el asistente de IA** y pulsa **Guardar chat**.
+3. El botón de chat aparece en tu web tras la siguiente publicación. El icono **?** del bloque explica el funcionamiento con detalle.
+
+Respondes a las conversaciones en la plataforma de chat (te damos acceso) o desde la pestaña **WhatsApp** de **Mensajes**. Con la casilla marcada, tu Política de privacidad, la Política de cookies y la página de Uso de IA describen el chat tal como funciona.
+
+#### Responder a un cliente desde tu móvil (aviso por Telegram)
+
+Cada vez que el asistente pasa una conversación a tu equipo, puedes recibir un aviso en Telegram y responder desde el móvil en menos de un minuto. Así se activa y así funciona:
+
+1. Crea un grupo de Telegram con las personas que vayan a atender el chat (puede ser solo tú).
+2. Añade al grupo el bot **@b_l_hermes_bot** (en Telegram: miembros del grupo → añadir → busca ese nombre).
+3. Escribe cualquier mensaje en el grupo y dile a tu proveedor el nombre del grupo. En unos minutos queda conectado; no hay nada más que configurar.
+4. Desde entonces, cada traspaso llega al grupo como un aviso: tu empresa, el canal (chat de la web o WhatsApp), el motivo (el cliente pide hablar con una persona, ha dejado sus datos, pregunta algo que no está en la web…), su último mensaje y un enlace **Responder en Chatwoot**.
+5. Toca el enlace. Se abre la conversación en la plataforma de chat; la primera vez te pedirá entrar con el usuario y la contraseña que te hemos dado. Escribe en la caja de abajo y pulsa enviar: el cliente lo ve al instante en el chat de tu web (o en WhatsApp).
+6. Para no pasar por el navegador, instala la app **Chatwoot** (App Store o Google Play). En la pantalla de inicio indica la dirección de la plataforma que te hemos dado y entra con tu usuario: recibirás las notificaciones en el móvil y responderás desde ahí.
+7. Cuando termines, marca la conversación como **Resuelta**. Si vuelve a escribir, el asistente la atiende de nuevo y te avisa si hace falta.
+
+> Si nadie responde en 15 minutos, el asistente retoma la conversación para que el cliente no se quede sin respuesta; en cuanto una persona escribe, la conversación vuelve a ser suya.
 
 ### Mensajes
 
