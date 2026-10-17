@@ -1,0 +1,20 @@
+{#-
+  One content card in the Cálida style (DESIGN.md §5.5): a `###` block of a
+  page body, shaped by src/content/content-cards.js. Expects `card`, and
+  `cardFallback` for what stands in when the block has no image: "number"
+  (services, the card's position) or "initial" (team, the first letter of the
+  name). Title and body are sanitized HTML already, hence `safe`.
+-#}
+<article class="c-card">
+  {%- if card.image %}
+  <img src="{{ card.image.src }}" alt="{{ card.image.alt }}" class="c-card-media" loading="lazy" decoding="async">
+  {%- elif cardFallback == "initial" %}
+  <span class="c-icon-circle c-card-mark" aria-hidden="true">{{ card.initial }}</span>
+  {%- else %}
+  <span class="c-icon-circle c-card-mark" aria-hidden="true">{{ card.index }}</span>
+  {%- endif %}
+  <h3>{{ card.title | safe }}</h3>
+  {%- if card.html %}
+  <div class="c-card-body">{{ card.html | safe }}</div>
+  {%- endif %}
+</article>

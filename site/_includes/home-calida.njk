@@ -10,8 +10,11 @@
 
   Every optional piece renders only when its data exists: chip from sector and
   city, highlights from page_index_highlights, the phone card from biz_phone,
-  the hours chip from biz_hours (40 characters or fewer), the services band
-  and the about block from their pages' titles.
+  the hours chip from biz_hours (40 characters or fewer), the services teaser
+  and the about block from their pages' titles. The teaser shows the first
+  three ### blocks of the Servicios body as cards (site.page_servicios_cards,
+  the same partial /servicios renders) and falls back to the tint band when
+  the body has none.
 -#}
 {%- set heroGame = site.hero_game == "1" -%}
 {%- set bizPhone = site.biz_phone | trim -%}
@@ -89,6 +92,24 @@
 {%- endif %}
 {%- if site.page_servicios_title %}
 <section class="site-page c-section"><div class="site-page-inner">
+  {%- if site.page_servicios_cards.cards.length %}
+  <div class="c-section-head reveal">
+    <div>
+      <span class="c-chip">Servicios</span>
+      <h2>{{ site.page_servicios_title | accentWord | safe }}</h2>
+      {%- if site.page_servicios_subtitle %}
+      <p class="c-section-lead">{{ site.page_servicios_subtitle | safe }}</p>
+      {%- endif %}
+    </div>
+    <a href="/servicios" class="c-link">Ver todos los servicios {% set icon = "arrow" %}{% set iconSize = 16 %}{% include "icon.njk" %}</a>
+  </div>
+  <div class="c-card-grid reveal">
+    {%- set cardFallback = "number" %}
+    {%- for card in site.page_servicios_cards.cards.slice(0, 3) %}
+    {% include "card-calida.njk" %}
+    {%- endfor %}
+  </div>
+  {%- else %}
   <div class="c-band reveal">
     <div class="c-band-copy">
       <span class="c-chip">Servicios</span>
@@ -99,6 +120,7 @@
     </div>
     <a href="/servicios" class="site-btn">Ver servicios {% set icon = "arrow" %}{% set iconSize = 16 %}{% include "icon.njk" %}</a>
   </div>
+  {%- endif %}
 </div></section>
 {%- endif %}
 {%- if site.page_quienes_title %}

@@ -18,7 +18,12 @@ permalink: "/servicios.html"
   <img src="{{ site.page_servicios_image }}" alt="{{ site.page_servicios_image_alt or (site.page_servicios_title | plainTitle) }}" class="site-page-image reveal" loading="lazy" decoding="async">
   {%- endif %}
   {%- if site.page_servicios_desc %}
+  {%- if site.calida and site.page_servicios_cards.cards.length %}
+  {%- set sections = site.page_servicios_cards %}{% set cardFallback = "number" %}
+  {% include "content-sections-calida.njk" %}
+  {%- else %}
   <div class="site-page-body reveal">{{ site.page_servicios_desc_html | safe }}</div>
+  {%- endif %}
   {%- endif %}
 </div></main>
 {%- endif %}
