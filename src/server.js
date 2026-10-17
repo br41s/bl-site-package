@@ -2,6 +2,7 @@ import express from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { getConfig, DB_PATH } from "./db/database.js";
+import { buildCsp } from "./csp.js";
 import { buildOnStartup, stopBuild } from "./build/rebuild.js";
 import { UPLOADS_DIR as uploadsDir } from "./media/uploads-dir.js";
 import authRouter from "./api/auth.js";
@@ -60,17 +61,9 @@ if (process.env.STAGING === "true") {
 }
 
 app.use((req, res, next) => {
-  res.setHeader(
-    "Content-Security-Policy",
-    // img-src allows Liderpapel's product-image host so hotlinked catalog
-    // images aren't silently blocked. TODO: confirm the exact media host
-    // once real MultimediaLinks URLs are seen (see src/sync/liderpapel/mapping.js).
-    // script-src/frame-src/connect-src include challenges.cloudflare.com for
-    // the Turnstile widget on the contact page (site/contacto.njk) — it's
-    // opt-in (src/turnstile.js) but the CSP has to allow it unconditionally
-    // since this header is set before any per-page config is known.
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.liderpapel.com; connect-src 'self' https://openrouter.ai https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'",
-  );
+  // Built per request from config: the chat widget's origin is a per-deploy
+  // setting (panel -> Integraciones), and the header has to match it.
+  res.setHeader("Content-Security-Policy", buildCsp({ chatWidgetUrl: getConfig("chat_widget_url") }));
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");

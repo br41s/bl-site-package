@@ -465,4 +465,52 @@ describe("GET /api/knowledge", () => {
     assert.notEqual(a.etag, c.etag);
     delete process.env.KNOWLEDGE_API_TOKEN;
   });
+
+  // --- per-turn catalogue search for the bot ---
+
+  test("search is gated like the payload and advertised in it", async () => {
+    let res = await call("GET", "/api/knowledge/search?q=pluma");
+    assert.equal(res.status, 404);
+    process.env.KNOWLEDGE_API_TOKEN = "test-token-123";
+    res = await call("GET", "/api/knowledge/search?q=pluma");
+    assert.equal(res.status, 401);
+    const body = await (await call("GET", "/api/knowledge", { token: "test-token-123" })).json();
+    assert.equal(body.catalogue.search_path, "/api/knowledge/search");
+    delete process.env.KNOWLEDGE_API_TOKEN;
+  });
+
+  test("search matches every word first, then any word ranked by hits; our names win; categories too", async () => {
+    process.env.KNOWLEDGE_API_TOKEN = "test-token-123";
+    const ins = db.prepare("INSERT INTO products (sku, slug, name, description, category, price_cents, stock_qty, search_text, active, feed_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)");
+    ins.run("P1", "pluma-lamy-safari-azul", "Pluma estilográfica Lamy Safari azul", "Plumín acero", "Plumas estilográficas", 2995, 3, "pluma estilografica lamy safari azul plumin acero");
+    ins.run("P2", "pluma-parker-jotter", "Pluma Parker Jotter", "Acero inoxidable", "Plumas estilográficas", 2450, 0, "pluma parker jotter acero inoxidable");
+    ins.run("P3", "boligrafo-bic-cristal", "Bolígrafo BIC Cristal", "Punta media", "Bolígrafos", 35, 50, "boligrafo bic cristal punta media");
+    db.prepare("INSERT INTO product_content (sku, display_name, description_md, status, search_text) VALUES (?, ?, ?, 'owned', ?)")
+      .run("P1", "Lamy Safari, pluma estilográfica azul", "Nuestra ficha", "lamy safari pluma estilografica azul nuestra ficha");
+
+    let r = await (await call("GET", "/api/knowledge/search?q=" + encodeURIComponent("pluma lamy"), { token: "test-token-123" })).json();
+    assert.deepEqual(r.products.map((p) => p.sku), ["P1"]);
+    assert.equal(r.products[0].name, "Lamy Safari, pluma estilográfica azul");
+    assert.equal(r.products[0].url, "/productos/pluma-lamy-safari-azul");
+    assert.equal(r.products[0].price_eur, 29.95);
+
+    r = await (await call("GET", "/api/knowledge/search?q=" + encodeURIComponent("necesito una pluma de buena calidad"), { token: "test-token-123" })).json();
+    assert.deepEqual(r.products.map((p) => p.sku), ["P1", "P2"], "any-word fallback, in stock first");
+    assert.deepEqual(r.categories.map((c) => c.name), ["Plumas estilográficas"]);
+    assert.equal(r.categories[0].url, "/productos/categoria/plumas-estilograficas/");
+
+    // Sentence words are dropped; a name hit outranks a description mention.
+    ins.run("P4", "carton-pluma-blanco", "Cartón pluma blanco 5 mm", "Plancha ligera", "Papelería", 2577, 9, "carton pluma blanco 5 mm plancha ligera");
+    ins.run("P5", "estuche-plano", "Estuche plano", "Para una pluma o un bolígrafo de calidad", "Estuches", 466, 9, "estuche plano para una pluma o un boligrafo de calidad");
+    r = await (await call("GET", "/api/knowledge/search?q=" + encodeURIComponent("Hola, necesito una pluma de buena calidad, ¿qué tenéis?"), { token: "test-token-123" })).json();
+    assert.deepEqual(r.terms, ["pluma"]);
+    assert.deepEqual(r.products.map((p) => p.sku).slice(0, 3), ["P1", "P4", "P2"], "name hits first: in stock, then our owned sheet, then the rest; description mention last");
+    assert.equal(r.products.at(-1).sku, "P5");
+    assert.deepEqual(r.categories.map((c) => c.name), ["Plumas estilográficas"]);
+
+    r = await (await call("GET", "/api/knowledge/search?q=" + encodeURIComponent("grapadora"), { token: "test-token-123" })).json();
+    assert.deepEqual(r.products, []);
+    assert.deepEqual(r.categories, []);
+    delete process.env.KNOWLEDGE_API_TOKEN;
+  });
 });

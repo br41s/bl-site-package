@@ -31,6 +31,9 @@ permalink: "/cookies.html"
       {%- if site.hero_game == "1" %}
       <li><strong><code>bl-game-best</code></strong> — almacenamiento local. Guarda tu mejor puntuación en el minijuego de la portada. Solo se guarda si juegas.</li>
       {%- endif %}
+      {%- if site.chat_widget_url and site.chat_widget_token %}
+      <li><strong><code>cw_conversation</code></strong> — almacenamiento local, propio del chat de la web. Guarda un identificador de tu conversación para que puedas retomarla si vuelves. Solo se crea si abres el chat y escribes.</li>
+      {%- endif %}
     </ul>
     <p>Todos son necesarios para prestarte un servicio que tú pides (el carrito, tu sesión, tu preferencia de modo), por lo que la ley no exige pedirte consentimiento. Ninguno sirve para seguirte por otros sitios ni para hacer perfiles.</p>
 
@@ -38,6 +41,9 @@ permalink: "/cookies.html"
     <ul>
       {%- if products.length %}
       <li><strong>Imágenes de producto.</strong> Algunas fotografías de producto se cargan directamente desde los servidores de nuestro proveedor de catálogo. Como con cualquier imagen en internet, tu navegador se conecta a ese servidor, que recibe tu dirección IP y datos técnicos del navegador, y se rige por su propia política. No le cedemos ningún otro dato.</li>
+      {%- endif %}
+      {%- if site.chat_widget_url and site.chat_widget_token %}
+      <li><strong>Chat de la web.</strong> El botón de chat y la ventana de conversación se cargan desde la plataforma de conversaciones de nuestro proveedor de alojamiento y mantenimiento técnico, en servidores de la Unión Europea. Al abrir el chat, tu navegador se conecta a ese servidor, que recibe tu dirección IP y datos técnicos del navegador. No se cargan rastreadores ni publicidad.</li>
       {%- endif %}
       {%- if site.turnstile_site_key %}
       <li><strong>Verificación anti-spam del formulario de contacto.</strong> En la página de contacto se carga Cloudflare Turnstile (Cloudflare, Inc.), que comprueba que quien envía el formulario es una persona. Para ello analiza datos técnicos de tu navegador y tu conexión. Consulta la <a href="https://www.cloudflare.com/turnstile-privacy-policy/" target="_blank" rel="noopener noreferrer">política de privacidad de Turnstile</a>.</li>
