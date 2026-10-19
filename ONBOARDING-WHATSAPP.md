@@ -1,6 +1,6 @@
 # Onboarding WhatsApp — Asistente de IA
 
-> DRAFT interno — pendiente de probarse con un cliente real antes de considerarse definitivo.
+> Interno. Recorrido completo con el número de BigLobster el 19/10/2026; falta el primer cliente real.
 
 Este documento es para el equipo de BigLobster. No compartir con el cliente (salvo en sesión de formación).
 
@@ -12,7 +12,7 @@ El servicio WhatsApp de IA permite que los clientes reciban consultas directas e
 
 **Requiere:**
 - Cuenta de Meta Business verificada
-- Número de teléfono sin registrar en la app móvil de WhatsApp
+- Un número que el cliente controle para siempre y que no esté en la app de WhatsApp (ver paso 0)
 - Método de pago en Meta para las tarifas de WhatsApp (se le factura directamente al cliente, no a BigLobster)
 - Chatwoot para gestionar la cola de conversaciones (puede estar en la misma instancia que el cliente o en una instancia compartida)
 
@@ -20,119 +20,93 @@ El servicio WhatsApp de IA permite que los clientes reciban consultas directas e
 
 ## Checklist de instalación
 
-### 1. Crear una cuenta de Meta Business y activar 2FA
+> Probado de extremo a extremo con el número de BigLobster el 19/10/2026. Las rutas de menú de Meta y Twilio cambian a menudo: si algo no coincide, guíate por lo que pone la pantalla, no por esta lista.
 
-- [ ] El cliente accede a [business.facebook.com](https://business.facebook.com)
-- [ ] Crea una cuenta de Meta Business (si no tiene una ya)
-- [ ] Verifica su identidad y la información fiscal
-- [ ] **Activa la verificación en dos pasos** (Settings → Security → Two-Factor Authentication)
+### 0. Elegir el número
 
-**Por qué:** Meta requiere autenticación de dos factores para crear y administrar WABAs.
+El número tiene que poder recibir **una vez** un código por SMS o por llamada, no estar registrado en la app de WhatsApp y **seguir siendo del cliente para siempre**: si lo pierde, pierde su WhatsApp de empresa. Por orden de preferencia:
 
----
+1. **Su teléfono fijo de siempre.** Meta acepta fijos verificados con llamada de voz. Gratis, ya está en su ficha de Google y sus clientes lo conocen.
+2. **Una segunda línea o eSIM** a nombre de la empresa.
+3. **Un número virtual de su propiedad.** Twilio: un local +1 cuesta 1,15 $/mes sin papeleo; un +34 exige documentación con dirección en España. Ver el paso 3 para verificarlo.
 
-### 2. Crear una App de Meta y añadir el producto WhatsApp
+Evitar: SIM de prepago que caduca si no se recarga (la operadora recicla el número) y números que dependen de un tercero (por ejemplo, el de un agente registrador dentro de su app).
 
-- [ ] En business.facebook.com, ir a **Apps & Assets → Apps** → **Create App**
-- [ ] Tipo de app: **Business**
-- [ ] Nombre de la app: `[Nombre empresa] WhatsApp` (ej: `Fontanería García WhatsApp`)
-- [ ] Una vez creada la app, en el panel de la app: **Add Products → WhatsApp**
+Si el cliente quiere **seguir usando la app WhatsApp Business en su móvil** con el mismo número, eso es *Coexistence*: exige que BigLobster sea Tech Provider de Meta y el Embedded Signup de Chatwoot. Hoy no lo ofrecemos; el número que pase a Cloud API deja de funcionar en la app.
 
-**Por qué:** La app es el contenedor de credenciales. WhatsApp es un producto dentro de la app.
+### 1. Portfolio de empresa en Meta
 
----
+- [ ] El cliente entra en [business.facebook.com](https://business.facebook.com) y crea (o elige) el **portfolio de empresa** con los datos legales de la empresa.
+- [ ] Activa la **verificación en dos pasos de su cuenta de Facebook/Meta** (no confundir con el PIN de WhatsApp del paso 5).
 
-### 3. Crear una WABA (WhatsApp Business Account) y añadir un número
+### 2. Crear la app de Meta (caso de uso WhatsApp)
 
-- [ ] En el producto WhatsApp → **Getting Started → Create Account** (o **Accounts** si ya hay WABAs)
-- [ ] Rellena el nombre de la empresa, sector y página web del cliente
-- [ ] Toca **Create Account**
-- [ ] Elige un número de teléfono que **NO esté actualmente registrado en ningún dispositivo con la app móvil de WhatsApp**
+- [ ] [developers.facebook.com/apps](https://developers.facebook.com/apps) → **Create app** → caso de uso **Connect with customers through WhatsApp** → vincularla al portfolio del paso 1.
+- [ ] Dentro de la app, el caso de uso abre una guía: *Overview*, **Step 1. Try it out** (número de prueba de Meta: no hace falta), **Step 2. Production setup** (lo que usamos) y *Step 3. Business verification*.
 
-**IMPORTANTE:** Migrar un número existente de WhatsApp personal es un proceso de Meta de 24–72 horas que lo elimina de la app normal durante ese tiempo. Avisar al cliente con claridad: si usa WhatsApp en su móvil, necesita un número diferente (una segunda línea, una eSIM, o esperar a migrar y quedar sin WhatsApp personal durante el proceso). La mayoría de clientes pequeños prefieren comprar un segundo número.
+### 3. Añadir y verificar el número (Step 2 → *Register your WhatsApp phone number*)
 
-- [ ] Meta envía un código SMS a ese teléfono. Verifica el código en la web.
-- [ ] Una vez verificado, el número aparece en la WABA.
+- [ ] **Add new number** → datos de la empresa (nombre legal, web, país) → perfil de WhatsApp (nombre visible, zona horaria, categoría, descripción) → número → método de verificación.
+- [ ] El **nombre visible** debe coincidir con el nombre de la empresa o de su web; Meta lo revisa, pero se puede enviar y recibir mientras tanto.
+- [ ] Fijo o número virtual: elegir **Phone call**.
 
----
+**Si el número es de Twilio:** un número +1 sin registro A2P 10DLC aparece como *Messaging disabled*, así que no cuentes con el SMS. Verifica por **llamada**:
 
-### 4. Añadir un método de pago
+1. Twilio → **TwiML Bins → Create new** con:
+   ```xml
+   <Response><Record maxLength="60" playBeep="false"/></Response>
+   ```
+2. **Phone Numbers → Active numbers → el número → Configuration details → Voice and emergency address → Edit configuration details** → método principal **TwiML Bin** → ese bin → **Save**.
+3. Prueba llamando tú: en **Call logs** debe aparecer la llamada con grabación.
+4. En Meta, *Phone call*; el código se escucha en **Call logs → la llamada → Recording**.
+5. **Al terminar**, cambia la voz del número: ese bin graba a cualquiera que llame. Si el número va a ser público, pon un buzón con aviso (`<Say>` antes del `<Record>`) y decláralo en la política de privacidad del cliente.
 
-- [ ] En la WABA → **Settings → Billing** (o en la app → **Billing**)
-- [ ] Toca **Add Payment Method**
-- [ ] Rellena los datos de tarjeta o cuenta bancaria del cliente
-- [ ] Meta le enviará una factura mensual a ese método de pago
+### 4. Usuario de sistema y token permanente
 
-**Importante:** El cliente paga directamente a Meta por las tarifas de conversación (normalmente entre 5€ y 30€/mes según volumen). BigLobster cobra por infraestructura (49€/mes) aparte.
+En [business.facebook.com/latest/settings/system_users](https://business.facebook.com/latest/settings/system_users) (portfolio del cliente):
 
----
+- [ ] **Add** → la primera vez Meta pide aceptar su política de no discriminación en anuncios (la acepta el cliente) → nombre `chatwoot`, rol **Employee**.
+- [ ] **Assign assets**:
+  - *Apps* → la app del paso 2 → **Develop app**.
+  - *WhatsApp accounts* → su WABA → **Manage phone numbers and message templates** + **Messages**.
+- [ ] **Generate token** → la app → caducidad **Never** (Chatwoot no renueva tokens) → permisos `whatsapp_business_management` y `whatsapp_business_messaging`.
+- [ ] Meta lo muestra **una sola vez**: va directo al gestor de contraseñas. Nunca por chat ni por email.
+- [ ] Anota el **Phone Number ID** y el **WhatsApp Business Account ID** que aparecen en Step 2 bajo el número. No son secretos.
 
-### 5. Generar un token de acceso permanente y anotar IDs
+### 5. Registrar el número en Cloud API
 
-- [ ] En el producto WhatsApp → **Configuration → Access Tokens**
-- [ ] Genera un token con alcance `whatsapp_business_messaging` y `whatsapp_business_management`
-- [ ] Copia el token (lo necesitarás en el paso 6)
-- [ ] En la WABA → **Settings**, anota:
-  - `phone_number_id` (formato: número largo de dígitos)
-  - `business_account_id` (WABA ID)
-- [ ] En la App de Meta → **Settings → Basic**, anota:
-  - `app_id`
-  - `app_secret` (guárdalo bien)
+El número tiene que quedar **Registered** (no *Pending*). El botón **Register** de Step 2 pide un PIN de 6 dígitos nuevo. Si falla con un error genérico y WhatsApp Manager muestra el número como *Pending* («Please register this phone number using the registration API»), regístralo por API desde un terminal; el comando pide token y PIN sin mostrarlos ni dejarlos en el historial:
 
-**Por qué:** Chatwoot necesita estos datos para conectarse a la WABA.
+```bash
+read -s "TOKEN?Token: " && echo && read -s "PIN?PIN: " && echo && curl -s -X POST "https://graph.facebook.com/v25.0/<PHONE_NUMBER_ID>/register" -H "Authorization: Bearer $TOKEN" -d messaging_product=whatsapp -d pin="$PIN"; echo
+```
 
----
+`{"success":true}` = registrado. El PIN que pongas **pasa a ser la verificación en dos pasos del número**: guárdalo junto al token; hace falta para volver a registrarlo.
 
 ### 6. Crear el inbox de WhatsApp en Chatwoot
 
-Este paso va en la instancia de Chatwoot donde atienda el cliente (puede ser compartida o dedicada).
+En la Account del cliente (Chatwoot 4.17):
 
-- [ ] Chatwoot → **Settings → Inboxes → Add Inbox**
-- [ ] Tipo: **WhatsApp Cloud**
-- [ ] Rellena:
-  - **Access Token** → el token del paso 5
-  - **Phone Number ID** → el del paso 5
-  - **Business Account ID** → el del paso 5
-- [ ] Toca **Create WhatsApp Channel**
+- [ ] **Settings → Inboxes → Add Inbox → WhatsApp → WhatsApp Cloud**.
+- [ ] Rellenar **Inbox Name**, **Phone number** (formato `+<prefijo><número>`), **Phone number ID**, **Business Account ID** y **API key** (el token del paso 4, lo pega quien lo tenga).
+- [ ] **Create WhatsApp Channel** → añadir como agente a la persona que atenderá los traspasos.
+- [ ] La pantalla final muestra la **Webhook URL** (`https://<chatwoot>/webhooks/whatsapp/+<número>`) y el **Webhook Verification Token**. Ambos siguen disponibles en el inbox → pestaña **Configuration**.
+- [ ] Inbox → pestaña **Bot Configuration** → elegir el Agent Bot de la Account del cliente → **Update**.
 
-Chatwoot valida los datos en tiempo real. Si hay un error, comprueba que:
-- El token es válido y no está expirado
-- El `phone_number_id` y `business_account_id` son los correctos
-- La WABA tiene un número verificado
+### 7. Webhook, suscripciones y publicación en Meta
 
----
+- [ ] Step 2 → **Configure Webhooks**: *Callback URL* = Webhook URL de Chatwoot, *Verify token* = el de Chatwoot → **Verify and save**.
+- [ ] En la misma sección, tabla **Webhook fields**: activar **`messages`**. Viene **desactivado** aunque Meta diga que suscribe los campos comunes; sin él no entra ningún mensaje.
+- [ ] Step 2 → *Register your WhatsApp phone number*: interruptor **Subscribe webhooks** de la WABA en azul.
+- [ ] **Publicar la app.** Mientras esté *Unpublished*, Meta solo entrega webhooks de prueba: ni los mensajes de los administradores llegan. Antes, en **App settings → Basic**: dominio, URL de privacidad, URL de condiciones, URL de borrado de datos y categoría. Luego **Publish → Publish**.
+- [ ] Método de pago: solo hace falta para mensajes que inicia la empresa (plantillas). Responder dentro de las 24 h desde que escribe el cliente no lo necesita.
 
-### 7. Configurar el webhook en la App de Meta
+### 8. Prueba de extremo a extremo
 
-- [ ] En la App de Meta → **WhatsApp → Configuration → Webhook**
-- [ ] Copia la **URL de webhook** que Chatwoot te da en el inbox de WhatsApp (normalmente algo como `https://chatwoot.example.com/webhooks/whatsapp_cloud/[inbox_id]`)
-- [ ] Pégala en el campo **Webhook URL** de Meta
-- [ ] Rellena el **Verify Token** (puede ser cualquier string, pero Chatwoot sugiere uno específico — revisa el inbox)
-- [ ] Toca **Verify and Save**
-
-Meta envía una petición GET a esa URL. Si Chatwoot responde correctamente, el webhook queda validado.
-
-- [ ] Una vez validado, en **Subscribe to Webhook Fields**, marca explícitamente:
-  - [ ] `messages`
-  - [ ] (optativo: `message_status` para ver si se entregó/leyó)
-
-**Importante:** A veces Meta no suscribe automáticamente a `messages`. Marca explícitamente o los mensajes entrantes no llegarán a Chatwoot.
-
----
-
-### 8. Enviar un mensaje de prueba de extremo a extremo
-
-- [ ] Desde un teléfono personal (no el número de negocio), envía un mensaje al número de la WABA
-- [ ] Espera 2–3 segundos
-- [ ] En Chatwoot → el inbox de WhatsApp debe mostrar una nueva conversación con el número del cliente
-- [ ] Responde desde Chatwoot
-- [ ] Espera 2–3 segundos
-- [ ] En el teléfono personal, recibirás la respuesta de Chatwoot
-
-Si algo falla:
-- Revisa los logs de Chatwoot (`docker logs chatwoot_rails` si está en contenedor)
-- Comprueba que el webhook está "Connected" en Meta App → WhatsApp Configuration
-- Verifica que `phone_number_id` y `business_account_id` en Chatwoot son exactos (sin espacios)
+- [ ] Desde un móvil personal, escribir al número (`https://wa.me/<número sin +>`).
+- [ ] En Chatwoot, la conversación entra en el inbox como **Pending** mientras la lleva el bot: no sale con el filtro por defecto (*Open*); cambia el filtro de estado.
+- [ ] La respuesta del bot debe figurar como **delivered** (Meta confirmó la entrega) y llegar al móvil.
+- [ ] `GET https://bl-whatsapp-bot.zeabur.app/health` → `lastOpenRouterCallAt` reciente y `lastOpenRouterCallOk: true`.
 
 ---
 
@@ -177,7 +151,10 @@ Antes de entregar al cliente, valida:
 | Problema | Causa probable | Solución |
 |----------|------------------|----------|
 | "Webhook validation failed" en Meta | Verify Token incorrecto o webhook URL no responde | Revisa que el token coincida en Meta y Chatwoot; reintenta |
-| Mensajes no llegan a Chatwoot | Campo `messages` no suscrito en Meta | Vuelve a Settings → Webhook → marca `messages` explícitamente |
+| Mensajes no llegan a Chatwoot | Campo `messages` no suscrito, WABA sin suscribir o app sin publicar | Step 2 → Configure Webhooks → Webhook fields → `messages` activado; *Subscribe webhooks* de la WABA activado; app **Published** |
+| El número sigue *Pending* en WhatsApp Manager | El botón Register del panel falló (error genérico) | Registrarlo por API con el comando del paso 5 |
+| No llega el SMS de verificación a un número de Twilio | Número +1 sin registro A2P: *Messaging disabled* | Verificar por llamada con el TwiML Bin del paso 3 |
+| La conversación no aparece en el inbox | Está en *Pending* (la lleva el bot) y el filtro por defecto es *Open* | Cambiar el filtro de estado a *Pending* o *All* |
 | Chatwoot no se conecta a WABA | ID incorrecto o token expirado | Copia y pega sin espacios; renueva el token si falta hace meses |
 | Respuestas tardan mucho | Congestión de Red o problema en el IA | Mira logs de Chatwoot y OpenRouter; espera o reinicia |
 | El IA no responde, Chatwoot sí | Knowledge base token no válido | Revisa que el cliente haya generado el token con permisos de lectura |
