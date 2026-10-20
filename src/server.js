@@ -1,7 +1,7 @@
 import express from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { getConfig, DB_PATH } from "./db/database.js";
+import db, { getConfig, DB_PATH } from "./db/database.js";
 import { buildCsp } from "./csp.js";
 import { buildOnStartup, stopBuild } from "./build/rebuild.js";
 import { UPLOADS_DIR as uploadsDir } from "./media/uploads-dir.js";
@@ -13,7 +13,8 @@ import setupRouter from "./api/setup.js";
 import siteRouter from "./api/site.js";
 import productsRouter from "./api/products.js";
 import productContentRouter from "./api/product-content.js";
-import redirectsRouter, { findLiveRedirect } from "./api/redirects.js";
+import redirectsRouter, { findLiveRedirect, resolvesOnDisk } from "./api/redirects.js";
+import { legacyUrlHandler } from "./legacy-urls.js";
 import reservationsRouter from "./api/reservations.js";
 import b2bRouter from "./api/b2b.js";
 import pricingRouter from "./api/pricing.js";
@@ -120,6 +121,18 @@ app.use((req, res, next) => {
   if (hit) return res.redirect(301, hit.new_path);
   next();
 });
+
+// URLs of the distributor's old white-label shop that Google still has
+// indexed (src/legacy-urls.js): redirected by shape, not one row per URL.
+const soldSlugBySku = db.prepare(
+  "SELECT slug FROM products WHERE sku = ? AND active = 1 AND feed_active = 1",
+);
+app.use(
+  legacyUrlHandler({
+    findSoldSlug: (sku) => soldSlugBySku.get(sku)?.slug,
+    categoryExists: (slug) => resolvesOnDisk(`/productos/categoria/${slug}`),
+  }),
+);
 
 // The not-found page is built with the site (site/404.njk → _site/404.html),
 // so it follows site_style; web/404.html stands in until a first build exists.
