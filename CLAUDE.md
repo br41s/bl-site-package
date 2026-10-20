@@ -263,6 +263,16 @@ Three consequences worth holding on to:
   the full row. The routes return `SELECT *`, so a new confidential column goes on that
   list, not on a per-route allow-list someone has to remember.
 
+**The distributor's old shop URLs are redirected by shape** (`src/legacy-urls.js`,
+mounted in `server.js` after the per-path `redirects` table). A client who moved here from
+the Liderpapel/Calipage white-label shop still has its URLs indexed, and Search Console
+reported ~1,000 of them as 404 (2026-10-20): `/product/<id>-….html` and any `PStores`
+URL carrying `codProduct=<id>` go to `/productos/<slug>` (the feed id is the `sku`), a
+`/cat/<n>-<slug>.html` or `/searchcat/…` category goes to `/productos/categoria/<slug>`
+when that page is built, and everything else (filtered listings, products no longer sold,
+categories we do not have) goes to `/productos`. Nothing else matches, so the site's own
+URLs are untouched. Use the `redirects` table for one-off dead paths, not for these.
+
 ## B2B area (trade prices)
 
 Opt-in per deploy (`b2b_enabled`, default off; panel → Profesionales). The
