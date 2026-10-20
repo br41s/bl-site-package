@@ -56,28 +56,28 @@ describe("legacy shop URLs", () => {
 
   test("a product we no longer sell goes to the shop, not a 404", async () => {
     const get = await serve();
-    await expectRedirect(get, "/product/1-descatalogado.html", "/productos");
-    await expectRedirect(get, "/searchcat/PStores?codProduct=999", "/productos");
+    await expectRedirect(get, "/product/1-descatalogado.html", "/productos/");
+    await expectRedirect(get, "/searchcat/PStores?codProduct=999", "/productos/");
   });
 
   test("a category goes to ours when it is built, else to the shop", async () => {
     const get = await serve();
-    await expectRedirect(get, "/cat/20-plastificadoras.html", "/productos/categoria/plastificadoras");
-    await expectRedirect(get, "/searchcat/12-calculadoras-de-bolsillo.html", "/productos");
-    await expectRedirect(get, "/searchcat/231-cartulinas.html_?codCategory=231&p=1", "/productos");
-    await expectRedirect(get, "/searchcat/164-164.html", "/productos");
+    await expectRedirect(get, "/cat/20-plastificadoras.html", "/productos/categoria/plastificadoras/");
+    await expectRedirect(get, "/searchcat/12-calculadoras-de-bolsillo.html", "/productos/");
+    await expectRedirect(get, "/searchcat/231-cartulinas.html_?codCategory=231&p=1", "/productos/");
+    await expectRedirect(get, "/searchcat/164-164.html", "/productos/");
   });
 
   test("filtered listings of the old shop go to the shop", async () => {
     const get = await serve();
-    await expectRedirect(get, "/PStores?searchString&codCategory=199&elementByPage=48", "/productos");
-    await expectRedirect(get, "/PStores;jsessionid=1C66F64A7F4129C9A217BE2CADAA3239?codCategory=199", "/productos");
-    await expectRedirect(get, "/searchcat/PStores?searchString&codCategory=29", "/productos");
+    await expectRedirect(get, "/PStores?searchString&codCategory=199&elementByPage=48", "/productos/");
+    await expectRedirect(get, "/PStores;jsessionid=1C66F64A7F4129C9A217BE2CADAA3239?codCategory=199", "/productos/");
+    await expectRedirect(get, "/searchcat/PStores?searchString&codCategory=29", "/productos/");
   });
 
   test("this site's own URLs and non-GET requests are left alone", async () => {
     const get = await serve();
-    for (const path of ["/productos", "/productos/172667-bloc-musica-y-canto.html", "/producto", "/servicios"]) {
+    for (const path of ["/productos/", "/productos/172667-bloc-musica-y-canto.html", "/producto", "/servicios"]) {
       assert.equal((await get(path)).status, 404, path);
     }
     assert.equal((await get("/product/172667-x.html", { method: "POST" })).status, 404);
