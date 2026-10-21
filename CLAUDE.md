@@ -268,9 +268,10 @@ mounted in `server.js` after the per-path `redirects` table). A client who moved
 the Liderpapel/Calipage white-label shop still has its URLs indexed, and Search Console
 reported ~1,000 of them as 404 (2026-10-20): `/product/<id>-….html` and any `PStores`
 URL carrying `codProduct=<id>` go to `/productos/<slug>` (the feed id is the `sku`), a
-`/cat/<n>-<slug>.html` or `/searchcat/…` category goes to `/productos/categoria/<slug>`
+`/cat/<n>-<slug>.html` or `/searchcat/…` category goes to `/productos/categoria/<slug>/`
 when that page is built, and everything else (filtered listings, products no longer sold,
-categories we do not have) goes to `/productos`. Nothing else matches, so the site's own
+categories we do not have) goes to `/productos/`. Targets carry the trailing slash on
+purpose: the static mount adds a second 301 to a directory without one. Nothing else matches, so the site's own
 URLs are untouched. Use the `redirects` table for one-off dead paths, not for these.
 
 ## B2B area (trade prices)

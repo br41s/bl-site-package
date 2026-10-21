@@ -5,7 +5,7 @@
 //
 //   /product/172667-bloc-musica….html            the product's feed id is its
 //   …/PStores;jsessionid=…?…codProduct=172667…   sku, so → /productos/<slug>
-//   /cat/20-plastificadoras.html                 → /productos/categoria/<slug>
+//   /cat/20-plastificadoras.html                 → /productos/categoria/<slug>/
 //   /searchcat/12-calculadoras-de-bolsillo.html     when we have it, else the shop
 //   /PStores?…codCategory=199&elementByPage=48…  a filtered listing → /productos
 //
@@ -17,7 +17,9 @@ const PRODUCT_PAGE = /^\/product\/(\d+)-[^/]*\.html$/;
 const CATEGORY_PAGE = /^\/(?:cat|searchcat)\/\d+-([a-z0-9-]+)\.html_?$/;
 // `;jsessionid=…` rides on the path of the old shop's session URLs.
 const SHOP_PAGE = /^\/(?:product\/|searchcat\/)?PStores(?:;[^?]*)?$/;
-const SHOP = "/productos";
+// With the trailing slash: the static mount answers a directory without one
+// with a second 301, so a bare `/productos` made every redirect two hops.
+const SHOP = "/productos/";
 
 // `findSoldSlug(sku)` → slug of a product we still sell, else undefined.
 // `categoryExists(slug)` → whether /productos/categoria/<slug> is built.
@@ -29,12 +31,12 @@ export function legacyTarget(url, { findSoldSlug, categoryExists }) {
   if (product || shop) {
     const sku = product ? product[1] : searchParams.get("codProduct");
     const slug = sku && findSoldSlug(sku);
-    return slug ? `${SHOP}/${slug}.html` : SHOP;
+    return slug ? `${SHOP}${slug}.html` : SHOP;
   }
 
   const category = pathname.match(CATEGORY_PAGE);
   if (category) {
-    return categoryExists(category[1]) ? `${SHOP}/categoria/${category[1]}` : SHOP;
+    return categoryExists(category[1]) ? `${SHOP}categoria/${category[1]}/` : SHOP;
   }
 
   return null;
