@@ -15,6 +15,7 @@ import productsRouter from "./api/products.js";
 import productContentRouter from "./api/product-content.js";
 import redirectsRouter, { findLiveRedirect, resolvesOnDisk } from "./api/redirects.js";
 import { legacyUrlHandler } from "./legacy-urls.js";
+import { cleanUrlHandler } from "./clean-urls.js";
 import reservationsRouter from "./api/reservations.js";
 import b2bRouter from "./api/b2b.js";
 import pricingRouter from "./api/pricing.js";
@@ -133,6 +134,10 @@ app.use(
     categoryExists: (slug) => resolvesOnDisk(`/productos/categoria/${slug}`),
   }),
 );
+
+// A built page has one address: its .html twin 301s to the clean one that the
+// canonical and the sitemap already use (src/clean-urls.js).
+app.use(cleanUrlHandler());
 
 // The not-found page is built with the site (site/404.njk → _site/404.html),
 // so it follows site_style; web/404.html stands in until a first build exists.

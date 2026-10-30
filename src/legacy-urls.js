@@ -14,7 +14,7 @@
 // crawler were getting. Everything else — including this site's own
 // /productos/… — never matches, so a normal request costs one regex test.
 const PRODUCT_PAGE = /^\/product\/(\d+)-[^/]*\.html$/;
-const CATEGORY_PAGE = /^\/(?:cat|searchcat)\/\d+-([a-z0-9-]+)\.html_?$/;
+const CATEGORY_PAGE = /^\/(?:cat|searchcat)\/\d+-([a-z0-9-]*)\.html_?$/;
 // `;jsessionid=…` rides on the path of the old shop's session URLs.
 const SHOP_PAGE = /^\/(?:product\/|searchcat\/)?PStores(?:;[^?]*)?$/;
 // With the trailing slash: the static mount answers a directory without one
@@ -31,12 +31,14 @@ export function legacyTarget(url, { findSoldSlug, categoryExists }) {
   if (product || shop) {
     const sku = product ? product[1] : searchParams.get("codProduct");
     const slug = sku && findSoldSlug(sku);
-    return slug ? `${SHOP}${slug}.html` : SHOP;
+    // The clean form, not `.html`: that is the page's canonical, and a redirect
+    // into its twin made Google list the twin as an alternate page.
+    return slug ? `${SHOP}${slug}` : SHOP;
   }
 
   const category = pathname.match(CATEGORY_PAGE);
   if (category) {
-    return categoryExists(category[1]) ? `${SHOP}categoria/${category[1]}/` : SHOP;
+    return category[1] && categoryExists(category[1]) ? `${SHOP}categoria/${category[1]}/` : SHOP;
   }
 
   return null;

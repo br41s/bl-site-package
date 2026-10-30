@@ -42,7 +42,7 @@ describe("legacy shop URLs", () => {
     await expectRedirect(
       get,
       "/product/172667-bloc-musica-y-canto-liderpapel-pentagrama-din-a4-24-hojas-100gm2.html",
-      "/productos/172667-bloc-musica-y-canto.html",
+      "/productos/172667-bloc-musica-y-canto",
     );
   });
 
@@ -50,7 +50,7 @@ describe("legacy shop URLs", () => {
     const get = await serve();
     const q = "?s=7766&o=product_b2c&p=1&codProduct=92382&descProduct=boligrafo-bic";
     for (const prefix of ["/product/PStores", "/searchcat/PStores;jsessionid=7C3E4A73B5479C4D13844D09484DFBDA"]) {
-      await expectRedirect(get, prefix + q, "/productos/92382-boligrafo-bic-cristal.html");
+      await expectRedirect(get, prefix + q, "/productos/92382-boligrafo-bic-cristal");
     }
   });
 
@@ -66,6 +66,7 @@ describe("legacy shop URLs", () => {
     await expectRedirect(get, "/searchcat/12-calculadoras-de-bolsillo.html", "/productos/");
     await expectRedirect(get, "/searchcat/231-cartulinas.html_?codCategory=231&p=1", "/productos/");
     await expectRedirect(get, "/searchcat/164-164.html", "/productos/");
+    await expectRedirect(get, "/searchcat/79-.html", "/productos/");
   });
 
   test("filtered listings of the old shop go to the shop", async () => {
