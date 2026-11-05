@@ -1,5 +1,0 @@
-{
-  "build_command": "npm ci --omit=dev",
-  "start_command": "node src/server.js",
-  "persistent_storage_dir": "/app/data"
-}
