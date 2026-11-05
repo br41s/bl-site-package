@@ -1,9 +1,9 @@
 // Minimal in-memory fixed-window rate limiter.
 //
-// Deliberately dependency-free and keyed on `req.ip`. This package runs one
-// container + one SQLite file per client, so an in-process counter is enough;
-// if a client ever scales to multiple instances, swap this for a shared-store
-// limiter (e.g. express-rate-limit backed by Redis).
+// Deliberately dependency-free and keyed on `clientIp(req)` (./client-ip.js).
+// This package runs one container + one SQLite file per client, so an
+// in-process counter is enough; if a client ever scales to multiple instances,
+// swap this for a shared-store limiter (e.g. express-rate-limit backed by Redis).
 //
 // NOTE on `req.ip` behind a proxy: Express `trust proxy` is off unless the
 // deploy sets TRUST_PROXY_HOPS (see src/server.js). Without it, `req.ip` is
@@ -12,12 +12,14 @@
 // endpoint fills the same bucket a legitimate visitor is using and locks
 // them out too, not just itself.
 
+import { clientIp } from "./client-ip.js";
+
 const buckets = new Map(); // key -> { count, resetAt }
 
 export function rateLimit({ windowMs, max, message }) {
   return (req, res, next) => {
     const now = Date.now();
-    const key = `${req.baseUrl}${req.path}:${req.ip}`;
+    const key = `${req.baseUrl}${req.path}:${clientIp(req)}`;
 
     let bucket = buckets.get(key);
     if (!bucket || now >= bucket.resetAt) {
