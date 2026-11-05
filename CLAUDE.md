@@ -24,6 +24,16 @@ during which the event loop answered no request at all, and the Product Sheet Wr
 read right after each publish timed out 10-23 times a day. `src/build/rebuild.test.js`
 runs a real build and fails if a request is not served while it is in flight.
 
+**The rate limiter keys on `clientIp(req)`, never `req.ip`** (`src/middleware/client-ip.js`).
+`req.ip` comes from `TRUST_PROXY_HOPS`; when that peer is in Cloudflare's published ranges it is
+an edge shared by many visitors, so the key is `CF-Connecting-IP` (IPv6: its /64). The header
+is believed only then, so a direct request cannot fake it and a deploy off Cloudflare (Plesk,
+with or without `TRUST_PROXY_HOPS`) behaves exactly as `req.ip` does. Cloudflare is not a hop:
+counting it makes `req.ip` forgeable on a direct request to the origin. A request with `CF-Worker` keeps
+plain `req.ip`: a Cloudflare Worker sends from Cloudflare's addresses and can write its own
+`CF-Connecting-IP`, even at a client host off Cloudflare. Refresh the ranges from
+cloudflare.com/ips if Cloudflare adds one.
+
 **Every async route goes through `asyncHandler`** (`src/middleware/async-handler.js`).
 Express 4 does not catch a rejected promise, and Node 22 exits on an unhandled rejection:
 one throw in an unwrapped async route takes the client's site down. `apiErrorHandler`,

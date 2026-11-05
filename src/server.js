@@ -32,13 +32,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// req.ip (and therefore the rate limiter in src/middleware/rateLimit.js) is
-// only the real visitor IP if Express knows how many reverse-proxy hops to
-// peel off X-Forwarded-For. Off by default: trusting the wrong hop count lets
-// a client spoof that header and dodge rate limits, and the hop count differs
-// per deploy target (Zeabur's ingress vs. a Plesk/Passenger host). Set
-// TRUST_PROXY_HOPS once confirmed for a given deployment — Zeabur's ingress
-// is a single hop, so TRUST_PROXY_HOPS=1 there.
+// req.ip is only the peer nearest the visitor if Express knows how many
+// reverse-proxy hops to peel off X-Forwarded-For. Off by default: trusting the
+// wrong hop count lets a client spoof that header and dodge rate limits, and
+// the hop count differs per deploy target (Coolify's Traefik vs. a
+// Plesk/Passenger host). Set TRUST_PROXY_HOPS once confirmed for a given
+// deployment. Coolify is a single hop, so TRUST_PROXY_HOPS=1 there, Cloudflare
+// or not: clientIp() in src/middleware/client-ip.js looks behind a Cloudflare
+// edge, and counting Cloudflare as a second hop would make req.ip forgeable on
+// any direct request to the origin.
 if (process.env.TRUST_PROXY_HOPS) {
   app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS));
 }
