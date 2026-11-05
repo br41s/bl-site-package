@@ -9,7 +9,7 @@
       "role": "reference",
       "url": "https://cliente.biglobster.top",
       "host": "coolify",
-      "driver": "zeabur",
+      "driver": "manual",
       "hermes_profile": "bl-site-package",
       "password_env": "FLEET_PASSWORD_BLCLIENTE"
     },
