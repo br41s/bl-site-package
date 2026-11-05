@@ -5,12 +5,12 @@ del paquete `bl-site-package` a producción sin romper los sitios de los
 clientes.
 
 `bl-site-package` es un paquete compartido: el mismo código corre en nuestra
-instancia de pruebas en Zeabur **y** en el entorno de cada cliente. Por eso
+instancia de pruebas en Coolify **y** en el entorno de cada cliente. Por eso
 todo cambio pasa primero por pruebas antes de tocar a ningún cliente.
 
-**Nuestro entorno de pruebas** es la instancia de Zeabur `bl-site-package`
-(proyecto `biglobster`), servida en `https://blcliente.zeabur.app`. Es la que
-auto-despliega desde `main`.
+**Nuestro entorno de pruebas** es la app `bl-site-package` de Coolify (proyecto
+`biglobster`), servida en `https://cliente.biglobster.top`. No auto-despliega: se
+redespliega a mano desde `main` (paso 5).
 
 **Los entornos de cliente son distintos entre sí.** El primer cliente,
 Shoroban, corre sobre **Plesk/Passenger (Debian)** en `shoroban.com`
@@ -60,11 +60,12 @@ asumas que "cliente" == "Plesk": cada uno se verifica por separado.
 3. **Revisión** → corre `/review` sobre la rama (los cambios de nivel sistema
    son *advisory*: los revisa una persona antes de mergear).
 4. **Merge a `main`.**
-5. **Zeabur auto-despliega** desde `main` en nuestra instancia de pruebas
-   (`https://blcliente.zeabur.app`).
+5. **Redespliega a mano** la app `bl-site-package` en Coolify, en nuestra instancia
+   de pruebas (`https://cliente.biglobster.top`). Un merge a `main` no la despliega
+   por sí solo: sin este paso, el smoke test comprobaría la versión anterior.
 6. **Smoke test** contra pruebas:
    ```bash
-   scripts/smoke-test.sh https://blcliente.zeabur.app
+   scripts/smoke-test.sh https://cliente.biglobster.top
    ```
    Debe salir en verde (exit 0). Si falla, **para**: no se toca a ningún
    cliente hasta arreglarlo.
@@ -93,7 +94,7 @@ asumas que "cliente" == "Plesk": cada uno se verifica por separado.
    crítico antes del paso 7.
 
 Regla de oro: **nunca** se despliega directamente a un cliente sin que el
-cambio haya estado verde en pruebas (Zeabur) primero.
+cambio haya estado verde en pruebas primero.
 
 **Comprueba la versión tras el deploy** con el chequeo de flota:
 
@@ -131,7 +132,7 @@ credenciales de su perfil; el script es la vista bajo demanda del operador.
 
 ---
 
-## Qué cubre pruebas (Zeabur) y qué NO
+## Qué cubre pruebas y qué NO
 
 Nuestra instancia de pruebas corre sobre **Alpine/Docker** (multi-stage
 `Dockerfile`, base `node:22-alpine`). Los entornos de cliente corren sobre otra
@@ -195,8 +196,8 @@ rebuild en caliente (`scheduleRebuild`). Consecuencia práctica al desplegar:
   Markdown de las páginas o un campo de config nuevo como `page_index_body`):
   **necesitan reiniciar la app.** El reinicio (a) carga el código nuevo y (b) regenera
   `_site/` con las plantillas nuevas. No hace falta un `npm run build` aparte.
-  - En **Zeabur** el auto-deploy desde `main` reconstruye la imagen y reinicia el
-    contenedor: basta con confirmar que redesplegó tras el merge.
+  - En **Coolify** el redespliegue a mano del paso 5 reconstruye la imagen y reinicia
+    el contenedor.
   - En **Plesk** es el `touch tmp/restart.txt` (o *Restart App*) del runbook de abajo,
     tras el `git pull`. Solo hace falta `npm ci` si cambiaron dependencias.
 
@@ -242,7 +243,7 @@ públicos. Nunca puede ser la raíz de la aplicación.** La raíz contiene
 el `JWT_SECRET`, la API key de OpenRouter del cliente y los mensajes de
 contacto), además de `src/`, `node_modules/`, `.env` y `.git/`.
 
-En Zeabur (contenedor Node, Express sirve todo) el problema no se da: Express es
+En la instancia de pruebas (contenedor Node, Express sirve todo) el problema no se da: Express es
 el único servidor y **nunca** sirve la raíz de la app — solo `_site/` (build de
 Eleventy), `web/` (assets del panel/setup) y `/uploads`. Una petición a
 `/data/app.db` cae en el 404. No hay nginx sirviendo ficheros directamente.
@@ -272,7 +273,7 @@ Defensa en profundidad, además de la estructura:
 
 Procedimiento razonado para el go-live y las actualizaciones en un servidor
 Plesk/Passenger (Debian). Documentado a partir del rollout de Shoroban. **No se
-aplica hasta que el cambio esté verde en pruebas (Zeabur)** — ver flujo
+aplica hasta que el cambio esté verde en pruebas** — ver flujo
 staging-first arriba. Pasos, en orden:
 
 1. **Document root correcto (CRÍTICO, seguridad).** En Plesk → *Node.js*:
