@@ -8,7 +8,7 @@
 
 ### 1. Añadir el dominio y configurar el DNS
 
-> **Needs a decision:** where new client instances are hosted after Zeabur (2026-11-05).
+> **El alojamiento se decide con cada cliente** (Brais, 2026-11-05): no hay host por defecto.
 
 ### 2. Verificar
 Una vez propagado el DNS (puede tardar hasta 24h, normalmente menos de 1h):

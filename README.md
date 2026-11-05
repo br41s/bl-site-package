@@ -4,7 +4,7 @@ Paquete web deployable para clientes SMB. Incluye sitio público, panel de gesti
 
 ## Deploy en 5 minutos
 
-> **Needs a decision:** where new client instances are hosted after Zeabur (2026-11-05).
+> **El alojamiento se decide con cada cliente** (Brais, 2026-11-05): no hay host por defecto.
 
 1. Abre `tudominio.com/setup`.
 2. Completa el wizard con empresa, sector, OpenRouter API Key y contraseña del panel.

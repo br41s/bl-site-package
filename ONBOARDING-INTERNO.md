@@ -18,7 +18,7 @@ Este documento es para el equipo de BigLobster. No compartir con el cliente.
 
 ### 1. Crear la instancia
 
-> **Needs a decision:** where new client instances are hosted after Zeabur (2026-11-05).
+> **El alojamiento se decide con cada cliente** (Brais, 2026-11-05): no hay host por defecto.
 
 ### 2. Configurar variables de entorno
 
@@ -94,7 +94,7 @@ Avisa al cliente en la entrega de que **las empresas ven los precios sin IVA** y
 
 ### 6. Dominio (si procede)
 
-> **Needs a decision:** where new client instances are hosted after Zeabur (2026-11-05).
+> **El alojamiento se decide con cada cliente** (Brais, 2026-11-05): no hay host por defecto.
 - [ ] Pasar al cliente el registro DNS a configurar
 - [ ] Verificar que el dominio resuelve correctamente (esperar hasta 1h)
 - [ ] Verificar que HTTPS está activo
