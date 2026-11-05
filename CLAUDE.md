@@ -1,7 +1,7 @@
 # bl-site-package — Claude Code Instructions
 
 Deployable web package sold to SMB clients: public site, management panel, blog, message
-inbox, and an AI marketing agent. One deploy per customer on Zeabur, configured through a
+inbox, and an AI marketing agent. One deploy per customer, configured through a
 `/setup` wizard rather than by editing code. Repo: `br41s/bl-site-package`.
 
 Extends the workspace `CLAUDE.md`. Rules here are project-specific only.
@@ -11,7 +11,7 @@ Extends the workspace `CLAUDE.md`. Rules here are project-specific only.
 ## Stack
 
 Eleventy static build (`eleventy.config.mjs`) plus a plain Node server (`src/server.js`).
-Data in `data/`. Deployed on Zeabur from the `Dockerfile`; `passenger-startup.cjs` exists
+Data in `data/`. Built from the `Dockerfile`; `passenger-startup.cjs` exists
 for Passenger-based hosts.
 
 - `npm run build` — Eleventy, `site/` → `_site/`

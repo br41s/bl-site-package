@@ -106,7 +106,7 @@ En la Account del cliente (Chatwoot 4.17):
 - [ ] Desde un móvil personal, escribir al número (`https://wa.me/<número sin +>`).
 - [ ] En Chatwoot, la conversación entra en el inbox como **Pending** mientras la lleva el bot: no sale con el filtro por defecto (*Open*); cambia el filtro de estado.
 - [ ] La respuesta del bot debe figurar como **delivered** (Meta confirmó la entrega) y llegar al móvil.
-- [ ] `GET https://bl-whatsapp-bot.zeabur.app/health` → `lastOpenRouterCallAt` reciente y `lastOpenRouterCallOk: true`.
+- [ ] `GET https://wa.biglobster.top/health` → `lastOpenRouterCallAt` reciente y `lastOpenRouterCallOk: true`.
 
 ---
 
