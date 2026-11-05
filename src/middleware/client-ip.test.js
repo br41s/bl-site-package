@@ -59,6 +59,15 @@ test("a direct request rotating the header stays in one bucket", async () => {
   assert.equal((await hit("203.0.113.22")).status, 429);
 });
 
+test("a Cloudflare Worker rotating the header stays in one bucket", async () => {
+  const hit = (forged) =>
+    fetch(`${oneHop}/limited`, {
+      headers: { "X-Forwarded-For": "104.16.0.2", "CF-Connecting-IP": forged, "CF-Worker": "attacker.example" },
+    });
+  assert.equal((await hit("203.0.113.31")).status, 200);
+  assert.equal((await hit("203.0.113.32")).status, 429);
+});
+
 test("prepending a Cloudflare address to X-Forwarded-For does not unlock the header", async () => {
   const headers = { "X-Forwarded-For": `${EDGE}, 198.51.100.9`, "CF-Connecting-IP": "203.0.113.1" };
   assert.equal(await seenIp(oneHop, headers), "198.51.100.9");

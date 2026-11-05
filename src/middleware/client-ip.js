@@ -44,5 +44,9 @@ function cloudflareVisitor(peer, header) {
 }
 
 export function clientIp(req) {
+  // A Worker's fetch leaves from Cloudflare's addresses and may write its own
+  // CF-Connecting-IP, on any host it can reach. Cloudflare marks those requests
+  // with CF-Worker.
+  if (req.headers["cf-worker"]) return req.ip;
   return cloudflareVisitor(req.ip, req.headers["cf-connecting-ip"]) || req.ip;
 }
