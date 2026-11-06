@@ -17,6 +17,12 @@ permalink: "/servicios.html"
   {%- if site.page_servicios_image %}
   <img src="{{ site.page_servicios_image }}" alt="{{ site.page_servicios_image_alt or (site.page_servicios_title | plainTitle) }}" class="site-page-image reveal" loading="lazy" decoding="async">
   {%- endif %}
+  {%- if site.servicios_overview.length and site.servicios_blocks_data.ai %}
+  <p class="svc-jump reveal">
+    <a class="site-btn" href="#{{ site.servicios_overview[0].id }}">Servicios de {{ site.company_name or "la empresa" }}</a>
+    <a class="site-btn site-btn-ghost" href="#svc-ai-title">Servicios de IA</a>
+  </p>
+  {%- endif %}
   {%- include "servicios-blocks.njk" %}
   {%- if site.page_servicios_desc %}
   {%- if site.calida and site.page_servicios_cards.cards.length %}
