@@ -312,6 +312,19 @@ retail per catalogue category, with a general fallback. `src/api/b2b.js` holds a
 - Discounts and the general % are written without `setConfig`: they are in no built page,
   and a rebuild of ~14,500 pages for a discount change would be pure cost.
 
+## Shipping zones (`shipping_zones`)
+
+Config key holding JSON `[{id, label, price_cents}]` (`src/shipping.js`), prices
+VAT included. Empty = no selector, checkout as before. With zones, the cart shows a
+«Zona de envío» select plus a fixed «Otros destinos» option that disables the buy
+button; `POST /api/reservations` re-checks it (400 for `otros`, missing or unknown
+zone) and **adds the zone's price to `total_cents` and the transfer amount**,
+recording `shipping_zone` (label) and `shipping_cents`. A B2B order takes the price
+net of VAT and carries it in `vat_cents` at `B2B_VAT_RATE`, grouped with the lines
+(`cartVatCents` in `web/cart.js` must agree to the cent). No panel editor: set it
+through `POST /api/site/texts` (`shipping_zones`, validated strictly). Shoroban:
+Península 700, Portugal 1400, Baleares 1000.
+
 ## Legal pages — they describe the code, so they move with it
 
 `/aviso-legal`, `/condiciones` (sales terms, only with a catalogue), `/privacidad`,
@@ -333,8 +346,9 @@ The pages state what the code does, so a code change can make them false:
   contact messages after 24 months and orders after 6 years, daily; the policy
   reads the same constants (`retention-periods.js` → `site.retention`).
 - **Checkout requires accepted terms** (`accept_terms`, stored as
-  `reservations.terms_accepted_at`) and the button says «Confirmar pedido con
-  obligación de pago» (TRLGDCU art. 98.2). The screen says «Pedido recibido»:
+  `reservations.terms_accepted_at`) and the button says «Comprar ahora»
+  (Brais's decision, 2026-11-06, replacing the statutory «Confirmar pedido con
+  obligación de pago» of TRLGDCU art. 98.2 — a legal risk he accepted). The screen says «Pedido recibido»:
   the terms make the contract when the business confirms, not on submit.
 - **Promises depend on what the deploy can do.** Emailed copies are promised only
   when `site.mail_configured` (SMTP set). `/uso-de-ia` and the footer must not

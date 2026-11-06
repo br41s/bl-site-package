@@ -3,6 +3,7 @@ import { formatContent } from "../../src/content/format-content.js";
 import { renderFaqAccordions } from "../../src/content/faq-accordion.js";
 import { splitCards } from "../../src/content/content-cards.js";
 import { buildLocalBusinessLd, buildFaqLd } from "../../src/content/structured-data.js";
+import { parseShippingZones } from "../../src/shipping.js";
 import { isSmtpConfigured } from "../../src/mail/mailer.js";
 import {
   CONTACT_RETENTION_MONTHS,
@@ -78,6 +79,8 @@ export default function () {
   config.shop_payment_line = config.bank_iban
     ? "Pide online y paga por transferencia bancaria"
     : "Pide online y paga al recibir tu pedido";
+  // Zones the cart offers (src/shipping.js); [] = no selector.
+  config.shipping_zones_list = parseShippingZones(config.shipping_zones);
   // The privacy policy states the periods the purge enforces
   // (src/privacy/retention.js), read from the same constants.
   config.retention = {

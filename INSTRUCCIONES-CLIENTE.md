@@ -168,6 +168,8 @@ Si no hay nada en la lista, no tienes que hacer nada.
 
 Aquí ves las reservas que te dejan los clientes desde la web. Las que hace una empresa con su cuenta de profesional aparecen marcadas con su nombre. Arriba está **Pago por transferencia**: si rellenas tu titular e IBAN (el BIC es opcional) y pulsas **Guardar datos bancarios**, al reservar el cliente ve esos datos con el importe y el concepto («Reserva» y su número), y los recibe también por email si tienes el email configurado. Esas reservas entran como *Pendiente de pago*: cuando recibas la transferencia, cámbiala a *Confirmada* (hasta entonces no cuenta para «Lo más vendido»). Las empresas con cuenta de profesional no ven tu IBAN: se les indica que pagan según su forma de pago habitual. Si dejas el IBAN vacío, no se pide transferencia. Todos los clientes reciben por email la confirmación de su reserva.
 
+**Zonas de envío.** Si tu web tiene zonas de envío configuradas, el cliente elige su zona antes de comprar (por ejemplo Península, Portugal o Baleares) y el coste del envío se suma al total y al importe de la transferencia; la zona también aparece en el email de aviso de cada reserva. Con la zona «Otros destinos» no puede comprar, porque no envías fuera de tus zonas. El botón de la compra dice **Comprar ahora**. Para cambiar tus zonas o precios de envío, escríbenos y lo actualizamos.
+
 ### Profesionales
 
 > Esta sección solo aparece si tu web tiene catálogo conectado con tu proveedor.

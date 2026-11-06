@@ -23,6 +23,7 @@ import {
 } from "../mail/mailer.js";
 import { isTurnstileConfigured } from "../turnstile.js";
 import { isValidBic, isValidIban } from "../utils/iban.js";
+import { isValidShippingZones } from "../shipping.js";
 import { asyncHandler } from "../middleware/async-handler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -141,6 +142,7 @@ router.post("/texts", requireAuth, (req, res) => {
     "legal_email",
     "legal_registry",
     "sales_shipping_text",
+    "shipping_zones",
     "legal_adr",
     "biz_type",
     "biz_street",
@@ -190,6 +192,7 @@ router.post("/texts", requireAuth, (req, res) => {
     google_site_verification: (v) => /^[A-Za-z0-9_-]{0,100}$/.test(v),
     bank_iban: (v) => v === "" || isValidIban(v),
     bank_bic: (v) => v === "" || isValidBic(v),
+    shipping_zones: isValidShippingZones,
     whatsapp_bot_enabled: (v) => ["", "0", "1"].includes(v),
     // Both are interpolated into every page's HTML and the chat URL also into
     // the CSP header (src/csp.js): an origin only, https, no path or query;

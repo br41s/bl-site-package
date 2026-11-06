@@ -62,6 +62,9 @@ export const PUBLIC_CONFIG_KEYS = [
   // the business writes; rendered on the legal pages and the cart.
   "legal_registry",
   "sales_shipping_text",
+  // Delivery zones and their price, JSON (src/shipping.js). Empty = no zone
+  // selector at checkout. Public: the build renders it into the cart.
+  "shipping_zones",
   "legal_adr",
   // Business profile for local SEO (LocalBusiness JSON-LD + contact page).
   // All optional; empty ones are omitted from the structured data.
@@ -569,6 +572,10 @@ ensureColumn("reservations", "vat_cents", "INTEGER");
 // When the buyer ticked "acepto las condiciones de venta" (src/api/reservations.js).
 // NULL on orders placed before the checkbox existed.
 ensureColumn("reservations", "terms_accepted_at", "TEXT");
+// Delivery zone chosen at checkout (label snapshot) and its price, VAT included
+// for retail / net for B2B like total_cents, which already contains it.
+ensureColumn("reservations", "shipping_zone", "TEXT");
+ensureColumn("reservations", "shipping_cents", "INTEGER");
 // One-time "choose your password" link for a B2B account (src/api/b2b.js).
 // Only the token's SHA-256 is kept, so a copy of the database cannot be used
 // to set anyone's password. An account created this way has an empty
