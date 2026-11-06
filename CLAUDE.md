@@ -1,7 +1,7 @@
 # bl-site-package — Claude Code Instructions
 
 Deployable web package sold to SMB clients: public site, management panel, blog, message
-inbox, and an AI marketing agent. One deploy per customer on Zeabur, configured through a
+inbox, and an AI marketing agent. One deploy per customer, configured through a
 `/setup` wizard rather than by editing code. Repo: `br41s/bl-site-package`.
 
 Extends the workspace `CLAUDE.md`. Rules here are project-specific only.
@@ -11,7 +11,7 @@ Extends the workspace `CLAUDE.md`. Rules here are project-specific only.
 ## Stack
 
 Eleventy static build (`eleventy.config.mjs`) plus a plain Node server (`src/server.js`).
-Data in `data/`. Deployed on Zeabur from the `Dockerfile`; `passenger-startup.cjs` exists
+Data in `data/`. Built from the `Dockerfile`; `passenger-startup.cjs` exists
 for Passenger-based hosts.
 
 - `npm run build` — Eleventy, `site/` → `_site/`
@@ -23,6 +23,16 @@ A catalogue client's site is ~14,500 pages; built in-process that was ~30s per p
 during which the event loop answered no request at all, and the Product Sheet Writer's
 read right after each publish timed out 10-23 times a day. `src/build/rebuild.test.js`
 runs a real build and fails if a request is not served while it is in flight.
+
+**The rate limiter keys on `clientIp(req)`, never `req.ip`** (`src/middleware/client-ip.js`).
+`req.ip` comes from `TRUST_PROXY_HOPS`; when that peer is in Cloudflare's published ranges it is
+an edge shared by many visitors, so the key is `CF-Connecting-IP` (IPv6: its /64). The header
+is believed only then, so a direct request cannot fake it and a deploy off Cloudflare (Plesk,
+with or without `TRUST_PROXY_HOPS`) behaves exactly as `req.ip` does. Cloudflare is not a hop:
+counting it makes `req.ip` forgeable on a direct request to the origin. A request with `CF-Worker` keeps
+plain `req.ip`: a Cloudflare Worker sends from Cloudflare's addresses and can write its own
+`CF-Connecting-IP`, even at a client host off Cloudflare. Refresh the ranges from
+cloudflare.com/ips if Cloudflare adds one.
 
 **Every async route goes through `asyncHandler`** (`src/middleware/async-handler.js`).
 Express 4 does not catch a rejected promise, and Node 22 exits on an unhandled rejection:

@@ -14,8 +14,8 @@ fichero, así que un manifest roto no llega a `main`.
 | `customer` | Cliente al que pertenece, o `null` para instancias propias. |
 | `role` | `reference` (nuestra instancia de pruebas, auto-despliega `main`), `staging` o `production`. Debe existir exactamente una entrada `reference`. |
 | `url` | URL base, sin barra final. |
-| `host` | Dónde corre: `zeabur`, `plesk-passenger`, … Informativo. |
-| `driver` | Cómo se despliega una actualización: `manual` (runbook), `zeabur` (API). Hoy solo se usa para saber qué instrucciones generar. |
+| `host` | Dónde corre: `coolify`, `plesk-passenger`, … Informativo. |
+| `driver` | Cómo se despliega una actualización: `manual` (runbook). Los scripts solo exigen que `host` y `driver` no estén vacíos (`validateManifest` en `scripts/fleet-check.mjs`); ningún valor cambia su comportamiento. |
 | `hermes_profile` | Slug del perfil de hermes dedicado a este despliegue (el que crea `provision_bl_client.py`). |
 | `password_env` | Variable de entorno de la que `scripts/fleet-check.mjs` lee la contraseña del panel. Nunca se guardan credenciales en este repo. |
 | `automation_key_env` | Variable de entorno con la clave de automatización del despliegue (el valor de su `RENTAL_AUTOMATION_KEY`). Hace falta si el login del panel tiene **Turnstile** activo: sin ella el login responde 400 y el despliegue sale como «estado ilegible». La clave solo evita el captcha, nunca la contraseña. Turnstile es obligatorio en toda alta nueva desde el setup (ver `DEPLOY.md`), así que a partir de ahora este campo se rellena para todo despliegue nuevo; los despliegues anteriores a ese cambio pueden seguir sin él si nunca activaron Turnstile. |

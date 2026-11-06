@@ -4,11 +4,12 @@ Paquete web deployable para clientes SMB. Incluye sitio público, panel de gesti
 
 ## Deploy en 5 minutos
 
-1. Conecta este repo en [Zeabur](https://zeabur.com).
-2. Abre `tudominio.com/setup`.
-3. Completa el wizard con empresa, sector, OpenRouter API Key y contraseña del panel.
-4. Accede a `tudominio.com/panel`.
-5. Publica y personaliza el sitio desde el panel.
+> **El alojamiento se decide con cada cliente** (Brais, 2026-11-05): no hay host por defecto.
+
+1. Abre `tudominio.com/setup`.
+2. Completa el wizard con empresa, sector, OpenRouter API Key y contraseña del panel.
+3. Accede a `tudominio.com/panel`.
+4. Publica y personaliza el sitio desde el panel.
 
 ## Modelo por defecto
 
@@ -153,7 +154,7 @@ descuento, menos el IVA.
 | `LIDERPAPEL_SYNC_MODE` | `sftp` o `local` (leer el feed de un directorio)           | `sftp`             |
 | `LIDERPAPEL_LOCAL_DIR` | Directorio del feed en modo `local`                        | vacío              |
 | `BL_SITE_DISABLE_REBUILD` | `1` desactiva la reconstrucción automática. **Solo para tests** | vacío       |
-| `TRUST_PROXY_HOPS`    | Nº de saltos de proxy inverso hasta esta app (activa `trust proxy` de Express para que el rate limiter use la IP real). En Zeabur son `1`; sin confirmar el nº de saltos, no la actives | vacío (desactivado) |
+| `TRUST_PROXY_HOPS`    | Nº de saltos de proxy inverso hasta esta app (activa `trust proxy` de Express para que el rate limiter use la IP real). Cloudflare no cuenta como salto: si el peer es un edge de Cloudflare, `src/middleware/client-ip.js` usa `CF-Connecting-IP`. En Coolify es `1`. Sin confirmar el nº de saltos, no la actives | vacío (desactivado) |
 | `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile (formulario de contacto y login del panel), o desde el panel. Detrás corre `src/spam.js` (campo trampa + texto aleatorio): el spam recibe `success` pero no se guarda ni se envía | vacío |
 | `KNOWLEDGE_API_TOKEN` | Complemento WhatsApp: token Bearer con el que el bot central (`hermes-sandbox/scripts/whatsapp-lead-bot`) lee `GET /api/knowledge` (empresa, páginas, FAQ y artículos publicados, una muestra de 60 productos con la copia propia primero, todas las categorías con sus URLs, y los hechos operativos derivados de la configuración). Vacío = la ruta responde 404 | vacío |
 | `CHATWOOT_BASE_URL` / `CHATWOOT_ACCOUNT_ID` / `CHATWOOT_API_TOKEN` | Complemento WhatsApp: instancia central de Chatwoot, cuenta de este cliente y token de API de su usuario de integración (no el token del bot). Activan `/api/conversations` y la pestaña WhatsApp de Mensajes; vacíos = la pestaña avisa de que no está configurado. Alta en `ONBOARDING-WHATSAPP.md` | vacío |

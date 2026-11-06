@@ -1,31 +1,16 @@
-# Conectar dominio propio en Zeabur
+# Conectar dominio propio
 
 ## Requisitos
 - Acceso al panel DNS de tu dominio (GoDaddy, Namecheap, Cloudflare, etc.)
-- El sitio ya desplegado y funcionando en Zeabur
+- El sitio ya desplegado y funcionando
 
 ## Pasos
 
-### 1. Añadir el dominio en Zeabur
-1. Entra en tu proyecto de Zeabur
-2. Haz click en el servicio → pestaña **Networking** o **Domains**
-3. Click en **Add Domain**
-4. Escribe tu dominio, por ejemplo `tuempresa.com`
-5. Zeabur te mostrará un registro DNS que debes añadir
+### 1. Añadir el dominio y configurar el DNS
 
-### 2. Configurar el DNS
-En el panel de tu proveedor de dominio, añade un registro:
-- **Tipo:** CNAME
-- **Nombre/Host:** `@` o `www` (según lo que indique Zeabur)
-- **Valor:** la URL que te da Zeabur (algo como `tu-servicio.zeabur.app`)
-- **TTL:** 300 (o el mínimo disponible)
+> **El alojamiento se decide con cada cliente** (Brais, 2026-11-05): no hay host por defecto.
 
-Si tu proveedor no permite CNAME en el apex (`@`), usa un registro A con la IP que te indique Zeabur.
-
-### 3. HTTPS
-Zeabur activa HTTPS automáticamente vía Let's Encrypt una vez que detecta el DNS configurado. No requiere ninguna acción adicional. El proceso tarda entre 5 y 15 minutos.
-
-### 4. Verificar
+### 2. Verificar
 Una vez propagado el DNS (puede tardar hasta 24h, normalmente menos de 1h):
 - `https://tudominio.com/setup` → debe cargar el wizard
 - `https://tudominio.com/panel` → debe cargar el panel
@@ -62,8 +47,7 @@ es un paso obligatorio del alta, no una opción que el cliente descubre más tar
 
 ### 1. Crear el widget en Cloudflare
 1. Entra en [dash.cloudflare.com → Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile)
-2. **Add widget** → añade el dominio del cliente (y el subdominio `*.zeabur.app` si todavía
-   vas a probar ahí antes de que el DNS propague)
+2. **Add widget** → añade el dominio del cliente
 3. Modo **Managed** (el que ya usa Shoroban)
 4. Copia la **Site key** y la **Secret key**
 
@@ -73,7 +57,7 @@ Panel del cliente → **Mi sitio web** → pestaña **Integraciones** → bloque
 Turnstile**.
 
 Alternativa sin tocar el panel: variables de entorno `TURNSTILE_SITE_KEY` /
-`TURNSTILE_SECRET_KEY` en Zeabur (tienen prioridad sobre lo guardado en el panel, igual que
+`TURNSTILE_SECRET_KEY` en el entorno de la app (tienen prioridad sobre lo guardado en el panel, igual que
 el resto de credenciales — ver tabla de variables de entorno en `README.md`).
 
 ### 3. Dar de alta la clave de automatización

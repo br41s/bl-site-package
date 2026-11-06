@@ -16,16 +16,13 @@ Este documento es para el equipo de BigLobster. No compartir con el cliente.
 
 ## Setup técnico (20 minutos)
 
-### 1. Crear proyecto en Zeabur
+### 1. Crear la instancia
 
-- [ ] Entrar en zeabur.com → New Project
-- [ ] Nombre del proyecto: `bl-[nombre-empresa]` (ej: `bl-fontaneria-garcia`)
-- [ ] Add Service → Git → seleccionar `braisntext/bl-site-package`
-- [ ] Esperar a que el build termine
+> **El alojamiento se decide con cada cliente** (Brais, 2026-11-05): no hay host por defecto.
 
 ### 2. Configurar variables de entorno
 
-En Zeabur → tu servicio → Variables:
+En el entorno de la app (variables de entorno):
 
 - [ ] `PANEL_PASSWORD` → contraseña acordada con el cliente
 - [ ] `JWT_SECRET` → string aleatorio de 32+ caracteres (usa: `openssl rand -hex 32`)
@@ -35,18 +32,15 @@ En Zeabur → tu servicio → Variables:
 
 ### 3. Configurar volumen persistente
 
-- [ ] Zeabur → tu servicio → Volumes → Add Volume
-- [ ] Nombre: `bl-data`
-- [ ] Mount path: `/app/data`
-- [ ] Guardar y esperar redeploy
+- [ ] Volumen persistente `bl-data` montado en `/app/data`
 
 ### 4. Primer acceso y configuración
 
-- [ ] Abrir `https://[url-zeabur]/setup`
+- [ ] Abrir `https://[url-instancia]/setup`
 - [ ] Paso 1: nombre de empresa y sector
 - [ ] Paso 2: introducir OPENROUTER_API_KEY — si el cliente ya te la compartió, úsala directamente. Si no, usa temporalmente una key de BigLobster desde el panel (**Mi sitio web → Modelo IA**) solo para poder redactar el contenido inicial, y sustitúyela por la del cliente antes de la entrega (ver checklist de entrega)
 - [ ] Paso 3: confirmar contraseña del panel
-- [ ] Acceder a `https://[url-zeabur]/panel`
+- [ ] Acceder a `https://[url-instancia]/panel`
 
 ### 5. Personalización inicial
 
@@ -100,7 +94,7 @@ Avisa al cliente en la entrega de que **las empresas ven los precios sin IVA** y
 
 ### 6. Dominio (si procede)
 
-- [ ] Zeabur → Networking → Add Domain → introducir dominio del cliente
+> **El alojamiento se decide con cada cliente** (Brais, 2026-11-05): no hay host por defecto.
 - [ ] Pasar al cliente el registro DNS a configurar
 - [ ] Verificar que el dominio resuelve correctamente (esperar hasta 1h)
 - [ ] Verificar que HTTPS está activo
@@ -149,7 +143,7 @@ panel y el contacto (Cloudflare Turnstile)* de [`DEPLOY.md`](DEPLOY.md).
 Cuando hay un cambio en `bl-site-package` que hay que llevar a clientes que ya
 están en producción, **no se despliega directamente**. Se sigue el proceso
 staging-first descrito en [`RELEASE.md`](RELEASE.md): merge a `main` → auto-deploy
-en Zeabur (staging) → `scripts/smoke-test.sh` en verde → recién entonces, rollout
+en la instancia de referencia (staging) → `scripts/smoke-test.sh` en verde → recién entonces, rollout
 a cada servidor de cliente (Plesk) con su propio smoke test.
 
 **Clientes en Plesk/Passenger**: el rollout tiene su propio runbook con los
@@ -158,7 +152,7 @@ root, versión de Node y reconstrucción del binario nativo `better-sqlite3`, y 
 variables de entorno). Ver la sección *Runbook de despliegue en cliente
 Plesk/Passenger* en [`RELEASE.md`](RELEASE.md). El estándar de `DB_PATH` en
 cualquier hosting donde el servidor web sirve el document root directamente es
-una ruta **fuera** de ese document root; en Zeabur el `/app/data` por defecto es
+una ruta **fuera** de ese document root; con el `Dockerfile` el `/app/data` por defecto es
 seguro porque Express nunca sirve la raíz de la app.
 
 ---
@@ -169,7 +163,7 @@ seguro porque Express nunca sirve la raíz de la app.
 | -------------------- | ----------------------------- |
 | Empresa              |                               |
 | Sector               |                               |
-| URL Zeabur           |                               |
+| URL de la instancia  |                               |
 | Dominio propio       |                               |
 | Web actual (opcional, para Agente de Contenido Inicial) |                               |
 | Email notificaciones |                               |

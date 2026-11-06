@@ -7,9 +7,9 @@
       "name": "Instancia de pruebas BigLobster",
       "customer": null,
       "role": "reference",
-      "url": "https://blcliente.zeabur.app",
-      "host": "zeabur",
-      "driver": "zeabur",
+      "url": "https://cliente.biglobster.top",
+      "host": "coolify",
+      "driver": "manual",
       "hermes_profile": "bl-site-package",
       "password_env": "FLEET_PASSWORD_BLCLIENTE"
     },
