@@ -24,6 +24,7 @@ import {
 import { isTurnstileConfigured } from "../turnstile.js";
 import { isValidBic, isValidIban } from "../utils/iban.js";
 import { isValidShippingZones } from "../shipping.js";
+import { isValidServiciosBlocks } from "../content/servicios-blocks.js";
 import { asyncHandler } from "../middleware/async-handler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -143,6 +144,7 @@ router.post("/texts", requireAuth, (req, res) => {
     "legal_registry",
     "sales_shipping_text",
     "shipping_zones",
+    "servicios_blocks",
     "legal_adr",
     "biz_type",
     "biz_street",
@@ -193,6 +195,7 @@ router.post("/texts", requireAuth, (req, res) => {
     bank_iban: (v) => v === "" || isValidIban(v),
     bank_bic: (v) => v === "" || isValidBic(v),
     shipping_zones: isValidShippingZones,
+    servicios_blocks: isValidServiciosBlocks,
     whatsapp_bot_enabled: (v) => ["", "0", "1"].includes(v),
     // Both are interpolated into every page's HTML and the chat URL also into
     // the CSP header (src/csp.js): an origin only, https, no path or query;

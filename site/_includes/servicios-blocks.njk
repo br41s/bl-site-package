@@ -1,0 +1,37 @@
+{#-
+  Optional blocks above the Servicios body (src/content/servicios-blocks.js):
+  an overview of the page's own sections, and a set of partner cards with one
+  outbound link. Both come from the `servicios_blocks` config key and render
+  nothing without it. Same classes in Clásico and Cálida (.svc-*), coloured
+  by the tokens each style already defines.
+-#}
+{%- if site.servicios_overview.length %}
+<nav class="svc-overview reveal" aria-label="Servicios de esta página">
+  <ul class="svc-grid">
+    {%- for it in site.servicios_overview %}
+    <li><a class="svc-card" href="#{{ it.id }}">
+      <span class="svc-icon">{% set icon = it.icon %}{% set iconSize = 22 %}{% include "icon.njk" %}</span>
+      <span class="svc-title">{{ it.title | safe }}</span>
+      {%- if it.text %}<span class="svc-text">{{ it.text }}</span>{% endif %}
+    </a></li>
+    {%- endfor %}
+  </ul>
+</nav>
+{%- endif %}
+{%- set ai = site.servicios_blocks_data.ai if site.servicios_blocks_data else null %}
+{%- if ai %}
+<section class="svc-ai reveal" aria-labelledby="svc-ai-title">
+  <h2 id="svc-ai-title">{{ ai.title }}</h2>
+  {%- if ai.intro %}<p class="svc-ai-intro">{{ ai.intro }}</p>{% endif %}
+  <ul class="svc-grid">
+    {%- for c in ai.cards %}
+    <li class="svc-card svc-card-static">
+      <span class="svc-icon">{% set icon = c.icon %}{% set iconSize = 22 %}{% include "icon.njk" %}</span>
+      <h3 class="svc-title">{{ c.title }}</h3>
+      <p class="svc-text">{{ c.text }}</p>
+    </li>
+    {%- endfor %}
+  </ul>
+  <a class="site-btn svc-ai-cta" href="{{ ai.url }}" target="_blank" rel="noopener">{{ ai.label }}<span class="visually-hidden"> (se abre en una pestaña nueva)</span></a>
+</section>
+{%- endif %}

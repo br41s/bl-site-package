@@ -1,6 +1,7 @@
 import { getConfig, PUBLIC_CONFIG_KEYS } from "../../src/db/database.js";
 import { formatContent } from "../../src/content/format-content.js";
 import { renderFaqAccordions } from "../../src/content/faq-accordion.js";
+import { parseServiciosBlocks, anchorSections } from "../../src/content/servicios-blocks.js";
 import { splitCards } from "../../src/content/content-cards.js";
 import { buildLocalBusinessLd, buildFaqLd } from "../../src/content/structured-data.js";
 import { parseShippingZones } from "../../src/shipping.js";
@@ -24,6 +25,16 @@ export default function () {
   config.page_quienes_desc_html = formatContent(config.page_quienes_desc);
   config.page_servicios_desc_html = formatContent(config.page_servicios_desc);
   config.page_contacto_desc_html = formatContent(config.page_contacto_desc);
+  // Optional blocks above the Servicios body (src/content/servicios-blocks.js).
+  // Anchors go on the sanitized HTML before any Cálida transform, and only when
+  // an overview is configured, so every other deploy's HTML is untouched.
+  config.servicios_blocks_data = parseServiciosBlocks(config.servicios_blocks);
+  config.servicios_overview = [];
+  if (config.servicios_blocks_data?.overview) {
+    const a = anchorSections(config.page_servicios_desc_html, config.servicios_blocks_data.overview);
+    config.page_servicios_desc_html = a.html;
+    config.servicios_overview = a.items;
+  }
   // site_url env override (SITE_URL) mirrors the runtime pattern used for
   // secrets like PANEL_PASSWORD; trailing slashes are stripped so templates
   // can concatenate absolute URLs without doubling the separator.
