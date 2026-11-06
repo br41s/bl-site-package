@@ -65,6 +65,8 @@ export const PUBLIC_CONFIG_KEYS = [
   // Delivery zones and their price, JSON (src/shipping.js). Empty = no zone
   // selector at checkout. Public: the build renders it into the cart.
   "shipping_zones",
+  // Optional blocks of /servicios, JSON (src/content/servicios-blocks.js).
+  "servicios_blocks",
   "legal_adr",
   // Business profile for local SEO (LocalBusiness JSON-LD + contact page).
   // All optional; empty ones are omitted from the structured data.

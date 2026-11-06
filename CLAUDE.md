@@ -335,6 +335,27 @@ net of VAT and carries it in `vat_cents` at `B2B_VAT_RATE`, grouped with the lin
 through `POST /api/site/texts` (`shipping_zones`, validated strictly). Shoroban:
 Península 700, Portugal 1400, Baleares 1000.
 
+## Servicios blocks (`servicios_blocks`)
+
+Optional, per deploy, empty = `/servicios` exactly as before. One public config key,
+JSON, set through `POST /api/site/texts` (validated strictly) — `src/content/servicios-blocks.js`:
+
+- `overview`: array of icon names (the list `ICON_NAMES`, each drawn by `icon.njk`;
+  no emoji on the site). Turns the body's own `##` sections into a card grid above
+  everything (title, first paragraph, anchor), icon by position. It is derived, so it
+  cannot drift from the text; `anchorSections` writes the `id`s onto the **sanitized**
+  HTML in `site/_data/site.js`, before any Cálida transform, and only when `overview`
+  is set (every other deploy's HTML is byte-identical).
+- `ai`: `{title, intro, url, label, cards[{icon,title,text}]}` — partner cards plus one
+  outbound link (https only, no credentials, `rel="noopener"`). Content, not code: the
+  package carries no customer wording and no partner's name. The link adds no cookie
+  and no request from the page (it is an `<a>`); `/cookies` and `/privacidad` need no
+  change. If the cards describe a third party's service, say so in `intro`: the
+  customer is the seller on the legal pages, not the partner.
+- Order on the page: overview → `ai` → body. A text about the partner goes in
+  `page_servicios_desc` as one more `##`. Rendered by `servicios-blocks.njk`
+  (`.svc-*` in `web/style.css`, tokens only, so Clásico and Cálida both work).
+
 ## Legal pages — they describe the code, so they move with it
 
 `/aviso-legal`, `/condiciones` (sales terms, only with a catalogue), `/privacidad`,
