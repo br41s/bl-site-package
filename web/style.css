@@ -1043,6 +1043,7 @@ body.infographic-lightbox-open {
   display: none;
 }
 .site-contact-form input,
+.site-contact-form select,
 .site-contact-form textarea {
   padding: 0.625rem 0.875rem;
   border: 1px solid var(--border);
@@ -1060,6 +1061,7 @@ body.infographic-lightbox-open {
     color 0.2s;
 }
 .site-contact-form input:focus,
+.site-contact-form select:focus,
 .site-contact-form textarea:focus {
   border-color: var(--accent);
 }
@@ -1915,6 +1917,7 @@ body.infographic-lightbox-open {
   .contact-form input,
   .contact-form textarea,
   .site-contact-form input,
+  .site-contact-form select,
   .site-contact-form textarea {
     width: 100%;
     box-sizing: border-box;
@@ -1938,4 +1941,21 @@ body.infographic-lightbox-open {
   width: 48px;
   height: 48px;
   color: var(--accent);
+}
+
+/* Checkout shipping zone: the selector, and the notice shown for "Otros destinos". */
+.checkout-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.checkout-zone-blocked {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+.checkout-zone-blocked[hidden] {
+  display: none;
 }

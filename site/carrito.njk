@@ -33,6 +33,19 @@ title: "Carrito"
       <input type="email" name="customer_email" placeholder="Email" required>
       <input type="tel" name="customer_phone" placeholder="Teléfono (opcional)">
       <textarea name="notes" placeholder="Notas (opcional): cómo prefieres recibirlo, datos para la factura…" rows="3"></textarea>
+      {%- if site.shipping_zones_list.length %}
+      <label class="checkout-zone">
+        <span>Zona de envío</span>
+        <select name="shipping_zone" id="shipping-zone" required>
+          <option value="" selected disabled>Elige tu zona de envío</option>
+          {%- for z in site.shipping_zones_list %}
+          <option value="{{ z.id }}" data-price-cents="{{ z.price_cents }}">{{ z.label }} · {{ ((z.price_cents / 100) | round(2)) | string | replace(".", ",") }} €</option>
+          {%- endfor %}
+          <option value="otros" data-blocked>Otros destinos</option>
+        </select>
+      </label>
+      <p class="checkout-zone-blocked" id="shipping-zone-blocked" role="alert" hidden>Por ahora no realizamos envíos a otros destinos, así que no podemos tramitar el pedido. Escríbenos si tienes dudas.</p>
+      {%- endif %}
       {%- if site.sales_shipping_text %}
       <details class="checkout-shipping">
         <summary>Entregas y gastos de envío</summary>
@@ -44,7 +57,7 @@ title: "Carrito"
         <span>He leído y acepto las <a href="/condiciones" target="_blank">condiciones de venta</a> y la <a href="/privacidad" target="_blank">política de privacidad</a>.</span>
       </label>
       <p class="form-privacy-note"><strong>Responsable:</strong> {{ titular }}<br>Usamos tus datos para gestionar tu pedido. Puedes acceder a ellos, rectificarlos, suprimirlos y ejercer tus demás derechos como explica la <a href="/privacidad">política de privacidad</a>.</p>
-      <button type="submit" class="site-btn">Confirmar pedido con obligación de pago</button>
+      <button type="submit" class="site-btn">Comprar ahora</button>
     </form>
 
     <div id="checkout-success" class="site-page-body" hidden></div>

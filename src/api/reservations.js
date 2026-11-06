@@ -3,7 +3,8 @@ import db, { getConfig } from "../db/database.js";
 import { getMailSettings, isNotifyEmailConfigured, isSmtpConfigured, sendMail } from "../mail/mailer.js";
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
-import { resolveB2bAccount, b2bPricing, b2bUnitPriceCents, vatCentsByRate } from "./b2b.js";
+import { resolveB2bAccount, b2bPricing, b2bUnitPriceCents, vatCentsByRate, B2B_VAT_RATE } from "./b2b.js";
+import { parseShippingZones } from "../shipping.js";
 import { asyncHandler } from "../middleware/async-handler.js";
 import { formatIban } from "../utils/iban.js";
 
@@ -118,12 +119,33 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
       vat_rate: product.vat_rate,
     });
   }
-  const total_cents = resolvedItems.reduce((sum, i) => sum + i.unit_price_cents * i.quantity, 0);
+  // Shipping: with zones configured the buyer must pick one we deliver to, and
+  // its price is added here, from config — the cart's figure is display only.
+  // "Otros destinos" (or anything unknown) is refused: the business does not
+  // ship there. The zone price includes VAT; a B2B order takes it off like any
+  // other trade price and carries it in vat_cents at the default rate.
+  const zones = parseShippingZones(getConfig("shipping_zones"));
+  let zone = null;
+  if (zones.length > 0) {
+    zone = zones.find((z) => z.id === req.body.shipping_zone);
+    if (!zone) {
+      return res.status(400).json({
+        error:
+          req.body.shipping_zone === "otros"
+            ? "No realizamos envíos a ese destino."
+            : "Elige una zona de envío (si no ves el selector, recarga la página).",
+      });
+    }
+  }
+  const shipping_cents = zone ? (b2bAccount ? Math.round(zone.price_cents / (1 + B2B_VAT_RATE)) : zone.price_cents) : null;
+  const total_cents =
+    resolvedItems.reduce((sum, i) => sum + i.unit_price_cents * i.quantity, 0) + (shipping_cents || 0);
   const vat_included = b2bAccount ? 0 : 1;
   const vat_cents = b2bAccount
-    ? vatCentsByRate(
-        resolvedItems.map((i) => ({ netCents: i.unit_price_cents * i.quantity, vatRate: i.vat_rate })),
-      )
+    ? vatCentsByRate([
+        ...resolvedItems.map((i) => ({ netCents: i.unit_price_cents * i.quantity, vatRate: i.vat_rate })),
+        ...(shipping_cents ? [{ netCents: shipping_cents, vatRate: B2B_VAT_RATE }] : []),
+      ])
     : null;
   const payment = paymentInstructions({
     amountCents: vat_included ? total_cents : total_cents + vat_cents,
@@ -134,7 +156,7 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
   const insertReservation = db.transaction(() => {
     const result = db
       .prepare(
-        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, status, total_cents, b2b_account_id, b2b_company, vat_included, vat_cents, terms_accepted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))",
+        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, status, total_cents, b2b_account_id, b2b_company, vat_included, vat_cents, shipping_zone, shipping_cents, terms_accepted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))",
       )
       .run(
         customer_name,
@@ -147,6 +169,8 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
         b2bAccount ? b2bAccount.company_name : null,
         vat_included,
         vat_cents,
+        zone ? zone.label : null,
+        shipping_cents,
       );
     const insertItem = db.prepare(
       "INSERT INTO reservation_items (reservation_id, sku, product_name, unit_price_cents, quantity) VALUES (?, ?, ?, ?, ?)",
@@ -164,9 +188,10 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
   const itemsList = resolvedItems
     .map((i) => `- ${i.quantity} x ${i.product_name} (${eur(i.unit_price_cents)}${vat_included ? "" : " sin IVA"})`)
     .join("\n");
+  const shippingLine = zone ? `\nEnvío (${zone.label}): ${eur(shipping_cents)}${vat_included ? "" : " sin IVA"}` : "";
   const totals = vat_included
-    ? `Total: ${eur(total_cents)}`
-    : `Total sin IVA: ${eur(total_cents)}\nIVA: ${eur(vat_cents)}\nTotal con IVA: ${eur(total_cents + vat_cents)}`;
+    ? `${shippingLine ? shippingLine.trimStart() + "\n" : ""}Total: ${eur(total_cents)}`
+    : `${shippingLine ? shippingLine.trimStart() + "\n" : ""}Total sin IVA: ${eur(total_cents)}\nIVA: ${eur(vat_cents)}\nTotal con IVA: ${eur(total_cents + vat_cents)}`;
   const settings = getMailSettings();
 
   // Owner notification and customer copy go out together, not one after the
@@ -223,6 +248,7 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
     success: true,
     id: reservationId,
     total_cents,
+    shipping_cents,
     vat_included: Boolean(vat_included),
     vat_cents,
     b2b: Boolean(b2bAccount),

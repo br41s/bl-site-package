@@ -88,6 +88,10 @@ function cartVatCents(cart) {
     var rate = itemVatRate(i.vatRate);
     netByRate[rate] = (netByRate[rate] || 0) + effectivePriceCents(i.priceCents, i.category, i.vatRate) * i.quantity;
   });
+  // Shipping is a net line at the default rate, grouped with the rest exactly
+  // as vatCentsByRate does server-side, so the cents agree.
+  var ship = shippingCents();
+  if (ship) netByRate[b2b.vat_rate] = (netByRate[b2b.vat_rate] || 0) + ship;
   return Object.keys(netByRate).reduce(function (sum, rate) {
     return sum + vatCents(netByRate[rate], Number(rate));
   }, 0);
@@ -384,6 +388,35 @@ function cartTotalCents(cart) {
   }, 0);
 }
 
+// Shipping zone picked in the checkout form (site/carrito.njk). Display only:
+// POST /api/reservations prices the zone itself and refuses "otros".
+// Returns null with no selector (no zones configured) or none chosen yet.
+// Net of VAT for a trade account, as src/api/reservations.js records it.
+function shippingZoneEl() {
+  return document.getElementById("shipping-zone");
+}
+
+function shippingCents() {
+  var select = shippingZoneEl();
+  if (!select || !select.value || select.value === "otros") return null;
+  var opt = select.options[select.selectedIndex];
+  var cents = parseInt(opt.dataset.priceCents, 10);
+  if (!Number.isFinite(cents)) return null;
+  return b2b ? Math.round(cents / (1 + b2b.vat_rate)) : cents;
+}
+
+// "Otros destinos" cannot be bought: warn and keep the buy button off.
+function syncShippingZone() {
+  var select = shippingZoneEl();
+  var form = document.getElementById("checkout-form");
+  if (!select || !form) return;
+  var blocked = select.value === "otros";
+  var note = document.getElementById("shipping-zone-blocked");
+  if (note) note.hidden = !blocked;
+  var btn = form.querySelector('button[type="submit"]');
+  if (btn) btn.disabled = blocked;
+}
+
 function formatEur(cents) {
   return (cents / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 }
@@ -614,7 +647,8 @@ function renderCartPage() {
     tr.appendChild(actionCell);
     itemsBody.appendChild(tr);
   });
-  var total = cartTotalCents(cart);
+  var ship = shippingCents();
+  var total = cartTotalCents(cart) + (ship || 0);
   totalCell.textContent = formatEur(total);
   var vatNote = table.querySelector("tfoot .price-vat-note");
   if (vatNote) {
@@ -623,7 +657,7 @@ function renderCartPage() {
       vatNote.textContent =
         "Precios profesionales sin IVA · IVA: " + formatEur(vat) + " · Total con IVA: " + formatEur(total + vat);
     } else {
-      vatNote.textContent = "IVA incluido";
+      vatNote.textContent = ship ? "IVA incluido · envío " + formatEur(ship) + " incluido" : "IVA incluido";
     }
   }
 }
@@ -707,10 +741,19 @@ function initCartPage() {
   var successBox = document.getElementById("checkout-success");
   if (!form) return;
 
+  var zoneSelect = shippingZoneEl();
+  if (zoneSelect) {
+    zoneSelect.addEventListener("change", function () {
+      syncShippingZone();
+      renderCartPage();
+    });
+  }
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     var cart = getCart();
     if (cart.length === 0) return;
+    if (zoneSelect && zoneSelect.value === "otros") return;
 
     var submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
@@ -725,6 +768,7 @@ function initCartPage() {
         customer_phone: form.customer_phone.value.trim(),
         notes: form.notes.value.trim(),
         accept_terms: form.accept_terms.checked,
+        shipping_zone: zoneSelect ? zoneSelect.value : undefined,
         items: cart.map(function (i) {
           return { sku: i.sku, quantity: i.quantity };
         }),
