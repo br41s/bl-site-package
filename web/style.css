@@ -2029,3 +2029,15 @@ a.svc-card:focus-visible {
   a.svc-card { transition: none; }
   a.svc-card:hover, a.svc-card:focus-visible { transform: none; }
 }
+.svc-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0 0 1.5rem;
+}
+.svc-ai h2 {
+  scroll-margin-top: 5rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.svc-jump) { scroll-behavior: smooth; }
+}
