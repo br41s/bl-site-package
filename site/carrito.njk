@@ -52,6 +52,19 @@ title: "Carrito"
         <div class="legal-shipping">{{ site.sales_shipping_text }}</div>
       </details>
       {%- endif %}
+      {#- Shown by web/cart.js only when GET /api/reservations/payment-options says
+          card is available (MONEI configured) and the visitor is not a B2B account. -#}
+      <fieldset class="checkout-payment" id="checkout-payment" hidden>
+        <legend>Forma de pago</legend>
+        <label class="checkout-pay-option">
+          <input type="radio" name="payment_method" value="card" checked>
+          <span>Tarjeta <small>Pagas ahora en la página segura de MONEI; nosotros no vemos ni guardamos los datos de tu tarjeta.</small></span>
+        </label>
+        <label class="checkout-pay-option" id="checkout-pay-transfer" hidden>
+          <input type="radio" name="payment_method" value="transfer">
+          <span>Transferencia bancaria <small>Te damos los datos al confirmar el pedido.</small></span>
+        </label>
+      </fieldset>
       <label class="checkout-accept">
         <input type="checkbox" name="accept_terms" required>
         <span>He leído y acepto las <a href="/condiciones" target="_blank">condiciones de venta</a> y la <a href="/privacidad" target="_blank">política de privacidad</a>.</span>

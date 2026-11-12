@@ -578,6 +578,11 @@ ensureColumn("reservations", "terms_accepted_at", "TEXT");
 // for retail / net for B2B like total_cents, which already contains it.
 ensureColumn("reservations", "shipping_zone", "TEXT");
 ensureColumn("reservations", "shipping_cents", "INTEGER");
+// Card payment through MONEI (src/api/monei.js): the id of the payment created
+// for this order, and when MONEI's callback confirmed it was paid. paid_at is
+// also what makes the callback idempotent (it only applies while it is NULL).
+ensureColumn("reservations", "monei_payment_id", "TEXT");
+ensureColumn("reservations", "paid_at", "TEXT");
 // One-time "choose your password" link for a B2B account (src/api/b2b.js).
 // Only the token's SHA-256 is kept, so a copy of the database cannot be used
 // to set anyone's password. An account created this way has an empty

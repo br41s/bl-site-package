@@ -1943,6 +1943,50 @@ body.infographic-lightbox-open {
   color: var(--accent);
 }
 
+/* Checkout payment choice (card via MONEI / transfer), shown by web/cart.js.
+   Tokens only, so Clásico and Cálida both work. */
+.checkout-payment {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.checkout-payment legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.checkout-payment[hidden],
+.checkout-pay-option[hidden] {
+  display: none;
+}
+.checkout-pay-option {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+.site-contact-form .checkout-pay-option input[type="radio"] {
+  width: auto;
+  flex: none;
+  padding: 0;
+  margin: 0.3rem 0 0;
+}
+.checkout-pay-option span {
+  flex: 1;
+  min-width: 0;
+}
+.checkout-pay-option small {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
 /* Checkout shipping zone: the selector, and the notice shown for "Otros destinos". */
 .checkout-zone {
   display: flex;

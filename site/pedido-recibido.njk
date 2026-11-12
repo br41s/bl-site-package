@@ -1,0 +1,25 @@
+---
+layout: base.njk
+navActive: productos
+permalink: "/pedido-recibido/index.html"
+title: "Pedido recibido"
+description: "Estamos confirmando tu pago."
+eleventyExcludeFromCollections: true
+---
+{#-
+  Where MONEI sends the customer back after paying (completeUrl, src/api/monei.js).
+  Arriving here proves nothing: the customer can type the URL, and MONEI says the
+  redirect does not guarantee the payment went through. Only MONEI's callback
+  confirms the order and sends the emails, so this page promises nothing but
+  that. It empties the cart (web/cart.js, on #order-received) because the
+  order already exists; the cart is deliberately kept until now so that a
+  customer who cancels on MONEI's page comes back to it intact.
+-#}
+<main class="site-page"><div class="site-page-inner">
+  <h1 class="reveal">Pedido recibido</h1>
+  <div id="order-received" class="site-page-body">
+    <p>Gracias por tu pedido. Estamos confirmando tu pago con el banco.</p>
+    <p>En cuanto lo recibamos te enviaremos un email con el resumen. Si en unos minutos no lo ves, revisa la carpeta de spam{% if site.biz_phone %} o llámanos al {{ site.biz_phone }}{% endif %}.</p>
+    <p><a href="/productos">Volver al catálogo</a></p>
+  </div>
+</div></main>

@@ -718,6 +718,51 @@ function renderPayment(box, payment) {
   appendParagraph(box, "Prepararemos tu pedido en cuanto recibamos el pago.");
 }
 
+// What the cart can offer, from GET /api/reservations/payment-options. Card is
+// only for retail: a business account pays the way it has agreed. With card on,
+// the static intro (which says no payment is taken online) is replaced.
+var paymentOptions = { card: false, transfer: false };
+
+function cardAvailable() {
+  return paymentOptions.card && !b2b;
+}
+
+function syncPaymentUi() {
+  var box = document.getElementById("checkout-payment");
+  if (!box) return;
+  var card = cardAvailable();
+  box.hidden = !card;
+  if (!card) return;
+  var transferOption = document.getElementById("checkout-pay-transfer");
+  if (transferOption) transferOption.hidden = !paymentOptions.transfer;
+  var intro = document.getElementById("checkout-intro");
+  if (intro) {
+    intro.textContent = paymentOptions.transfer
+      ? "Elige cómo quieres pagar: con tarjeta ahora, en la página segura de nuestro proveedor de pagos, o por transferencia bancaria."
+      : "Al confirmar el pedido pasarás a la página segura de nuestro proveedor de pagos para pagar con tarjeta.";
+  }
+}
+
+// "card" only when the card option is on screen and chosen; otherwise nothing
+// is sent and the server keeps its transfer / pay-on-delivery behaviour.
+function chosenPaymentMethod(form) {
+  if (!cardAvailable()) return undefined;
+  var checked = form.querySelector('input[name="payment_method"]:checked');
+  return checked ? checked.value : "card";
+}
+
+function loadPaymentOptions() {
+  return fetch("/api/reservations/payment-options", { credentials: "same-origin" })
+    .then(function (r) {
+      return r.ok ? r.json() : null;
+    })
+    .then(function (o) {
+      if (o) paymentOptions = { card: o.card === true, transfer: o.transfer === true };
+      syncPaymentUi();
+    })
+    .catch(function () {});
+}
+
 function initCartPage() {
   var table = document.getElementById("cart-table");
   if (!table) return;
@@ -740,6 +785,25 @@ function initCartPage() {
   var form = document.getElementById("checkout-form");
   var successBox = document.getElementById("checkout-success");
   if (!form) return;
+
+  loadPaymentOptions();
+
+  // MONEI's failUrl: the payment did not go through, the cart is untouched.
+  if (/[?&]pago=error\b/.test(location.search)) {
+    successBox.hidden = false;
+    successBox.textContent =
+      "El pago no se ha completado y no se ha hecho ningún cargo. Puedes intentarlo de nuevo o elegir otra forma de pago.";
+    successBox.style.color = "var(--accent)";
+  }
+
+  var redirecting = false;
+  // Coming back with the browser's Back button can restore this page frozen
+  // mid-redirect, with the button still disabled.
+  window.addEventListener("pageshow", function (e) {
+    if (!e.persisted) return;
+    redirecting = false;
+    form.querySelector('button[type="submit"]').disabled = false;
+  });
 
   var zoneSelect = shippingZoneEl();
   if (zoneSelect) {
@@ -768,6 +832,7 @@ function initCartPage() {
         customer_phone: form.customer_phone.value.trim(),
         notes: form.notes.value.trim(),
         accept_terms: form.accept_terms.checked,
+        payment_method: chosenPaymentMethod(form),
         shipping_zone: zoneSelect ? zoneSelect.value : undefined,
         items: cart.map(function (i) {
           return { sku: i.sku, quantity: i.quantity };
@@ -784,6 +849,18 @@ function initCartPage() {
           successBox.hidden = false;
           successBox.textContent = result.data.error || "No se pudo confirmar la reserva.";
           successBox.style.color = "var(--accent)";
+          return;
+        }
+        // Card: the order exists and waits for payment. Hand the customer to the
+        // payment page and keep the cart, so cancelling there brings it back
+        // intact; /pedido-recibido empties it once the customer returns.
+        var pay = result.data.redirect_url;
+        if (typeof pay === "string" && pay.indexOf("https://") === 0) {
+          redirecting = true;
+          successBox.hidden = false;
+          successBox.textContent = "Te llevamos a la página de pago…";
+          successBox.style.color = "var(--text-primary)";
+          window.location.assign(pay);
           return;
         }
         localStorage.removeItem(CART_KEY);
@@ -814,9 +891,16 @@ function initCartPage() {
         successBox.style.color = "var(--accent)";
       })
       .finally(function () {
-        submitBtn.disabled = false;
+        if (!redirecting) submitBtn.disabled = false;
       });
   });
+}
+
+// /pedido-recibido (site/pedido-recibido.njk): the order exists, so the cart goes.
+function initOrderReceivedPage() {
+  if (!document.getElementById("order-received")) return;
+  localStorage.removeItem(CART_KEY);
+  updateCartBadge();
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -824,6 +908,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initAddToCartButtons();
   initProductSearch();
   initCartPage();
+  initOrderReceivedPage();
   initB2bSetPasswordPage();
 
   // The sign-in page asks unconditionally, flag or not: it is the page someone
@@ -837,5 +922,6 @@ document.addEventListener("DOMContentLoaded", function () {
     updateB2bBanner();
     renderCartPage();
     prefillCheckoutFromB2b();
+    syncPaymentUi();
   });
 });

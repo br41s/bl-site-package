@@ -34,7 +34,7 @@ permalink: "/privacidad.html"
     {%- if products.length %}
     <h3>Pedidos</h3>
     <ul>
-      <li><strong>Datos:</strong> nombre, email, teléfono (opcional), las notas que añadas, los productos, cantidades e importes{% if site.b2b_enabled == "1" %} y, en pedidos de empresa, el nombre de la empresa{% endif %}. Si pides entrega a domicilio, también la dirección que nos facilites para entregarlo.</li>
+      <li><strong>Datos:</strong> nombre, email, teléfono (opcional), las notas que añadas, los productos, cantidades e importes{% if site.b2b_enabled == "1" %} y, en pedidos de empresa, el nombre de la empresa{% endif %}. Si pides entrega a domicilio, también la dirección que nos facilites para entregarlo.{% if site.card_payments %} Si pagas con tarjeta, también el número de operación y el resultado del pago; los datos de la tarjeta no los recibimos.{% endif %}</li>
       <li><strong>Para qué:</strong> gestionar tu pedido, el pago, la entrega, las devoluciones y la garantía, y cumplir nuestras obligaciones contables y fiscales.</li>
       <li><strong>Base legal:</strong> la ejecución del contrato de compraventa (art. 6.1.b RGPD) y el cumplimiento de obligaciones legales (art. 6.1.c RGPD).</li>
       <li><strong>Plazo:</strong> {{ site.retention.orderYears }} años desde el pedido, el plazo de conservación de la documentación mercantil (art. 30 del Código de Comercio); después se borra automáticamente.</li>
@@ -93,6 +93,9 @@ permalink: "/privacidad.html"
       {%- if products.length %}
       <li><strong>Empresas de transporte</strong>, si tu pedido se envía: solo el nombre, la dirección y el teléfono de entrega.</li>
       <li><strong>Entidades bancarias</strong>, en la gestión de los pagos y devoluciones.</li>
+      {%- if site.card_payments %}
+      <li><strong>MONEI</strong>, nuestro proveedor de servicios de pago, si pagas con tarjeta: le enviamos el importe, el número de pedido, tu nombre y tu email, y tú introduces los datos de tu tarjeta directamente en su página de pago. MONEI trata los datos de pago conforme a su propia política de privacidad.</li>
+      {%- endif %}
       {%- endif %}
       <li><strong>Administraciones públicas</strong> (por ejemplo, la Agencia Tributaria), cuando una ley nos obligue.</li>
       {%- if turnstile %}
@@ -132,6 +135,6 @@ permalink: "/privacidad.html"
     <h2>10. Cambios en esta política</h2>
     <p>Si cambiamos la forma en que tratamos tus datos, actualizaremos esta página y la fecha de abajo.</p>
 
-    <p class="legal-updated">Última actualización: 2 de octubre de 2026.</p>
+    <p class="legal-updated">Última actualización: {% if site.card_payments %}12 de noviembre de 2026{% else %}2 de octubre de 2026{% endif %}.</p>
   </div>
 </div></main>
