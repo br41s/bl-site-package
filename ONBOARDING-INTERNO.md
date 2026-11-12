@@ -28,6 +28,7 @@ En el entorno de la app (variables de entorno):
 - [ ] `JWT_SECRET` → string aleatorio de 32+ caracteres (usa: `openssl rand -hex 32`)
 - [ ] `PORT` → `8080`
 - [ ] **NO** configures `OPENROUTER_API_KEY` aquí — el código la prioriza sobre la que el cliente introduce en `/setup`, así que si se pone aquí la del cliente queda ignorada en silencio. La API Key es BYOK: la introduce el cliente (o tú, temporalmente, ver paso 4).
+- [ ] Pago con tarjeta con MONEI (solo si está contratado): el cliente abre cuenta en MONEI y activa los métodos de pago que quiera; `MONEI_API_KEY` = clave de **Ajustes → Acceso API** del panel de MONEI (`pk_test_…` para probar, `pk_live_…` en producción) y `site_url`/`SITE_URL` con `https`. Reinicia la app (reconstruye las páginas legales). Prueba en modo test con la tarjeta `4444 4444 4444 4422` (12/34, CVC 123) y «Complete» en el simulador 3D Secure: el pedido debe quedar *Confirmada*. No hace falta dar de alta ninguna URL en MONEI: la dirección del aviso viaja con cada pago.
 - [ ] Complemento WhatsApp (solo si está contratado): `KNOWLEDGE_API_TOKEN`, `CHATWOOT_BASE_URL`, `CHATWOOT_ACCOUNT_ID` y `CHATWOOT_API_TOKEN` según [`ONBOARDING-WHATSAPP.md`](ONBOARDING-WHATSAPP.md). Sin ellas `/api/knowledge` responde 404 y la pestaña WhatsApp de Mensajes avisa de que no está configurada. Además hay que poner `whatsapp_bot_enabled` a `1` en la tabla `config` (activa los avisos de `/uso-de-ia` y `/privacidad`; todavía no hay control en el panel)
 
 ### 3. Configurar volumen persistente

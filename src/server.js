@@ -17,6 +17,7 @@ import redirectsRouter, { findLiveRedirect, resolvesOnDisk } from "./api/redirec
 import { legacyUrlHandler } from "./legacy-urls.js";
 import { cleanUrlHandler } from "./clean-urls.js";
 import reservationsRouter from "./api/reservations.js";
+import moneiRouter from "./api/monei.js";
 import b2bRouter from "./api/b2b.js";
 import pricingRouter from "./api/pricing.js";
 import syncRouter from "./api/sync.js";
@@ -53,6 +54,10 @@ if (process.env.TRUST_PROXY_HOPS) {
 // sets req._body the global parser below no-ops for this path, so every other
 // route keeps the tight default limit (smaller JSON-bomb surface).
 app.use("/api/site/upload-image", express.json({ limit: "15mb" }));
+// MONEI signs the exact bytes of its callback, so it needs the raw body: it must
+// be mounted before the global JSON parser, which would consume the stream and
+// leave nothing to verify the signature against.
+app.use("/api/monei", moneiRouter);
 app.use(express.json());
 
 // En subdominios de staging (STAGING=true en las variables de entorno),

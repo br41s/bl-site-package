@@ -6,6 +6,7 @@ import { splitCards } from "../../src/content/content-cards.js";
 import { buildLocalBusinessLd, buildFaqLd } from "../../src/content/structured-data.js";
 import { parseShippingZones } from "../../src/shipping.js";
 import { isSmtpConfigured } from "../../src/mail/mailer.js";
+import { isMoneiConfigured } from "../../src/monei-config.js";
 import {
   CONTACT_RETENTION_MONTHS,
   ORDER_RETENTION_YEARS,
@@ -82,6 +83,12 @@ export default function () {
   // src/api/contact.js), so the legal pages may only promise them then. A
   // boolean, never the SMTP settings themselves (those are secrets).
   config.mail_configured = isSmtpConfigured();
+  // Whether the checkout offers card payment through MONEI (MONEI_API_KEY in the
+  // environment and an https site_url). The terms, privacy and cookies pages say
+  // the site takes no card payments unless this is true, so they read it here.
+  // A boolean, never the key. It is read at build time: changing MONEI_API_KEY
+  // needs a restart, which rebuilds the site (buildOnStartup).
+  config.card_payments = isMoneiConfigured();
   // How a catalogue order is paid, in one line, for the catalogue hero and its
   // meta descriptions. Same rule as paymentInstructions in
   // src/api/reservations.js: with an IBAN, retail orders are paid by transfer

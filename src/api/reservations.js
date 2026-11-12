@@ -1,6 +1,7 @@
 import { Router } from "express";
 import db, { getConfig } from "../db/database.js";
-import { getMailSettings, isNotifyEmailConfigured, isSmtpConfigured, sendMail } from "../mail/mailer.js";
+import { describeReservation, sendReservationMails } from "../mail/reservation-mails.js";
+import { createMoneiPayment, isMoneiConfigured } from "./monei.js";
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 import { resolveB2bAccount, b2bPricing, b2bUnitPriceCents, vatCentsByRate, B2B_VAT_RATE } from "./b2b.js";
@@ -17,8 +18,6 @@ const reservationLimiter = rateLimit({ windowMs: 60 * 1000, max: 10 });
 // arrive and confirms it. Not a sale yet, so "Lo más vendido" ignores it
 // (SOLD_STATUSES in site/_data/shopBlocks.js).
 const VALID_STATUSES = ["awaiting_payment", "pending", "confirmed", "ready_for_pickup", "completed", "cancelled"];
-
-const eur = (cents) => `${(cents / 100).toFixed(2)} €`;
 
 // How the customer pays, shown on the checkout screen and in their email.
 // A B2B account pays the way it has agreed with the business, so it never
@@ -40,25 +39,19 @@ function paymentInstructions({ amountCents, b2b }) {
   };
 }
 
-function paymentText(payment) {
-  if (!payment) return "Te avisaremos para confirmar la entrega.";
-  if (payment.method === "usual") {
-    return "El pago se hará según tu forma de pago habitual con nosotros. Te avisaremos para confirmar la entrega.";
-  }
-  const lines = [`Para completar tu reserva, haz una transferencia de ${eur(payment.amount_cents)} a:`];
-  if (payment.holder) lines.push(`Titular: ${payment.holder}`);
-  lines.push(`IBAN: ${payment.iban}`);
-  if (payment.bic) lines.push(`BIC: ${payment.bic}`);
-  lines.push(`Concepto: ${payment.reference}`, "", "Prepararemos tu pedido en cuanto recibamos el pago.");
-  return lines.join("\n");
-}
-
 // GET /api/reservations — panel list (newest first)
 router.get("/", requireAuth, (req, res) => {
   const reservations = db
     .prepare("SELECT * FROM reservations ORDER BY datetime(created_at) DESC, id DESC")
     .all();
   res.json({ reservations });
+});
+
+// GET /api/reservations/payment-options — public. What the cart can offer, so
+// the page shows a card option only when MONEI is set up and a transfer option
+// only when there are bank details. Nothing here is a secret.
+router.get("/payment-options", (req, res) => {
+  res.json({ card: isMoneiConfigured(), transfer: Boolean(getConfig("bank_iban")) });
 });
 
 // GET /api/reservations/:id — panel detail, with items
@@ -147,11 +140,21 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
         ...(shipping_cents ? [{ netCents: shipping_cents, vatRate: B2B_VAT_RATE }] : []),
       ])
     : null;
-  const payment = paymentInstructions({
-    amountCents: vat_included ? total_cents : total_cents + vat_cents,
-    b2b: Boolean(b2bAccount),
-  });
-  const status = payment?.method === "transfer" ? "awaiting_payment" : "pending";
+  // Card is only used when the page asks for it (payment_method: "card"): a page
+  // cached from before this existed sends nothing and gets the old behaviour,
+  // instead of a reservation waiting for a payment its customer was never sent to.
+  // Card is for retail only; a B2B account keeps paying the way it has agreed.
+  const wantsCard = req.body.payment_method === "card";
+  if (wantsCard && (b2bAccount || !isMoneiConfigured())) {
+    return res.status(400).json({ error: "El pago con tarjeta no está disponible. Recarga la página." });
+  }
+  const payment = wantsCard
+    ? { method: "card", amount_cents: total_cents }
+    : paymentInstructions({
+        amountCents: vat_included ? total_cents : total_cents + vat_cents,
+        b2b: Boolean(b2bAccount),
+      });
+  const status = payment?.method === "transfer" || wantsCard ? "awaiting_payment" : "pending";
 
   const insertReservation = db.transaction(() => {
     const result = db
@@ -183,66 +186,63 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
 
   const reservationId = insertReservation();
 
+  // A card order is created unpaid, then handed to MONEI's payment page. The
+  // emails wait for MONEI's callback (src/api/monei.js), so an abandoned payment
+  // page never reaches the owner as a new order. If MONEI cannot be reached the
+  // order is cancelled rather than left waiting for a payment that cannot happen.
+  if (wantsCard) {
+    try {
+      const monei = await createMoneiPayment({
+        reservationId,
+        amountCents: total_cents,
+        customerName: customer_name,
+        customerEmail: customer_email,
+        description: `Pedido ${reservationId} — ${getConfig("company_name") || "Web"}`,
+      });
+      db.prepare("UPDATE reservations SET monei_payment_id = ? WHERE id = ?").run(monei.id, reservationId);
+      return res.status(201).json({
+        success: true,
+        id: reservationId,
+        total_cents,
+        shipping_cents,
+        vat_included: true,
+        vat_cents,
+        b2b: false,
+        payment: { method: "card" },
+        redirect_url: monei.redirectUrl,
+      });
+    } catch (err) {
+      console.error(`MONEI: no se pudo iniciar el pago de la reserva ${reservationId}:`, err.message);
+      db.prepare("UPDATE reservations SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?").run(
+        reservationId,
+      );
+      return res.status(502).json({
+        error: "No se pudo iniciar el pago con tarjeta. Inténtalo de nuevo en unos minutos.",
+      });
+    }
+  }
+
   if (payment?.method === "transfer") payment.reference = `Reserva ${reservationId}`;
 
-  const itemsList = resolvedItems
-    .map((i) => `- ${i.quantity} x ${i.product_name} (${eur(i.unit_price_cents)}${vat_included ? "" : " sin IVA"})`)
-    .join("\n");
-  const shippingLine = zone ? `\nEnvío (${zone.label}): ${eur(shipping_cents)}${vat_included ? "" : " sin IVA"}` : "";
-  const totals = vat_included
-    ? `${shippingLine ? shippingLine.trimStart() + "\n" : ""}Total: ${eur(total_cents)}`
-    : `${shippingLine ? shippingLine.trimStart() + "\n" : ""}Total sin IVA: ${eur(total_cents)}\nIVA: ${eur(vat_cents)}\nTotal con IVA: ${eur(total_cents + vat_cents)}`;
-  const settings = getMailSettings();
-
-  // Owner notification and customer copy go out together, not one after the
-  // other: the checkout waits for both, and SMTP can take seconds each.
-  const notifyOwner = async () => {
-    if (!isSmtpConfigured(settings) || !isNotifyEmailConfigured(settings)) return;
-    try {
-      const b2bLine = b2bAccount
-        ? `Cuenta de empresa: ${b2bAccount.company_name}${b2bAccount.tax_id ? ` (${b2bAccount.tax_id})` : ""} — precios profesionales aplicados\n`
-        : "";
-      const paymentLine = payment?.method === "transfer"
-        ? `Pago: por transferencia, concepto «${payment.reference}»\n`
-        : payment?.method === "usual"
-          ? "Pago: forma de pago habitual de la empresa\n"
-          : "";
-      await sendMail(
-        {
-          from: `"${customer_name}" <${settings.user}>`,
-          to: settings.notifyEmail,
-          subject: `Nueva reserva #${reservationId}${b2bAccount ? ` (empresa: ${b2bAccount.company_name})` : ""}`,
-          text: `${b2bLine}${paymentLine}Cliente: ${customer_name}\nEmail: ${customer_email}\nTeléfono: ${customer_phone}\n\nProductos:\n${itemsList}\n\n${totals}\n\nNotas: ${notes}`,
-        },
-        settings,
-      );
-    } catch (err) {
-      console.error("Error enviando email de notificación de reserva:", err.message);
-    }
-  };
-
-  // The customer's own copy, with how to pay. Needs only SMTP, not
-  // notify_email (that is the owner's address). Swallowed like the one above:
-  // the reservation is stored and the screen already shows the same details.
-  const notifyCustomer = async () => {
-    if (!isSmtpConfigured(settings)) return;
-    try {
-      const companyName = getConfig("company_name") || "Web";
-      await sendMail(
-        {
-          from: `"${companyName}" <${settings.user}>`,
-          to: customer_email,
-          subject: `Tu reserva nº ${reservationId} — ${companyName}`,
-          text: `Hola ${customer_name},\n\nHemos recibido tu reserva nº ${reservationId}.\n\nProductos:\n${itemsList}\n\n${totals}\n\n${paymentText(payment)}\n\n— ${companyName}`,
-        },
-        settings,
-      );
-    } catch (err) {
-      console.error("Error enviando la confirmación de reserva al cliente:", err.message);
-    }
-  };
-
-  await Promise.all([notifyOwner(), notifyCustomer()]);
+  const { itemsList, totals } = describeReservation({
+    items: resolvedItems,
+    vat_included,
+    vat_cents,
+    total_cents,
+    zone_label: zone ? zone.label : null,
+    shipping_cents,
+  });
+  await sendReservationMails({
+    reservationId,
+    customer_name,
+    customer_email,
+    customer_phone,
+    notes,
+    itemsList,
+    totals,
+    payment,
+    b2bAccount,
+  });
 
   res.status(201).json({
     success: true,

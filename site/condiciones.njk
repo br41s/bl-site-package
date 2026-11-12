@@ -40,6 +40,9 @@ permalink: "/condiciones.html"
       <li>Añade los productos al carrito.</li>
       <li>En el carrito, indica tu nombre y tu email (el teléfono es opcional). En las notas puedes decirnos cómo prefieres recibir el pedido.</li>
       <li>Acepta estas condiciones y la política de privacidad, y pulsa <strong>«Comprar ahora»</strong>. Hasta ese momento puedes cambiar o quitar productos y corregir tus datos.</li>
+      {%- if site.card_payments %}
+      <li>Si eliges pagar con tarjeta, pasas a la página de pago segura de MONEI y, al terminar, vuelves a esta web. Si no completas el pago, el pedido no sigue adelante y no se te cobra nada.</li>
+      {%- endif %}
       <li>Te mostramos en pantalla el resumen del pedido, con su número{% if site.bank_iban %} y los datos para pagarlo por transferencia{% endif %}{% if site.mail_configured %}, y te lo enviamos por email como acuse de recibo{% else %}; guárdalo o imprímelo como acuse de recibo, o pídenos una copia por escrito{% endif %}.</li>
       <li>Revisamos la disponibilidad y la forma de entrega y te confirmamos el pedido. Si la entrega tiene gastos que todavía no conocías, te los indicamos antes de prepararlo y puedes anular el pedido sin coste. <strong>El contrato queda perfeccionado con esa confirmación.</strong></li>
     </ol>
@@ -58,17 +61,20 @@ permalink: "/condiciones.html"
     </ul>
 
     <h2>6. Pago</h2>
+    {%- if site.card_payments %}
+    <p>Puedes pagar <strong>con tarjeta</strong> en la página de pago segura de nuestro proveedor de servicios de pago, <strong>MONEI</strong>, a la que pasas al pulsar «Comprar ahora». Los datos de tu tarjeta los introduces allí: nosotros no los recibimos ni los guardamos, solo sabemos si el pago se ha hecho o no. Si después no podemos atender el pedido, por ejemplo por falta de disponibilidad, te devolvemos el importe íntegro por la misma vía.</p>
+    {%- endif %}
     {%- if site.bank_iban %}
-    <p>El pago se hace por <strong>transferencia bancaria</strong> a la cuenta que te indicamos al hacer el pedido, con la referencia que te damos como concepto. Preparamos el pedido cuando recibimos el pago. Si no lo recibimos, te avisaremos antes de anular el pedido.</p>
-    {%- else %}
+    <p>{% if site.card_payments %}También puedes pagar{% else %}El pago se hace{% endif %} por <strong>transferencia bancaria</strong> a la cuenta que te indicamos al hacer el pedido, con la referencia que te damos como concepto. Preparamos el pedido cuando recibimos el pago. Si no lo recibimos, te avisaremos antes de anular el pedido.</p>
+    {%- elif not site.card_payments %}
     <p>El pago se hace en el momento de la entrega o de la recogida del pedido; te indicaremos las formas de pago aceptadas al confirmarlo.</p>
     {%- endif %}
-    <p>Este sitio no admite pagos con tarjeta ni te pedirá nunca los datos de tu tarjeta. Si necesitas factura con tus datos fiscales, indícalo en las notas del pedido.</p>
+    <p>{% if not site.card_payments %}Este sitio no admite pagos con tarjeta ni te pedirá nunca los datos de tu tarjeta. {% endif %}Si necesitas factura con tus datos fiscales, indícalo en las notas del pedido.</p>
 
     <h2>7. Derecho de desistimiento</h2>
     <p>Si compras como consumidor, puedes desistir del contrato <strong>en un plazo de 14 días naturales</strong> sin indicar el motivo. El plazo empieza el día en que tú, o la persona que indiques (que no sea el transportista), recibís el producto; si el pedido llega en varias entregas, desde la recepción de la última.</p>
     <p><strong>Cómo ejercerlo.</strong> Comunícanoslo antes de que termine el plazo con una declaración inequívoca, por ejemplo por email a {{ contacto | safe }}{% if site.legal_address %} o por carta a {{ site.legal_address }}{% endif %}. Puedes usar el formulario de abajo, aunque no es obligatorio.</p>
-    <p><strong>Devolución del dinero.</strong> Te devolveremos todos los pagos recibidos, incluidos los gastos de entrega ordinarios, en un plazo máximo de 14 días naturales desde que nos comuniques tu decisión, por transferencia a la cuenta que nos indiques y sin ningún coste para ti. Podemos esperar a recibir el producto, o a que nos acredites que lo has enviado, antes de devolverte el dinero.</p>
+    <p><strong>Devolución del dinero.</strong> Te devolveremos todos los pagos recibidos, incluidos los gastos de entrega ordinarios, en un plazo máximo de 14 días naturales desde que nos comuniques tu decisión, {% if site.card_payments %}por el mismo medio de pago que hayas utilizado{% else %}por transferencia a la cuenta que nos indiques{% endif %} y sin ningún coste para ti. Podemos esperar a recibir el producto, o a que nos acredites que lo has enviado, antes de devolverte el dinero.</p>
     <p><strong>Devolución del producto.</strong> Envíanoslo{% if site.legal_address %} a {{ site.legal_address }}{% endif %} {% if site.biz_street %} o entrégalo en nuestro establecimiento{% endif %}, como muy tarde 14 días naturales después de comunicarnos tu desistimiento. El coste directo de devolverlo corre de tu cuenta. Solo respondes de la pérdida de valor del producto que se deba a una manipulación distinta de la necesaria para comprobar su naturaleza, características y funcionamiento.</p>
     <p><strong>Excepciones.</strong> No se puede desistir, entre otros casos previstos en el artículo 103 del TRLGDCU, de la compra de productos hechos según tus especificaciones o claramente personalizados; de productos precintados que no sean aptos para devolverse por razones de protección de la salud o de higiene, si se han desprecintado; ni de grabaciones de audio o vídeo o programas informáticos precintados, si se han desprecintado.</p>
 
@@ -104,7 +110,7 @@ permalink: "/condiciones.html"
     <h2>{% if site.b2b_enabled == "1" %}11{% else %}10{% endif %}. Legislación aplicable y jurisdicción</h2>
     <p>Estas condiciones se rigen por la legislación española. Si eres consumidor, puedes acudir a los juzgados y tribunales de tu domicilio. En los demás casos, las partes se someten a los juzgados y tribunales del domicilio del vendedor.</p>
 
-    <p class="legal-updated">Última actualización: 2 de octubre de 2026.</p>
+    <p class="legal-updated">Última actualización: {% if site.card_payments %}12 de noviembre de 2026{% else %}2 de octubre de 2026{% endif %}.</p>
   {%- endif %}
   </div>
 </div></main>

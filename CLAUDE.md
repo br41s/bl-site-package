@@ -335,6 +335,59 @@ net of VAT and carries it in `vat_cents` at `B2B_VAT_RATE`, grouped with the lin
 through `POST /api/site/texts` (`shipping_zones`, validated strictly). Shoroban:
 Península 700, Portugal 1400, Baleares 1000.
 
+## Card payments (MONEI)
+
+Opt-in per deploy: `MONEI_API_KEY` in the environment **and** an https `site_url`
+(or `SITE_URL`), checked by `isMoneiConfigured()` in `src/monei-config.js`. Missing
+either, nothing changes. The customer is redirected to MONEI's hosted payment
+page, so no card data reaches this server or its JavaScript (PCI SAQ-A): there is
+no `monei.js`, no iframe, no card field of ours. Verified end to end against
+MONEI's test environment on 2026-11-12.
+
+- **Flow.** `POST /api/reservations` with `payment_method: "card"` prices the order
+  server-side, inserts it as `awaiting_payment`, creates the payment
+  (`createMoneiPayment`, `src/api/monei.js`, `Authorization: <key>` with no
+  `Bearer`) and answers `redirect_url`; `web/cart.js` does `location.assign`. The
+  cart in `localStorage` is kept until `/pedido-recibido` empties it, so a
+  customer who cancels on MONEI's page finds it intact. `failUrl` returns to
+  `/carrito?pago=error`, `cancelUrl` to `/carrito`.
+- **The callback is the only thing that changes an order.** `POST /api/monei/callback`
+  (`MONEI-Signature`: `t=…,v1=…`, HMAC-SHA256 of `"<t>.<raw body>"` keyed with the
+  API key, constant-time compare, non-`v1` schemes ignored). Returning to
+  `/pedido-recibido` proves nothing, and the page says so. It must stay mounted
+  **before** `express.json()` in `src/server.js`: the signature covers the exact
+  bytes, and a parsed body can never be verified. No time window on `t`: MONEI
+  signs a payment callback once and may retry it hours later.
+- **What the callback checks.** The payment id must equal the stored
+  `monei_payment_id` (404 otherwise, so MONEI retries); on `SUCCEEDED` the amount
+  and currency must equal what the server priced, or nothing is applied and it is
+  logged («REVISAR»). `SUCCEEDED` sets `paid_at` and `confirmed` in one `UPDATE …
+  WHERE paid_at IS NULL`, which is what makes a retry a no-op; a late success on an
+  order already cancelled still counts (the money was taken). `FAILED`, `CANCELED`
+  and `EXPIRED` cancel an unpaid `awaiting_payment` order.
+- **Emails wait for the callback.** A card order is announced (owner and customer)
+  from the callback, through `src/mail/reservation-mails.js` (shared with the
+  checkout), so an abandoned payment page never reaches the owner as an order.
+  Every attempt is a new reservation; abandoned ones stay `awaiting_payment`, like
+  an unpaid transfer.
+- **Never card:** B2B accounts (they pay as agreed), and any page that does not send
+  `payment_method: "card"` (a cached page from before this existed keeps the old
+  behaviour instead of leaving an order waiting for a payment its customer was
+  never sent to). `GET /api/reservations/payment-options` tells the cart whether to
+  show the card option.
+- **The key is environment-only**, never a config row or in `PUBLIC_CONFIG_KEYS`:
+  it also signs every callback. `MONEI_API_URL` exists only so tests can point at a
+  fake.
+- **Legal pages read `site.card_payments`** (`site/_data/site.js`) at build time, so
+  turning card on or off needs a restart, which rebuilds. With it on the terms stop
+  saying the site takes no card payments, refunds go back by the same means, and all
+  three pages name MONEI. `src/build/legal-card-payments.test.js` builds both.
+- **Testing for real.** MONEI cannot reach `localhost`: use a tunnel
+  (`cloudflared tunnel --url`) and set `SITE_URL` to it. Test key `pk_test_…`; card
+  `4444 4444 4444 4422`, 12/34, CVC 123, then «Complete» in the 3D Secure simulator.
+  Not built: refunds or card status in the panel (use MONEI's dashboard), a panel
+  field for the key.
+
 ## Servicios blocks (`servicios_blocks`)
 
 Optional, per deploy, empty = `/servicios` exactly as before. One public config key,
@@ -385,6 +438,10 @@ The pages state what the code does, so a code change can make them false:
   when `site.mail_configured` (SMTP set). `/uso-de-ia` and the footer must not
   promise human review before publication: agents can publish posts and product
   sheets directly. Add a review gate in code before ever claiming one again.
+- **Card payment changes three of these pages**, only when `site.card_payments`
+  (see "Card payments (MONEI)"): terms §4 and §6 and the refund line, privacy §3-§4,
+  cookies §3, and their «Última actualización» date. MONEI's own page sets its own
+  cookies; this site loads nothing from MONEI, so `/cookies` only points to it.
 - Wording follows `bank_iban` the way `paymentInstructions` does
   (`site.shop_payment_line`); never promise "sin pago por adelantado" again.
 

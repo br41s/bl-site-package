@@ -45,6 +45,9 @@ permalink: "/cookies.html"
       {%- if site.chat_widget_url and site.chat_widget_token %}
       <li><strong>Chat de la web.</strong> El botón de chat y la ventana de conversación se cargan desde la plataforma de conversaciones de nuestro proveedor de alojamiento y mantenimiento técnico, en servidores de la Unión Europea. Al abrir el chat, tu navegador se conecta a ese servidor, que recibe tu dirección IP y datos técnicos del navegador. No se cargan rastreadores ni publicidad.</li>
       {%- endif %}
+      {%- if site.card_payments %}
+      <li><strong>Pago con tarjeta.</strong> Si eliges pagar con tarjeta, al pulsar «Comprar ahora» sales de esta web y pasas a la página de pago de nuestro proveedor, MONEI. Esa página es de MONEI y se rige por su propia política de cookies y de privacidad; esta web no carga nada de MONEI en tu navegador mientras navegas.</li>
+      {%- endif %}
       {%- if site.turnstile_site_key %}
       <li><strong>Verificación anti-spam del formulario de contacto.</strong> En la página de contacto se carga Cloudflare Turnstile (Cloudflare, Inc.), que comprueba que quien envía el formulario es una persona. Para ello analiza datos técnicos de tu navegador y tu conexión. Consulta la <a href="https://www.cloudflare.com/turnstile-privacy-policy/" target="_blank" rel="noopener noreferrer">política de privacidad de Turnstile</a>.</li>
       {%- endif %}
@@ -58,6 +61,6 @@ permalink: "/cookies.html"
     <p>Si en el futuro usamos cookies que necesiten tu consentimiento, te lo pediremos antes de instalarlas y actualizaremos esta página.</p>
 
     <p><strong>Responsable:</strong> {{ titular }}<br>Más información en la <a href="/privacidad">Política de privacidad</a>.</p>
-    <p class="legal-updated">Última actualización: 2 de octubre de 2026.</p>
+    <p class="legal-updated">Última actualización: {% if site.card_payments %}12 de noviembre de 2026{% else %}2 de octubre de 2026{% endif %}.</p>
   </div>
 </div></main>
