@@ -5,6 +5,7 @@ import { parseServiciosBlocks, anchorSections } from "../../src/content/servicio
 import { splitCards } from "../../src/content/content-cards.js";
 import { buildLocalBusinessLd, buildFaqLd } from "../../src/content/structured-data.js";
 import { parseShippingZones } from "../../src/shipping.js";
+import { shopPaymentLine, shopHeroLine } from "../../src/content/shop-lines.js";
 import { isSmtpConfigured } from "../../src/mail/mailer.js";
 import { isMoneiConfigured } from "../../src/monei-config.js";
 import {
@@ -89,16 +90,22 @@ export default function () {
   // A boolean, never the key. It is read at build time: changing MONEI_API_KEY
   // needs a restart, which rebuilds the site (buildOnStartup).
   config.card_payments = isMoneiConfigured();
-  // How a catalogue order is paid, in one line, for the catalogue hero and its
-  // meta descriptions. Same rule as paymentInstructions in
-  // src/api/reservations.js: with an IBAN, retail orders are paid by transfer
-  // before they are prepared. "Sin pago por adelantado" was said here before
-  // the transfer flow existed, and contradicted it.
-  config.shop_payment_line = config.bank_iban
-    ? "Pide online y paga por transferencia bancaria"
-    : "Pide online y paga al recibir tu pedido";
   // Zones the cart offers (src/shipping.js); [] = no selector.
   config.shipping_zones_list = parseShippingZones(config.shipping_zones);
+  // How a catalogue order is paid and delivered: one short line for the meta
+  // descriptions, one for the catalogue hero subtitle. Same rule as
+  // paymentInstructions in src/api/reservations.js: with an IBAN, retail orders
+  // are paid by transfer before they are prepared. "Sin pago por adelantado"
+  // was said here before the transfer flow existed, and contradicted it.
+  config.shop_payment_line = shopPaymentLine({
+    bankIban: config.bank_iban,
+    cardPayments: config.card_payments,
+  });
+  config.shop_hero_line = shopHeroLine({
+    bankIban: config.bank_iban,
+    cardPayments: config.card_payments,
+    zones: config.shipping_zones_list,
+  });
   // The privacy policy states the periods the purge enforces
   // (src/privacy/retention.js), read from the same constants.
   config.retention = {
