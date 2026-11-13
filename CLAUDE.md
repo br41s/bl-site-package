@@ -442,8 +442,10 @@ The pages state what the code does, so a code change can make them false:
   (see "Card payments (MONEI)"): terms §4 and §6 and the refund line, privacy §3-§4,
   cookies §3, and their «Última actualización» date. MONEI's own page sets its own
   cookies; this site loads nothing from MONEI, so `/cookies` only points to it.
-- Wording follows `bank_iban` the way `paymentInstructions` does
-  (`site.shop_payment_line`); never promise "sin pago por adelantado" again.
+- Wording follows `bank_iban` and, with MONEI on, card the way `paymentInstructions`
+  does: `site.shop_payment_line` (meta descriptions) and `site.shop_hero_line` (the
+  /productos/ hero: payment plus the delivery zones, free ones first) both come from
+  `src/content/shop-lines.js`; never promise "sin pago por adelantado" again.
 
 ## Customer configuration
 
