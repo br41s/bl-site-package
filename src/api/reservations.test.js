@@ -72,6 +72,9 @@ function reserve(headers = {}, extra = { accept_terms: true }) {
     body: JSON.stringify({
       customer_name: "Ana",
       customer_email: "ana@cliente.es",
+      address: "CALLE ALCALA 50",
+      postal_code: "28014",
+      city: "Madrid",
       items: [{ sku: "A1", quantity: 2 }],
       ...extra,
     }),

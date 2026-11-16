@@ -17,6 +17,7 @@ import redirectsRouter, { findLiveRedirect, resolvesOnDisk } from "./api/redirec
 import { legacyUrlHandler } from "./legacy-urls.js";
 import { cleanUrlHandler } from "./clean-urls.js";
 import reservationsRouter from "./api/reservations.js";
+import addressRouter from "./api/address.js";
 import moneiRouter from "./api/monei.js";
 import b2bRouter from "./api/b2b.js";
 import pricingRouter from "./api/pricing.js";
@@ -102,6 +103,7 @@ app.use("/api/products", productsRouter);
 app.use("/api/product-content", productContentRouter);
 app.use("/api/redirects", redirectsRouter);
 app.use("/api/reservations", reservationsRouter);
+app.use("/api/address", addressRouter);
 app.use("/api/b2b", b2bRouter);
 app.use("/api/pricing", pricingRouter);
 app.use("/api/sync", syncRouter);

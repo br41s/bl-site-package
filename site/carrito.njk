@@ -33,18 +33,33 @@ title: "Carrito"
       <input type="email" name="customer_email" placeholder="Email" required>
       <input type="tel" name="customer_phone" placeholder="Teléfono (opcional)">
       <textarea name="notes" placeholder="Notas (opcional): cómo prefieres recibirlo, datos para la factura…" rows="3"></textarea>
+      <fieldset class="checkout-address">
+        <legend>Dirección de entrega</legend>
+        <div class="address-autocomplete">
+          <input type="text" name="address" id="address-input" placeholder="Empieza a escribir tu calle y número" maxlength="150" required autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="address-suggestions">
+          <ul id="address-suggestions" class="address-suggestions" role="listbox" hidden></ul>
+        </div>
+        <p class="address-hint">Elige tu dirección en la lista; si no aparece, escríbela completa y rellena los campos de abajo.</p>
+        <input type="text" name="address_extra" placeholder="Piso, puerta, escalera… (opcional)" maxlength="60" autocomplete="address-line2">
+        <div class="address-row">
+          <input type="text" name="postal_code" placeholder="Código postal" maxlength="12" required autocomplete="postal-code">
+          <input type="text" name="city" placeholder="Localidad" maxlength="80" required autocomplete="address-level2">
+        </div>
+        <p class="address-credit">Sugerencias de direcciones: © Instituto Geográfico Nacional de España (CartoCiudad).</p>
+      </fieldset>
       {%- if site.shipping_zones_list.length %}
       <label class="checkout-zone">
         <span>Zona de envío</span>
         <select name="shipping_zone" id="shipping-zone" required>
           <option value="" selected disabled>Elige tu zona de envío</option>
           {%- for z in site.shipping_zones_list %}
-          <option value="{{ z.id }}" data-price-cents="{{ z.price_cents }}">{{ z.label }} · {{ ((z.price_cents / 100) | round(2)) | string | replace(".", ",") }} €</option>
+          <option value="{{ z.id }}" data-price-cents="{{ z.price_cents }}"{% if z.region %} data-region="{{ z.region }}"{% endif %}>{{ z.label }} · {{ ((z.price_cents / 100) | round(2)) | string | replace(".", ",") }} €</option>
           {%- endfor %}
           <option value="otros" data-blocked>Otros destinos</option>
         </select>
       </label>
       <p class="checkout-zone-blocked" id="shipping-zone-blocked" role="alert" hidden>Por ahora no realizamos envíos a otros destinos, así que no podemos tramitar el pedido. Escríbenos si tienes dudas.</p>
+      <p class="checkout-zone-warning" id="shipping-zone-mismatch" role="alert" hidden></p>
       {%- endif %}
       {%- if site.sales_shipping_text %}
       <details class="checkout-shipping">

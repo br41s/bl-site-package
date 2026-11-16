@@ -2070,6 +2070,12 @@ document.addEventListener("DOMContentLoaded", function () {
             " · " + new Date(res.created_at).toLocaleString("es-ES");
           info.appendChild(name);
           info.appendChild(meta);
+          if (typeof res.shipping_address === "string" && res.shipping_address) {
+            var shippingAddress = document.createElement("span");
+            shippingAddress.className = "reservation-card-meta";
+            shippingAddress.textContent = "Envío a: " + res.shipping_address;
+            info.appendChild(shippingAddress);
+          }
 
           var select = document.createElement("select");
           select.className = "reservation-status-select";

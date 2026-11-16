@@ -5,7 +5,7 @@ import { createMoneiPayment, isMoneiConfigured } from "./monei.js";
 import { requireAuth } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 import { resolveB2bAccount, b2bPricing, b2bUnitPriceCents, vatCentsByRate, B2B_VAT_RATE } from "./b2b.js";
-import { parseShippingZones } from "../shipping.js";
+import { parseShippingZones, formatShippingAddress } from "../shipping.js";
 import { asyncHandler } from "../middleware/async-handler.js";
 import { formatIban } from "../utils/iban.js";
 
@@ -39,6 +39,17 @@ function paymentInstructions({ amountCents, b2b }) {
   };
 }
 
+// Delivery address typed at checkout: flattened to one line (a pasted newline
+// could otherwise start a header in an email) and clipped to what the checkout
+// fields allow.
+function addressField(value, max) {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(/[\r\n\t\u0000-\u001f]+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
 // GET /api/reservations — panel list (newest first)
 router.get("/", requireAuth, (req, res) => {
   const reservations = db
@@ -70,6 +81,10 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
   const customer_email = typeof req.body.customer_email === "string" ? req.body.customer_email.trim() : "";
   const customer_phone = typeof req.body.customer_phone === "string" ? req.body.customer_phone.trim() : "";
   const notes = typeof req.body.notes === "string" ? req.body.notes.trim() : "";
+  const address = addressField(req.body.address, 150);
+  const address_extra = addressField(req.body.address_extra, 60);
+  const postal_code = addressField(req.body.postal_code, 12);
+  const city = addressField(req.body.city, 80);
   const items = Array.isArray(req.body.items) ? req.body.items : [];
 
   if (!customer_name || !customer_email || items.length === 0) {
@@ -130,6 +145,17 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
       });
     }
   }
+  // Every order asks for a delivery address, with or without shipping zones:
+  // what the customer typed goes on the parcel, or identifies who picks it up.
+  // The hint covers a checkout page cached from before these fields existed.
+  const validPostalCode = /^[0-9A-Za-z][0-9A-Za-z -]{2,10}$/.test(postal_code);
+  if (address.length < 3 || city.length < 2 || !validPostalCode) {
+    return res.status(400).json({
+      error:
+        "Escribe tu dirección de entrega: calle y número, código postal y localidad (si no ves los campos, recarga la página).",
+    });
+  }
+  const shipping_address = formatShippingAddress({ address, extra: address_extra, postal_code, city });
   const shipping_cents = zone ? (b2bAccount ? Math.round(zone.price_cents / (1 + B2B_VAT_RATE)) : zone.price_cents) : null;
   const total_cents =
     resolvedItems.reduce((sum, i) => sum + i.unit_price_cents * i.quantity, 0) + (shipping_cents || 0);
@@ -159,7 +185,7 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
   const insertReservation = db.transaction(() => {
     const result = db
       .prepare(
-        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, status, total_cents, b2b_account_id, b2b_company, vat_included, vat_cents, shipping_zone, shipping_cents, terms_accepted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))",
+        "INSERT INTO reservations (customer_name, customer_email, customer_phone, notes, status, total_cents, b2b_account_id, b2b_company, vat_included, vat_cents, shipping_zone, shipping_cents, terms_accepted_at, shipping_address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)",
       )
       .run(
         customer_name,
@@ -174,6 +200,7 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
         vat_cents,
         zone ? zone.label : null,
         shipping_cents,
+        shipping_address,
       );
     const insertItem = db.prepare(
       "INSERT INTO reservation_items (reservation_id, sku, product_name, unit_price_cents, quantity) VALUES (?, ?, ?, ?, ?)",
@@ -242,6 +269,7 @@ router.post("/", reservationLimiter, asyncHandler(async (req, res) => {
     totals,
     payment,
     b2bAccount,
+    shipping_address,
   });
 
   res.status(201).json({

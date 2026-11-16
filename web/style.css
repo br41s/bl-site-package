@@ -2003,6 +2003,80 @@ body.infographic-lightbox-open {
 .checkout-zone-blocked[hidden] {
   display: none;
 }
+.checkout-zone-warning {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+.checkout-zone-warning[hidden] {
+  display: none;
+}
+
+/* Checkout delivery address (site/carrito.njk): the street field with its
+   suggestion list (CartoCiudad through /api/address/suggest), the floor/door,
+   and the postal code and town. Tokens only, so Clásico and Cálida both work. */
+.checkout-address {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.checkout-address legend {
+  padding: 0;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.address-autocomplete {
+  position: relative;
+}
+/* The form is a flex column, which stretches its direct children; this input
+   sits one level down, so it needs the width said. */
+.address-autocomplete input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.address-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 16rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.address-suggestions[hidden] {
+  display: none;
+}
+.address-suggestions li {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.address-suggestions li:hover,
+.address-suggestions li.is-active {
+  background: var(--accent-light);
+}
+.address-row {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.6rem;
+}
+.address-hint,
+.address-credit {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
 
 /* SERVICIOS — optional overview + partner cards (site/_includes/servicios-blocks.njk).
    Tokens only, so Clásico and Cálida each colour them with their own. */

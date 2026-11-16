@@ -52,6 +52,7 @@ export async function sendReservationMails({
   totals,
   payment,
   b2bAccount,
+  shipping_address,
 }) {
   const settings = getMailSettings();
 
@@ -68,12 +69,13 @@ export async function sendReservationMails({
           : payment?.method === "usual"
             ? "Pago: forma de pago habitual de la empresa\n"
             : "";
+      const addressLine = shipping_address ? `Dirección de envío: ${shipping_address}\n` : "";
       await sendMail(
         {
           from: `"${customer_name}" <${settings.user}>`,
           to: settings.notifyEmail,
           subject: `Nueva reserva #${reservationId}${b2bAccount ? ` (empresa: ${b2bAccount.company_name})` : ""}`,
-          text: `${b2bLine}${paymentLine}Cliente: ${customer_name}\nEmail: ${customer_email}\nTeléfono: ${customer_phone}\n\nProductos:\n${itemsList}\n\n${totals}\n\nNotas: ${notes}`,
+          text: `${b2bLine}${paymentLine}Cliente: ${customer_name}\nEmail: ${customer_email}\nTeléfono: ${customer_phone}\n${addressLine}\nProductos:\n${itemsList}\n\n${totals}\n\nNotas: ${notes}`,
         },
         settings,
       );
@@ -88,12 +90,13 @@ export async function sendReservationMails({
     if (!isSmtpConfigured(settings)) return;
     try {
       const companyName = getConfig("company_name") || "Web";
+      const addressBlock = shipping_address ? `Dirección de entrega:\n${shipping_address}\n\n` : "";
       await sendMail(
         {
           from: `"${companyName}" <${settings.user}>`,
           to: customer_email,
           subject: `Tu reserva nº ${reservationId} — ${companyName}`,
-          text: `Hola ${customer_name},\n\nHemos recibido tu reserva nº ${reservationId}.\n\nProductos:\n${itemsList}\n\n${totals}\n\n${paymentText(payment)}\n\n— ${companyName}`,
+          text: `Hola ${customer_name},\n\nHemos recibido tu reserva nº ${reservationId}.\n\nProductos:\n${itemsList}\n\n${totals}\n\n${addressBlock}${paymentText(payment)}\n\n— ${companyName}`,
         },
         settings,
       );

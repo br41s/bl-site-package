@@ -396,6 +396,11 @@ function shippingZoneEl() {
   return document.getElementById("shipping-zone");
 }
 
+// web/postal-region.js, loaded lazily and only on a checkout with a zone
+// selector. Until it arrives (or if it never does) the zone select works
+// exactly as before: no auto-selection, no warning.
+var postal = null;
+
 function shippingCents() {
   var select = shippingZoneEl();
   if (!select || !select.value || select.value === "otros") return null;
@@ -415,6 +420,71 @@ function syncShippingZone() {
   if (note) note.hidden = !blocked;
   var btn = form.querySelector('button[type="submit"]');
   if (btn) btn.disabled = blocked;
+}
+
+// The select's own change handler and the postal-code auto-selection need the
+// same refresh: the blocked notice, the buy button and the totals.
+function refreshShippingZone() {
+  syncShippingZone();
+  renderCartPage();
+}
+
+function hasZoneRegions(select) {
+  var options = select.options;
+  for (var i = 0; i < options.length; i += 1) {
+    if (options[i].getAttribute("data-region")) return true;
+  }
+  return false;
+}
+
+// Typing a postal code selects the zone that serves its region, or "otros"
+// when no configured zone does. A code whose region is unknown leaves the
+// select as it is. Dormant when no zone carries a region.
+function applyPostalZone() {
+  var form = document.getElementById("checkout-form");
+  var select = shippingZoneEl();
+  if (!form || !select || !postal || !hasZoneRegions(select)) return;
+  var input = form.elements.namedItem("postal_code");
+  if (!input) return;
+  var region = postal.postalRegion(input.value);
+  if (!region) {
+    updateZoneWarning();
+    return;
+  }
+  var match = null;
+  var options = select.options;
+  for (var i = 0; i < options.length; i += 1) {
+    if (options[i].getAttribute("data-region") === region) {
+      match = options[i];
+      break;
+    }
+  }
+  select.value = match ? match.value : "otros";
+  refreshShippingZone();
+  updateZoneWarning();
+}
+
+// A hand-picked zone that disagrees with the postal code is not blocked: the
+// customer may know better, so it is only flagged.
+function updateZoneWarning() {
+  var form = document.getElementById("checkout-form");
+  var select = shippingZoneEl();
+  var warning = document.getElementById("shipping-zone-mismatch");
+  if (!form || !select || !warning) return;
+  var option = select.options[select.selectedIndex];
+  var zoneRegion = option ? option.getAttribute("data-region") : "";
+  var input = form.elements.namedItem("postal_code");
+  var region = postal && input ? postal.postalRegion(input.value) : null;
+  if (zoneRegion && region && zoneRegion !== region) {
+    var label = option.textContent.split(" · ")[0];
+    warning.textContent =
+      "El código postal " + input.value.trim() + " corresponde a " + postal.regionLabel(region) +
+      ", pero has elegido «" + label + "». Revisa la zona de envío: el precio del envío depende de ella.";
+    warning.hidden = false;
+  } else {
+    warning.hidden = true;
+    warning.textContent = "";
+  }
 }
 
 function formatEur(cents) {
@@ -787,6 +857,7 @@ function initCartPage() {
   if (!form) return;
 
   loadPaymentOptions();
+  initAddressAutocomplete(form);
 
   // MONEI's failUrl: the payment did not go through, the cart is untouched.
   if (/[?&]pago=error\b/.test(location.search)) {
@@ -807,9 +878,16 @@ function initCartPage() {
 
   var zoneSelect = shippingZoneEl();
   if (zoneSelect) {
+    import("/postal-region.js")
+      .then(function (m) {
+        postal = m;
+        var postalInput = form.elements.namedItem("postal_code");
+        if (postalInput) postalInput.addEventListener("input", applyPostalZone);
+      })
+      .catch(function () {});
     zoneSelect.addEventListener("change", function () {
-      syncShippingZone();
-      renderCartPage();
+      refreshShippingZone();
+      updateZoneWarning();
     });
   }
 
@@ -834,6 +912,12 @@ function initCartPage() {
         accept_terms: form.accept_terms.checked,
         payment_method: chosenPaymentMethod(form),
         shipping_zone: zoneSelect ? zoneSelect.value : undefined,
+        // Delivery address, only on a checkout page that has the fields (a
+        // shop with shipping zones). JSON.stringify drops the undefined keys.
+        address: form.address ? form.address.value.trim() : undefined,
+        address_extra: form.address_extra ? form.address_extra.value.trim() : undefined,
+        postal_code: form.postal_code ? form.postal_code.value.trim() : undefined,
+        city: form.city ? form.city.value.trim() : undefined,
         items: cart.map(function (i) {
           return { sku: i.sku, quantity: i.quantity };
         }),
@@ -893,6 +977,173 @@ function initCartPage() {
       .finally(function () {
         if (!redirecting) submitBtn.disabled = false;
       });
+  });
+}
+
+// Delivery address at checkout: suggests real Spanish addresses from our own
+// /api/address/suggest (CartoCiudad, IGN). It is only an aid — the fields are
+// plain inputs, so if the service is slow or down the customer types the
+// address by hand and the order goes through just the same.
+function initAddressAutocomplete(form) {
+  var input = document.getElementById("address-input");
+  var list = document.getElementById("address-suggestions");
+  if (!input || !list) return;
+
+  var debounceTimer = null;
+  var controller = null; // in-flight request, aborted by the next keystroke
+  var currentQuery = ""; // the query the latest request was made for
+  var suggestions = [];
+  var activeIndex = -1;
+
+  function hide() {
+    list.hidden = true;
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+    activeIndex = -1;
+  }
+
+  function clear() {
+    list.textContent = "";
+    suggestions = [];
+    hide();
+  }
+
+  function stop() {
+    if (controller) {
+      controller.abort();
+      controller = null;
+    }
+    currentQuery = "";
+    clear();
+  }
+
+  function setActive(index) {
+    var items = list.querySelectorAll("li");
+    Array.prototype.forEach.call(items, function (li, i) {
+      if (i === index) li.classList.add("is-active");
+      else li.classList.remove("is-active");
+    });
+    activeIndex = index;
+    var active = items[index];
+    if (active) input.setAttribute("aria-activedescendant", active.id);
+    else input.removeAttribute("aria-activedescendant");
+  }
+
+  function pick(suggestion) {
+    input.value = suggestion.street;
+    var postalInput = form.elements.namedItem("postal_code");
+    if (postalInput) postalInput.value = suggestion.postal_code || "";
+    var town = form.elements.namedItem("city");
+    if (town) town.value = suggestion.city || "";
+    // The postal code just changed: pick the zone it belongs to, if known.
+    applyPostalZone();
+    clear();
+    // A street with no number ("callejero") still needs one typed by hand:
+    // focus stays in the address field, cursor at the end, to add it. With a
+    // number, the floor and door are the next thing to ask for.
+    if (/\d/.test(suggestion.street)) {
+      var extra = form.elements.namedItem("address_extra");
+      if (extra) extra.focus();
+    } else {
+      input.focus();
+      try {
+        input.setSelectionRange(input.value.length, input.value.length);
+      } catch (e) {}
+    }
+  }
+
+  function render(items) {
+    list.textContent = "";
+    suggestions = items;
+    activeIndex = -1;
+    if (items.length === 0) {
+      hide();
+      return;
+    }
+    items.forEach(function (suggestion, i) {
+      var li = document.createElement("li");
+      li.id = "address-opt-" + i;
+      li.setAttribute("role", "option");
+      // textContent, never innerHTML: the label comes from a third party.
+      li.textContent = suggestion.label;
+      li.addEventListener("mousedown", function (e) {
+        // preventDefault so the input keeps focus and no blur hides the list
+        // before the pick.
+        e.preventDefault();
+        pick(suggestion);
+      });
+      list.appendChild(li);
+    });
+    list.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+  }
+
+  function lookUp(query) {
+    if (controller) controller.abort();
+    controller = new AbortController();
+    currentQuery = query;
+    fetch("/api/address/suggest?q=" + encodeURIComponent(query), { signal: controller.signal })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (data) {
+        // A newer keystroke already fired: this answer is for a stale query.
+        if (currentQuery !== query || input.value.trim() !== query) return;
+        render(Array.isArray(data.suggestions) ? data.suggestions : []);
+      })
+      .catch(function () {
+        if (currentQuery !== query || input.value.trim() !== query) return; // aborted on purpose
+        clear(); // unreachable or broken: the customer types it by hand
+      });
+  }
+
+  input.addEventListener("input", function () {
+    var query = input.value.trim();
+    clearTimeout(debounceTimer);
+    if (query.length < 3) {
+      stop();
+      return;
+    }
+    debounceTimer = setTimeout(function () {
+      lookUp(query);
+    }, 250);
+  });
+
+  input.addEventListener("keydown", function (e) {
+    var open = !list.hidden && suggestions.length > 0;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (!open) return;
+      e.preventDefault();
+      var next = e.key === "ArrowDown" ? activeIndex + 1 : activeIndex - 1;
+      if (next < 0) next = suggestions.length - 1;
+      if (next >= suggestions.length) next = 0;
+      setActive(next);
+      return;
+    }
+    if (e.key === "Enter") {
+      // Only when there is something highlighted: a normal Enter still
+      // submits the form.
+      if (open && activeIndex >= 0 && suggestions[activeIndex]) {
+        e.preventDefault();
+        pick(suggestions[activeIndex]);
+      }
+      return;
+    }
+    if (e.key === "Escape" && open) {
+      e.preventDefault();
+      clear();
+    }
+  });
+
+  // A click on an option must land before the list hides: hence the delay.
+  input.addEventListener("blur", function () {
+    setTimeout(hide, 150);
+  });
+
+  document.addEventListener("click", function (e) {
+    if (list.hidden) return;
+    if (e.target === input || list.contains(e.target)) return;
+    hide();
   });
 }
 
