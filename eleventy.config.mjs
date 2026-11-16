@@ -26,6 +26,7 @@ export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "web/404.css": "404.css" });
   eleventyConfig.addPassthroughCopy({ "web/site.js": "site.js" });
   eleventyConfig.addPassthroughCopy({ "web/cart.js": "cart.js" });
+  eleventyConfig.addPassthroughCopy({ "web/postal-region.js": "postal-region.js" });
   // The homepage game, file by file: web/game/ holds no tests today, but a
   // directory copy would ship one the moment someone added it there.
   eleventyConfig.addPassthroughCopy({ "web/game/rules.js": "game/rules.js" });

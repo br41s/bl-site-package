@@ -150,6 +150,7 @@ async function mailPaidReservation(reservation) {
     totals,
     payment: { method: "card" },
     b2bAccount: null,
+    shipping_address: reservation.shipping_address,
   });
 }
 

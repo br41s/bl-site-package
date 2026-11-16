@@ -40,6 +40,10 @@ function build(env = {}) {
 }
 
 const PAGES = ["condiciones.html", "privacidad.html", "cookies.html"];
+// The privacy page also names the address-suggestion service every order uses
+// (src/api/address.js), so with a catalogue it is dated 16 November; the terms
+// and cookies pages keep the date of their own last change.
+const expectedDate = (page, own) => (page === "privacidad.html" ? "16 de noviembre" : own);
 const CARD_ENV = { MONEI_API_KEY: "pk_test_build_check", SITE_URL: "https://tienda.example.com" };
 
 before(() => {
@@ -65,7 +69,7 @@ describe("legal pages without card payment", () => {
   });
 
   test("keep their original date and the transfer-only wording", () => {
-    for (const page of PAGES) assert.match(read(page), /Última actualización: 2 de octubre de 2026/, page);
+    for (const page of PAGES) assert.match(read(page), new RegExp(`Última actualización: ${expectedDate(page, "2 de octubre")} de 2026`), page);
     assert.match(read("condiciones.html"), /El pago se hace por\s*<strong>transferencia bancaria/);
     assert.match(read("condiciones.html"), /por transferencia a la cuenta que nos indiques/);
   });
@@ -94,7 +98,7 @@ describe("legal pages with card payment", () => {
   });
 
   test("are dated from this change", () => {
-    for (const page of PAGES) assert.match(read(page), /Última actualización: 12 de noviembre de 2026/, page);
+    for (const page of PAGES) assert.match(read(page), new RegExp(`Última actualización: ${expectedDate(page, "12 de noviembre")} de 2026`), page);
   });
 
   test("an http site_url keeps card off, since MONEI could not call back", () => {

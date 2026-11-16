@@ -92,6 +92,7 @@ permalink: "/privacidad.html"
       <li><strong>Nuestro proveedor de correo electrónico</strong>, que envía y recibe los emails, como encargado del tratamiento.</li>
       {%- if products.length %}
       <li><strong>Empresas de transporte</strong>, si tu pedido se envía: solo el nombre, la dirección y el teléfono de entrega.</li>
+      <li><strong>Servicio público de direcciones CartoCiudad (Instituto Geográfico Nacional de España)</strong>, al hacer un pedido: al escribir tu dirección en el pedido, el texto que tecleas se consulta en su servicio de sugerencias a través de nuestro servidor, para ofrecerte direcciones que elegir. No recibe tu IP, tu nombre ni los datos de tu pedido.</li>
       <li><strong>Entidades bancarias</strong>, en la gestión de los pagos y devoluciones.</li>
       {%- if site.card_payments %}
       <li><strong>MONEI</strong>, nuestro proveedor de servicios de pago, si pagas con tarjeta: le enviamos el importe, el número de pedido, tu nombre y tu email, y tú introduces los datos de tu tarjeta directamente en su página de pago. MONEI trata los datos de pago conforme a su propia política de privacidad.</li>
@@ -135,6 +136,6 @@ permalink: "/privacidad.html"
     <h2>10. Cambios en esta política</h2>
     <p>Si cambiamos la forma en que tratamos tus datos, actualizaremos esta página y la fecha de abajo.</p>
 
-    <p class="legal-updated">Última actualización: {% if site.card_payments %}12 de noviembre de 2026{% else %}2 de octubre de 2026{% endif %}.</p>
+    <p class="legal-updated">Última actualización: {% if products.length %}16 de noviembre de 2026{% elif site.card_payments %}12 de noviembre de 2026{% else %}2 de octubre de 2026{% endif %}.</p>
   </div>
 </div></main>

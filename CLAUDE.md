@@ -335,6 +335,39 @@ net of VAT and carries it in `vat_cents` at `B2B_VAT_RATE`, grouped with the lin
 through `POST /api/site/texts` (`shipping_zones`, validated strictly). Shoroban:
 Península 700, Portugal 1400, Baleares 1000.
 
+## Delivery address at checkout
+
+Asked on **every** order (Brais, 2026-11-16), B2B and pick-up shops included.
+
+- **The address is typed with suggestions, never forced from them.** `web/cart.js`
+  (`initAddressAutocomplete`) calls our own `GET /api/address/suggest?q=`
+  (`src/api/address.js`), which asks CartoCiudad (IGN, official Spanish data, no key) and
+  returns `{label, street, postal_code, city}` for portals and streets only. The browser never
+  talks to a third party, so the CSP, `/cookies` and the visitor's IP are untouched; only the
+  typed text goes out, from our server (privacy §4 says so). IGN asks for attribution: the line
+  under the field. **Any upstream failure answers `{suggestions: []}`** (and never logs the typed
+  text): the four fields (`address`, `address_extra`, `postal_code`, `city`) are plain inputs,
+  which is also how a Portuguese address gets in — CartoCiudad is Spain only.
+  `ADDRESS_API_URL` exists only so tests can point at a fake.
+- **The server is the boundary.** `POST /api/reservations` refuses an order with no address
+  (400, same "reload the page" hint as `accept_terms`), strips control characters, clips lengths,
+  and stores one formatted line in `reservations.shipping_address` (`formatShippingAddress`,
+  `src/shipping.js`). It reaches the owner's email, the customer's copy and the panel's order
+  card. A card order is mailed from the MONEI callback, which reads the stored column.
+- **The postal code picks the shipping zone.** `web/postal-region.js` is one pure module
+  (`postalRegion`: Spanish 5-digit codes by province prefix — 07 Baleares, 35/38 Canarias,
+  51 Ceuta, 52 Melilla — and Portuguese `NNNN-NNN`), shipped to the browser as a passthrough
+  and imported by `src/shipping.js`, so the page and the server cannot disagree. A zone in
+  `shipping_zones` carries an optional `region` (one of `REGIONS`); with none, its `id` is used
+  when it equals a region name (Shoroban's ids are expected to be `peninsula`/`portugal`/`baleares`
+  — **verify against its config before release**, else add `region` through `POST /api/site/texts`).
+  Typing a postal code selects the zone, or «Otros destinos» when no zone serves that region; a
+  manual choice that disagrees shows a **non-blocking** warning. Deploys whose zones carry no
+  region see none of it.
+- **Not built:** server-side rejection or flagging of a zone/postal-code mismatch (the owner
+  sees both in the email), B2B prefill, editing the address in the panel. CartoCiudad's request
+  limits are undocumented; the 10 min cache and the 60/min rate limit are our own guard.
+
 ## Card payments (MONEI)
 
 Opt-in per deploy: `MONEI_API_KEY` in the environment **and** an https `site_url`

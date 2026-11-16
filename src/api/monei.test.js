@@ -102,6 +102,9 @@ const checkout = (extra = {}) =>
       customer_name: "Ana",
       customer_email: "ana@example.com",
       customer_phone: "612 34 56 78",
+      address: "CALLE ALCALA 50",
+      postal_code: "28014",
+      city: "Madrid",
       accept_terms: true,
       items: [{ sku: "A1", quantity: 2 }],
       ...extra,
@@ -267,6 +270,24 @@ describe("POST /api/monei/callback", () => {
     assert.match(owner.text, /con tarjeta/);
     assert.match(owner.text, /2 x Cuaderno/);
     assert.match(customer.text, /Hemos recibido tu pago con tarjeta/);
+  });
+
+  test("a card order placed with an address carries it in both emails once paid", async () => {
+    const res = await checkout({
+      payment_method: "card",
+      address: "CALLE ALCALA 50",
+      address_extra: "2ºB",
+      postal_code: "28014",
+      city: "Madrid",
+    });
+    assert.equal(res.status, 201);
+    const id = (await res.json()).id;
+    assert.equal(row(id).shipping_address, "CALLE ALCALA 50, 2ºB, 28014 Madrid");
+    assert.equal((await callback(succeeded(id))).status, 200);
+    const owner = sent.find((m) => m.to === "tienda@example.com");
+    const customer = sent.find((m) => m.to === "ana@example.com");
+    assert.match(owner.text, /Dirección de envío: CALLE ALCALA 50, 2ºB, 28014 Madrid/);
+    assert.match(customer.text, /Dirección de entrega:\nCALLE ALCALA 50, 2ºB, 28014 Madrid/);
   });
 
   test("MONEI retrying the same callback changes nothing and sends nothing", async () => {

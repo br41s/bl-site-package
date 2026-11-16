@@ -72,6 +72,9 @@ function reserve(headers = {}, extra = { accept_terms: true }) {
     body: JSON.stringify({
       customer_name: "Ana",
       customer_email: "ana@cliente.es",
+      address: "CALLE ALCALA 50",
+      postal_code: "28014",
+      city: "Madrid",
       items: [{ sku: "A1", quantity: 2 }],
       ...extra,
     }),
@@ -98,7 +101,10 @@ describe("shipping zones", () => {
   test("the zone's price is added to the total and to the transfer amount, server-side", async () => {
     setConfig("shipping_zones", ZONES);
     setConfig("bank_iban", "ES4301824731840201605267");
-    const { status, body } = await reserve({}, { accept_terms: true, shipping_zone: "portugal" });
+    const { status, body } = await reserve(
+      {},
+      { accept_terms: true, shipping_zone: "portugal", address: "CALLE ALCALA 50", postal_code: "28014", city: "Madrid" },
+    );
     assert.equal(status, 201);
     assert.equal(body.total_cents, 2420 + 1400);
     assert.equal(body.payment.amount_cents, 2420 + 1400);
@@ -127,7 +133,10 @@ describe("shipping zones", () => {
       body: JSON.stringify({ email: "compras@acme.es", password: "secreto-123" }),
     });
     const cookie = (login.headers.get("set-cookie") || "").split(";")[0];
-    const { body } = await reserve({ Cookie: cookie }, { accept_terms: true, shipping_zone: "peninsula" });
+    const { body } = await reserve(
+      { Cookie: cookie },
+      { accept_terms: true, shipping_zone: "peninsula", address: "CALLE ALCALA 50", postal_code: "28014", city: "Madrid" },
+    );
     assert.equal(body.shipping_cents, 579); // 700 / 1.21
     assert.equal(body.vat_included, false);
     // items: 2 x 1210 = 2420 gross -> 2000 net; + 579 shipping net
