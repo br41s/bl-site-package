@@ -130,6 +130,11 @@ on links: `guide-buy`):
 
 Two looks, one content model. `DESIGN.md` is the spec and the reference.
 
+`.reveal` never hides anything inside `<main>`: a CSS guard in `web/style.css` keeps it
+visible. `<main>` is the hero or the whole page, so it holds the LCP element. Only the home
+sections after the hero animate (biglobster.top, 2026-11-17: hidden heroes meant a 5 s mobile
+LCP).
+
 - `calida` — the designed look: Fraunces + Nunito, cream ground, surfaces tinted with
   the accent, 24 px radii, blob hero. The setup wizard writes it on every new install.
 - `""` / `clasico` — the original look. Existing deploys have no value stored and keep

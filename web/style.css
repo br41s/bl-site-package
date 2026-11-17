@@ -1825,6 +1825,15 @@ body.infographic-lightbox-open {
   opacity: 1;
   transform: none;
 }
+/* Nothing inside <main> waits for the scroll reveal. <main> is the hero on the home and
+   the whole page elsewhere, so it holds the LCP element. Hidden until site.js ran, it
+   cost biglobster.top a 5 s mobile LCP on 37 of 66 pages (PageSpeed, 2026-11-17).
+   The home sections after the hero sit outside <main> and keep the animation. */
+main .reveal {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
 @media (prefers-reduced-motion: reduce) {
   .reveal {
     opacity: 1;
