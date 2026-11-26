@@ -296,6 +296,16 @@ link use the first, yet Google crawled the twin and reported ~21,000 of them as
 `.html` (and `/index.html`) to the clean address, query kept; `/404.html` and files that
 are not built pages (`web/`) are left alone. Never link or redirect to the `.html` form.
 
+**A product without a page is redirected, not a 404** (`src/discontinued-products.js`,
+mounted after both static mounts, so it only runs when no built page exists). A product
+is built only while `active = 1 AND feed_active = 1`, and the sync resets `feed_active` on
+every run, so SKUs of the GC2-GC5 supplier blocks vanished and came back between syncs; Google
+crawled them while absent and Search Console failed the 404 validation on 229 of them
+(2026-11-26). When `/productos/<id>-<slug>` has no page but the row exists, it answers a
+**302** (the product may return, and its own URL then wins again) to
+`/productos/categoria/<slug>/` if that page is built, else `/productos/`. A slug with no
+row stays a 404. The cause, a sync that drops those blocks intermittently, is not fixed here.
+
 ## B2B area (trade prices)
 
 Opt-in per deploy (`b2b_enabled`, default off; panel → Profesionales). The
