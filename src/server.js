@@ -16,6 +16,7 @@ import productContentRouter from "./api/product-content.js";
 import redirectsRouter, { findLiveRedirect, resolvesOnDisk } from "./api/redirects.js";
 import { legacyUrlHandler } from "./legacy-urls.js";
 import { cleanUrlHandler } from "./clean-urls.js";
+import { discontinuedProductHandler } from "./discontinued-products.js";
 import reservationsRouter from "./api/reservations.js";
 import addressRouter from "./api/address.js";
 import moneiRouter from "./api/monei.js";
@@ -167,6 +168,20 @@ app.use(
 
 // Panel/setup assets (panel.js, setup.js, style-panel.css, etc.)
 app.use(express.static(join(__dirname, "../web")));
+
+// Mounted after both static mounts, so it only runs when no built page exists:
+// a product that left the feed or was hidden still has a row, and its URL should
+// not be a 404 (src/discontinued-products.js).
+const categoryBySlug = db.prepare("SELECT category FROM products WHERE slug = ?");
+app.use(
+  discontinuedProductHandler({
+    findCategory: (slug) => {
+      const row = categoryBySlug.get(slug);
+      return row ? row.category || "" : undefined;
+    },
+    categoryBuilt: (slug) => resolvesOnDisk(`/productos/categoria/${slug}`),
+  }),
+);
 
 // 404 (src/not-found.js)
 app.use(notFound);
